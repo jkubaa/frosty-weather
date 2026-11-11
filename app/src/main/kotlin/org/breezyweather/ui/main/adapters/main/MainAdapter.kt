@@ -33,6 +33,8 @@ import org.breezyweather.ui.main.adapters.main.holder.AbstractMainCardViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.AbstractMainViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.AirQualityViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.AlertViewHolder
+import org.breezyweather.ui.main.adapters.main.holder.HighlightsViewHolder
+import org.breezyweather.ui.main.utils.Highlights
 import org.breezyweather.ui.main.adapters.main.holder.ClockViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.DailyViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.FooterViewHolder
@@ -111,6 +113,9 @@ class MainAdapter(
                 if (c === CardDisplay.CARD_NOWCAST &&
                     (!weather.hasMinutelyPrecipitation || weather.minutelyForecast.size < 3)
                 ) {
+                    continue
+                }
+                if (c === CardDisplay.CARD_HIGHLIGHTS && Highlights.build(activity, location).isEmpty()) {
                     continue
                 }
                 if (c === CardDisplay.CARD_DAILY_FORECAST && weather.dailyForecast.isEmpty()) {
@@ -199,6 +204,7 @@ class MainAdapter(
         ViewType.SUN -> SunViewHolder(parent)
         ViewType.MOON -> MoonViewHolder(parent)
         ViewType.CLOCK -> ClockViewHolder(parent)
+        ViewType.HIGHLIGHTS -> HighlightsViewHolder(parent)
         ViewType.FOOTER -> FooterViewHolder(ComposeView(parent.context))
         else -> FooterViewHolder(ComposeView(parent.context))
     }
@@ -356,6 +362,7 @@ class MainAdapter(
             CardDisplay.CARD_SUN -> ViewType.SUN
             CardDisplay.CARD_MOON -> ViewType.MOON
             CardDisplay.CARD_CLOCK -> ViewType.CLOCK
+            CardDisplay.CARD_HIGHLIGHTS -> ViewType.HIGHLIGHTS
         }
 
         private fun getCardDisplay(viewType: Int): CardDisplay? = when (viewType) {
@@ -373,6 +380,7 @@ class MainAdapter(
             ViewType.SUN -> CardDisplay.CARD_SUN
             ViewType.MOON -> CardDisplay.CARD_MOON
             ViewType.CLOCK -> CardDisplay.CARD_CLOCK
+            ViewType.HIGHLIGHTS -> CardDisplay.CARD_HIGHLIGHTS
             else -> null
         }
     }

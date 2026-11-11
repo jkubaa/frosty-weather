@@ -59,6 +59,7 @@ class SettingsManager private constructor(
         }
 
         const val DEFAULT_CARD_DISPLAY = "nowcast" +
+            "&highlights" +
             "&daily_forecast" +
             "&hourly_forecast" +
             "&precipitation" +

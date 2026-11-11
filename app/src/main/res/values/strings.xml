@@ -38,6 +38,33 @@
     <string name="daily_yesterday_short">Yda</string>
     <string name="daily_today_short">Today</string>
     <string name="hourly_now">Now</string>
+    <!-- Highlights card (liquid glass redesign) -->
+    <string name="highlights">Highlights</string>
+    <string name="highlight_rain">Rain</string>
+    <string name="highlight_snow">Snow</string>
+    <!-- %1$s: Rain or Snow, %2$s: time -->
+    <string name="highlight_precipitation_around">%1$s likely around %2$s</string>
+    <!-- %1$s: Rain or Snow -->
+    <string name="highlight_precipitation_tomorrow">%1$s likely tomorrow</string>
+    <!-- %1$s: Rain or Snow, %2$s: weekday -->
+    <string name="highlight_precipitation_on">%1$s likely on %2$s</string>
+    <string name="highlight_dry">No rain expected in the coming days</string>
+    <!-- %1$s: percentage -->
+    <string name="highlight_chance">%1$s chance</string>
+    <!-- %1$s: temperature difference, like 6° -->
+    <string name="highlight_warmer_tomorrow">Tomorrow will be %1$s warmer</string>
+    <string name="highlight_cooler_tomorrow">Tomorrow will be %1$s cooler</string>
+    <!-- %1$s: today's high, %2$s: tomorrow's high -->
+    <string name="highlight_highs">High today %1$s, tomorrow %2$s</string>
+    <!-- %1$s: weekday, %2$s: temperature -->
+    <string name="highlight_warmest_day">Warmest day: %1$s, up to %2$s</string>
+    <!-- %1$s: UV index, %2$s: time -->
+    <string name="highlight_uv_peak">UV index up to %1$s around %2$s</string>
+    <!-- %1$s: wind speed, %2$s: time -->
+    <string name="highlight_gusts">Gusts up to %1$s around %2$s</string>
+    <!-- %1$s: time -->
+    <string name="highlight_sunset">Sunset at %1$s</string>
+    <string name="highlight_sunrise">Sunrise at %1$s</string>
     <string name="daily_tomorrow_short">Tmw</string>
     <string name="daily_summary">Daily summary</string>
     <!-- Charts -->
