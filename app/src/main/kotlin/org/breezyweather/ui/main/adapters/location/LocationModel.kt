@@ -25,6 +25,7 @@ import org.breezyweather.common.extensions.getRelativeTime
 import org.breezyweather.common.extensions.uncapitalize
 import org.breezyweather.domain.location.model.getPlace
 import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.ui.theme.weatherView.WeatherViewController
 import java.util.Date
 import kotlin.time.Duration.Companion.hours
 
@@ -36,7 +37,8 @@ class LocationModel(
     var weatherCode: WeatherCode? = null
     var weatherText: String? = null
     val currentPosition: Boolean = location.isCurrentPosition
-    val title: String = (if (location.isCurrentPosition) "⊙ " else "") + location.getPlace(context)
+    // The current location is marked with an arrow by the card (no more "⊙" prefix)
+    val title: String = location.getPlace(context)
     var alerts: Int = 0
     var body: String
 
@@ -76,6 +78,8 @@ class LocationModel(
             )
         } else if (!weatherText.isNullOrEmpty()) {
             weatherText!!
+        } else if (weatherCode != null) {
+            WeatherViewController.getWeatherText(weatherCode!!)
         } else {
             location.administrationLevels()
         }

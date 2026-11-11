@@ -16,124 +16,121 @@
 
 package org.breezyweather.ui.main.adapters.location
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.ColorStateList
-import android.view.MotionEvent
+import android.graphics.Color
 import android.view.View
-import androidx.core.content.ContextCompat
-import androidx.core.widget.ImageViewCompat
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.recyclerview.widget.RecyclerView
+import breezyweather.domain.location.model.Location
 import org.breezyweather.R
-import org.breezyweather.common.extensions.DEFAULT_CARD_LIST_ITEM_ELEVATION_DP
-import org.breezyweather.common.extensions.getThemeColor
+import org.breezyweather.common.extensions.dpToPx
+import org.breezyweather.common.extensions.getFormattedTime
+import org.breezyweather.common.extensions.is12Hour
 import org.breezyweather.databinding.ItemLocationCardBinding
-import org.breezyweather.domain.location.model.isDaylight
-import org.breezyweather.ui.theme.resource.providers.ResourceProvider
+import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.ui.common.glass.GlassText
+import org.breezyweather.ui.main.adapters.main.holder.GlassForecastFormat
+import org.breezyweather.ui.theme.weatherView.WeatherViewController
+import org.breezyweather.ui.theme.weatherView.materialWeatherView.SkyPalette
+import org.breezyweather.unit.temperature.TemperatureUnit
+import java.util.Date
 
+/**
+ * A location of the list, as an iOS weather style card painted with the location's own sky.
+ * Long-press anywhere on the card to reorder it (see [org.breezyweather.ui.main.widgets.LocationItemTouchCallback]),
+ * swipe it to delete or edit it.
+ */
 class LocationHolder(
     private val mBinding: ItemLocationCardBinding,
     private val mClickListener: (String) -> Unit,
-    private val mDragListener: (LocationHolder) -> Unit,
 ) : RecyclerView.ViewHolder(mBinding.root) {
-    @SuppressLint("SetTextI18n", "ClickableViewAccessibility")
-    fun onBindView(context: Context, model: LocationModel, resourceProvider: ResourceProvider) {
-        val elevatedSurfaceColor = org.breezyweather.common.utils.ColorUtils.getWidgetSurfaceColor(
-            DEFAULT_CARD_LIST_ITEM_ELEVATION_DP,
-            context.getThemeColor(androidx.appcompat.R.attr.colorPrimary),
-            context.getThemeColor(com.google.android.material.R.attr.colorSurface)
-        )
-        val talkBackBuilder = StringBuilder()
-        if (model.currentPosition) {
-            talkBackBuilder.append(context.getString(R.string.location_current))
-        }
-        if (talkBackBuilder.toString().isNotEmpty()) {
-            talkBackBuilder.append(context.getString(org.breezyweather.unit.R.string.locale_separator))
-        }
+
+    fun onBindView(context: Context, model: LocationModel) {
+        val location = model.location
+        val daylight = WeatherViewController.isDaylight(location)
+
+        mBinding.root.clipToOutline = true
+        mBinding.item.background = SkyPalette.gradient(WeatherViewController.getWeatherKind(location), daylight)
+
+        // Swipe actions, iOS colors: delete in red, edit in gray
         mBinding.container.apply {
             swipe(0f)
             iconResStart = R.drawable.ic_delete
-        }
-        mBinding.container.iconResEnd = R.drawable.ic_settings
-        mBinding.container.apply {
-            backgroundColorStart =
-                context.getThemeColor(com.google.android.material.R.attr.colorErrorContainer)
-            backgroundColorEnd = if (model.location.isCurrentPosition) {
-                context.getThemeColor(com.google.android.material.R.attr.colorTertiaryContainer)
-            } else {
-                context.getThemeColor(com.google.android.material.R.attr.colorSecondaryContainer)
-            }
-            tintColorStart =
-                context.getThemeColor(com.google.android.material.R.attr.colorOnErrorContainer)
-            tintColorEnd = if (model.location.isCurrentPosition) {
-                context.getThemeColor(com.google.android.material.R.attr.colorOnTertiaryContainer)
-            } else {
-                context.getThemeColor(com.google.android.material.R.attr.colorOnSecondaryContainer)
-            }
-        }
-        mBinding.item.setBackgroundColor(
-            if (model.selected) {
-                context.getThemeColor(com.google.android.material.R.attr.colorPrimaryContainer)
-            } else if (model.alerts > 0) {
-                ContextCompat.getColor(context, R.color.alert_background)
-            } else {
-                elevatedSurfaceColor
-            }
-        )
-        ImageViewCompat.setImageTintList(
-            mBinding.sortButton,
-            ColorStateList.valueOf(
-                if (model.selected) {
-                    context.getThemeColor(com.google.android.material.R.attr.colorOnPrimaryContainer)
-                } else if (model.alerts > 0) {
-                    ContextCompat.getColor(context, R.color.alert_text)
-                } else {
-                    context.getThemeColor(androidx.appcompat.R.attr.colorPrimary)
-                }
-            )
-        )
-        mBinding.sortButton.visibility = View.VISIBLE
-        mBinding.content.setPaddingRelative(0, 0, 0, 0)
-        if (model.weatherCode != null) {
-            mBinding.weatherIcon.apply {
-                visibility = View.VISIBLE
-                setImageDrawable(resourceProvider.getWeatherIcon(model.weatherCode, model.location.isDaylight))
-            }
-        } else {
-            mBinding.weatherIcon.visibility = View.GONE
-        }
-        mBinding.title1.setTextColor(
-            if (model.selected) {
-                context.getThemeColor(com.google.android.material.R.attr.colorOnPrimaryContainer)
-            } else {
-                context.getThemeColor(R.attr.colorTitleText)
-            }
-        )
-        mBinding.title1.text = model.title
-        if (model.body.isEmpty()) {
-            mBinding.title2.visibility = View.GONE
-        } else {
-            mBinding.title2.visibility = View.VISIBLE
-            mBinding.title2.setTextColor(
-                if (model.alerts > 0) {
-                    ContextCompat.getColor(context, R.color.alert_text)
-                } else {
-                    context.getThemeColor(R.attr.colorBodyText)
-                }
-            )
-            mBinding.title2.text = model.body
+            iconResEnd = R.drawable.ic_settings
+            backgroundColorStart = DELETE_COLOR
+            backgroundColorEnd = EDIT_COLOR
+            tintColorStart = Color.WHITE
+            tintColorEnd = Color.WHITE
         }
 
-        mBinding.container.setOnClickListener { mClickListener(model.location.formattedId) }
-        // TODO
-        mBinding.sortButton.setOnTouchListener { _: View?, event: MotionEvent ->
-            if (event.action == MotionEvent.ACTION_DOWN) {
-                mDragListener(this)
+        // Name, with the iOS arrow for the current location
+        mBinding.title.text = model.title
+        val arrow = if (model.currentPosition) {
+            AppCompatResources.getDrawable(context, R.drawable.ic_location_arrow)?.mutate()?.apply {
+                val size = context.dpToPx(15f).toInt()
+                setBounds(0, 0, size, size)
             }
-            false
+        } else {
+            null
         }
-        talkBackBuilder.append(context.getString(org.breezyweather.unit.R.string.locale_separator))
-            .append(context.getString(R.string.location_swipe_to_delete))
-        itemView.contentDescription = talkBackBuilder.toString()
+        mBinding.title.setCompoundDrawablesRelative(null, null, arrow, null)
+
+        // Local time of the location
+        // Local time of the location, after a "Current location" label for the current one
+        val time = Date().getFormattedTime(location, context, context.is12Hour)
+        mBinding.subtitle.text = if (model.currentPosition) {
+            context.getString(R.string.location_current) + " · " + time
+        } else {
+            time
+        }
+
+        // Condition, or what's wrong (not located yet, outdated, active alerts)
+        mBinding.condition.text = model.body
+        mBinding.condition.visibility = if (model.body.isEmpty()) View.GONE else View.VISIBLE
+
+        val temperatureUnit = SettingsManager.getInstance(context).getTemperatureUnit(context)
+        val temperature = location.weather?.current?.temperature?.temperature
+        if (temperature != null) {
+            mBinding.temperature.visibility = View.VISIBLE
+            mBinding.temperature.text = GlassForecastFormat.degrees(context, temperature, temperatureUnit)
+            GlassText.apply(mBinding.temperature)
+        } else {
+            mBinding.temperature.visibility = View.INVISIBLE
+        }
+
+        val highLow = highLow(context, location, temperatureUnit)
+        mBinding.highLow.visibility = if (highLow == null) View.GONE else View.VISIBLE
+        mBinding.highLow.text = highLow
+
+        mBinding.item.setOnClickListener { mClickListener(location.formattedId) }
+
+        itemView.contentDescription = listOfNotNull(
+            if (model.currentPosition) context.getString(R.string.location_current) else null,
+            model.title,
+            mBinding.temperature.text?.takeIf { temperature != null },
+            model.body.takeIf { it.isNotEmpty() },
+            highLow,
+            context.getString(R.string.location_swipe_to_delete)
+        ).joinToString(context.getString(org.breezyweather.unit.R.string.locale_separator))
+    }
+
+    /** Today's "H:24°  L:13°", like the home screen hero. */
+    private fun highLow(context: Context, location: Location, unit: TemperatureUnit): String? {
+        val today = location.weather?.today ?: return null
+        val temperatures = listOfNotNull(
+            today.day?.temperature?.temperature,
+            today.night?.temperature?.temperature
+        )
+        if (temperatures.isEmpty()) return null
+        return context.getString(
+            R.string.hero_high_low,
+            GlassForecastFormat.degrees(context, temperatures.maxBy { it.toDouble(TemperatureUnit.CELSIUS) }, unit),
+            GlassForecastFormat.degrees(context, temperatures.minBy { it.toDouble(TemperatureUnit.CELSIUS) }, unit)
+        )
+    }
+
+    companion object {
+        private val DELETE_COLOR = Color.rgb(0xFF, 0x45, 0x3A)
+        private val EDIT_COLOR = Color.rgb(0x63, 0x63, 0x66)
     }
 }

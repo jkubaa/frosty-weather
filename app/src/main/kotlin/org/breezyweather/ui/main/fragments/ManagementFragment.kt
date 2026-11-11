@@ -17,12 +17,51 @@
 package org.breezyweather.ui.main.fragments
 
 import android.Manifest
+import android.graphics.drawable.GradientDrawable
+import org.breezyweather.ui.theme.weatherView.WeatherViewController
+import org.breezyweather.ui.theme.weatherView.materialWeatherView.SkyPalette
+import android.graphics.Typeface
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.style.TextAlign
+import org.breezyweather.common.extensions.dpToPx
+import android.content.res.ColorStateList
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.core.graphics.ColorUtils
+import org.breezyweather.ui.common.glass.FrostedBar
+import org.breezyweather.ui.common.glass.LiquidGlass
+import kotlin.math.roundToInt
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import org.breezyweather.ui.theme.ThemeManager
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -42,19 +81,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.MyLocation
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -74,25 +107,24 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import breezyweather.domain.location.model.Location
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.breezyweather.BreezyWeather
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
-import org.breezyweather.common.extensions.isDarkMode
-import org.breezyweather.common.extensions.plus
 import org.breezyweather.common.extensions.setSystemBarStyle
 import org.breezyweather.common.source.getName
 import org.breezyweather.common.utils.helpers.IntentHelper
@@ -104,13 +136,9 @@ import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.sources.SourceManager
 import org.breezyweather.ui.common.composables.AlertDialogNoPadding
 import org.breezyweather.ui.common.composables.AnimatedVisibilitySlideVertically
-import org.breezyweather.ui.common.composables.NotificationCard
 import org.breezyweather.ui.common.composables.SecondarySourcesPreference
-import org.breezyweather.ui.common.decorations.Material3ListItemDecoration
 import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
-import org.breezyweather.ui.common.widgets.Material3Scaffold
 import org.breezyweather.ui.common.widgets.defaultCardListItemElevation
-import org.breezyweather.ui.common.widgets.insets.BWCenterAlignedTopAppBar
 import org.breezyweather.ui.main.MainActivity
 import org.breezyweather.ui.main.MainActivityViewModel
 import org.breezyweather.ui.main.adapters.location.LocationAdapter
@@ -118,8 +146,11 @@ import org.breezyweather.ui.main.widgets.LocationItemTouchCallback
 import org.breezyweather.ui.main.widgets.LocationItemTouchCallback.TouchReactor
 import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
 import org.breezyweather.ui.theme.compose.themeRipple
-import org.breezyweather.ui.theme.resource.ResourcesProviderFactory
-import org.breezyweather.ui.theme.resource.providers.ResourceProvider
+
+private const val COMPACT_TITLE_FADE_DP = 40f
+
+/** Height of the row of floating buttons at the top of the list. */
+private val TOP_ROW_HEIGHT = 60.dp
 
 class PushedManagementFragment : ManagementFragment() {
 
@@ -128,7 +159,7 @@ class PushedManagementFragment : ManagementFragment() {
     }
 
     override fun setSystemBarStyle() {
-        requireActivity().window.setSystemBarStyle(!requireActivity().isDarkMode)
+        requireActivity().window.setSystemBarStyle(isLightList())
     }
 }
 
@@ -139,8 +170,30 @@ open class ManagementFragment : MainModuleFragment(), TouchReactor {
     private lateinit var layout: LinearLayoutManager
     private lateinit var adapter: LocationAdapter
     private lateinit var recyclerView: RecyclerView
+    private lateinit var searchBar: View
+
+    /** Top color of the list backdrop (see [updateBackdrop]), continued behind the status bar and top fade. */
+    private val backdropTopColor = mutableIntStateOf(android.graphics.Color.BLACK)
+
+    /** Height of the status bar (and cutout) over the list, in px. */
+    private val topInset = mutableIntStateOf(0)
+
+    /** Frosted bar behind the top buttons and the compact title (see [FrostedBar]). */
+    private lateinit var topBar: FrostedBar
+
+    /** Tint of the frosted top bar: the backdrop color, dense enough for the title to stay readable. */
+    private fun topBarTint(backdropTop: Int): Int =
+        ColorUtils.setAlphaComponent(backdropTop, ((if (isLightList()) 0.72f else 0.62f) * 255).toInt())
+
+    /** Vertical position of the search capsule over the list, in px. */
+    private val searchBarOffset = mutableIntStateOf(0)
+
+    /** Opacity of the compact title between the top buttons: shown once the large title is scrolled away. */
+    private val compactTitleAlpha = mutableFloatStateOf(0f)
+
+    /** Top of the search slot in the list header, in px from the top of the header (-1: not laid out yet). */
+    private var searchSlotTop = -1
     private lateinit var itemTouchHelper: ItemTouchHelper
-    private var resourceProvider: ResourceProvider? = null
 
     private var callback: Callback? = null
 
@@ -168,282 +221,98 @@ open class ManagementFragment : MainModuleFragment(), TouchReactor {
 
     @Composable
     private fun ContentView() {
-        ensureResourceProvider()
-
-        val validLocationListState = viewModel.validLocationList.collectAsState()
-        var notificationDismissed by remember {
-            mutableStateOf(viewModel.statementManager.isPostNotificationDialogAlreadyShown)
-        }
-        var notificationAppUpdateCheckDismissed by remember {
-            mutableStateOf(viewModel.statementManager.isAppUpdateCheckDialogAlreadyShown)
-        }
-
         val dialogChooseWeatherSourcesOpenState = viewModel.dialogChooseWeatherSourcesOpen.collectAsState()
         val selectedLocationState = viewModel.selectedLocation.collectAsState()
 
         val dialogChooseDebugLocationOpenState = viewModel.dialogChooseDebugLocationOpen.collectAsState()
 
-        val locationLoadingState = viewModel.locationListLoading.collectAsState()
+        val colors = remember { LocationListColors(isLightList()) }
+        val navigationBarHeight = WindowInsets.navigationBars.getBottom(LocalDensity.current)
+        // The list and the frosted top bar go under the status bar: the bar's content starts below it
+        val density = LocalDensity.current
+        val topInsetPx = WindowInsets.safeDrawing.only(WindowInsetsSides.Top).getTop(density)
+        if (topInset.intValue != topInsetPx) topInset.intValue = topInsetPx
+        val topInsetDp = with(density) { topInsetPx.toDp() }
 
-        /*
-         * We should add a scroll behavior to make the top bar change color when scrolling, but
-         * as we mix ComposeView and XML views, this leads to stuttering in scrolling.
-         * Implement it later once we replace the RecyclerView as a LazyList. It’s not an easy
-         * task as we need to implement drag & drop and swipe left/right
-         */
-        Material3Scaffold(
-            topBar = {
-                BWCenterAlignedTopAppBar(
-                    title = stringResource(R.string.locations),
-                    onBackPressed = if (!((requireActivity() as MainActivity).isDrawerLayoutVisible)) {
-                        { (requireActivity() as MainActivity).setManagementFragmentVisibility(false) }
-                    } else {
-                        null
-                    },
-                    actions = {
-                        IconButton(
-                            onClick = {
-                                activity?.let { IntentHelper.startSettingsActivity(it) }
-                            }
-                        ) {
-                            Icon(
-                                painterResource(R.drawable.ic_settings),
-                                contentDescription = stringResource(R.string.action_settings),
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    },
-                    windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top)
-                )
-            },
-            floatingActionButton = {
-                if (validLocationListState.value.isNotEmpty()) {
-                    Column {
-                        if (BreezyWeather.instance.debugMode) {
-                            FloatingActionButton(
-                                containerColor = MaterialTheme.colorScheme.tertiary,
-                                onClick = {
-                                    viewModel.openChooseDebugLocationDialog()
-                                }
-                            ) {
-                                Icon(
-                                    Icons.Outlined.BugReport,
-                                    stringResource(R.string.action_add_debug_location)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
-                        }
-                        if (validLocationListState.value.firstOrNull { it.isCurrentPosition } == null) {
-                            FloatingActionButton(
-                                containerColor = MaterialTheme.colorScheme.tertiary,
-                                onClick = {
-                                    viewModel.openChooseWeatherSourcesDialog(
-                                        Location(isCurrentPosition = true)
-                                            .applyDefaultPreset((requireActivity() as MainActivity).sourceManager)
-                                    )
-                                }
-                            ) {
-                                Icon(
-                                    Icons.Outlined.MyLocation,
-                                    stringResource(R.string.action_add_current_location)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
-                        }
-                        FloatingActionButton(
-                            containerColor = MaterialTheme.colorScheme.tertiary,
-                            onClick = {
-                                callback?.onSearchBarClicked()
-                            }
-                        ) {
-                            Icon(
-                                Icons.Outlined.Add,
-                                stringResource(R.string.action_add_new_location)
-                            )
-                        }
-                    }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(backdropTopColor.intValue))
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                .clipToBounds()
+        ) {
+            // The list scrolls with its header (title, prompts), like iOS weather, and under the
+            // floating glass elements below
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = {
+                    recyclerView
+                },
+                update = {
+                    if (it.paddingBottom != navigationBarHeight) it.setPadding(0, 0, 0, navigationBarHeight)
                 }
-            }
-        ) { paddings ->
-            if (validLocationListState.value.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(
-                            // Do not set a horizontal padding as this adds too much padding in
-                            // landscape mode.
-                            top = paddings.calculateTopPadding(),
-                            bottom = paddings.calculateBottomPadding(),
-                            start = dimensionResource(R.dimen.normal_margin),
-                            end = dimensionResource(R.dimen.normal_margin)
-                        )
-                ) {
-                    if (locationLoadingState.value) {
-                        LinearProgressIndicator(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = dimensionResource(R.dimen.small_margin))
-                        )
-                    } else {
-                        Spacer(
-                            modifier = Modifier.height(4.dp + dimensionResource(R.dimen.small_margin))
-                        )
-                    }
-                    var hasNotificationPermission: Boolean? = null
-                    if (!notificationDismissed || !notificationAppUpdateCheckDismissed) {
-                        val notificationPermissionState = rememberMultiplePermissionsState(
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                listOf(Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                // permission not needed
-                                emptyList()
-                            }
-                        )
-                        hasNotificationPermission = notificationPermissionState.permissions.isEmpty() ||
-                            notificationPermissionState.permissions[0].status == PermissionStatus.Granted
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        AnimatedVisibilitySlideVertically(
-                            hasNotificationPermission == false && !notificationDismissed
-                        ) {
-                            Column {
-                                NotificationCard(
-                                    title = stringResource(R.string.dialog_permissions_notification_title),
-                                    summary = stringResource(R.string.dialog_permissions_notification_content),
-                                    onClick = {
-                                        viewModel.statementManager.setPostNotificationDialogAlreadyShown()
-                                        notificationDismissed = true
-
-                                        PermissionHelper.requestPermissionWithFallback(
-                                            activity = requireActivity(),
-                                            permission = Manifest.permission.POST_NOTIFICATIONS,
-                                            fallback = {
-                                                IntentHelper.startNotificationSettingsActivity(requireActivity())
-                                            }
-                                        )
-                                    },
-                                    onClose = {
-                                        viewModel.statementManager.setPostNotificationDialogAlreadyShown()
-                                        notificationDismissed = true
-                                        /*
-                                         * We could turn off alert notification from SettingsManager, but
-                                         * it’s best not to, as the user can still enable notification
-                                         * permission again from Android settings, and there is a
-                                         * permission check before sending any notification even if
-                                         * preference is enabled.
-                                         */
-                                    }
-                                )
-                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.small_margin)))
-                            }
-                        }
-                    }
-                    if (BreezyWeather.instance.isGitHubUpdateCheckerEnabled) {
-                        AnimatedVisibilitySlideVertically(
-                            hasNotificationPermission == true && !notificationAppUpdateCheckDismissed
-                        ) {
-                            Column {
-                                NotificationCard(
-                                    title = stringResource(R.string.dialog_app_update_check_title),
-                                    summary = stringResource(R.string.dialog_app_update_check_content),
-                                    onClick = {
-                                        viewModel.statementManager.setAppUpdateCheckDialogAlreadyShown()
-                                        notificationAppUpdateCheckDismissed = true
-                                        SettingsManager.getInstance(requireContext()).isAppUpdateCheckEnabled = true
-                                    },
-                                    onClose = {
-                                        viewModel.statementManager.setAppUpdateCheckDialogAlreadyShown()
-                                        notificationAppUpdateCheckDismissed = true
-                                    }
-                                )
-                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.small_margin)))
-                            }
-                        }
-                    }
-                    AndroidView(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clipToBounds(),
-                        factory = {
-                            recyclerView
-                        }
+            )
+            // Frosted top bar behind the buttons and the compact title: blurs the cards scrolling under
+            // it (tinted, so the title stays readable), with a soft bottom edge
+            AndroidView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(topInsetDp + TOP_ROW_HEIGHT + FrostedBar.FADE_DP.dp),
+                factory = { topBar }
+            )
+            // Search, over the list: follows its slot in the header, then stays pinned under the top buttons
+            // (moved by a layout offset, not a View translation: Compose routes touches by layout
+            // position, so a translated view wouldn't receive the taps where it's drawn)
+            AndroidView(
+                modifier = Modifier
+                    .offset { IntOffset(0, searchBarOffset.intValue) }
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .height(dimensionResource(R.dimen.location_search_bar_height)),
+                factory = {
+                    searchBar
+                }
+            )
+            // Liquid glass buttons, floating over the list: back (when the list is pushed over the home
+            // screen) and settings
+            Row(
+                modifier = Modifier
+                    .padding(top = topInsetDp)
+                    .fillMaxWidth()
+                    .height(TOP_ROW_HEIGHT)
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (!((requireActivity() as MainActivity).isDrawerLayoutVisible)) {
+                    LiquidGlassIconButton(
+                        icon = R.drawable.ic_toolbar_back,
+                        contentDescription = stringResource(R.string.action_back),
+                        isLight = isLightList(),
+                        blurRoot = recyclerView,
+                        onClick = { (requireActivity() as MainActivity).setManagementFragmentVisibility(false) }
                     )
+                } else {
+                    Spacer(modifier = Modifier.size(GLASS_BUTTON_SIZE)) // keeps the compact title centered
                 }
-            } else {
-                Row(
+                // Compact title, faded in once the large one has scrolled away
+                Text(
+                    text = stringResource(R.string.locations),
+                    color = colors.content,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(
-                            // Do not set a horizontal padding as this adds too much padding in
-                            // landscape mode.
-                            PaddingValues(horizontal = dimensionResource(R.dimen.normal_margin)) +
-                                PaddingValues(
-                                    top = paddings.calculateTopPadding(),
-                                    bottom = paddings.calculateBottomPadding() + dimensionResource(R.dimen.large_margin)
-                                )
-                        ),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.large_margin))
-                    ) {
-                        Button(
-                            onClick = {
-                                callback?.onSearchBarClicked()
-                            }
-                        ) {
-                            Text(
-                                text = stringResource(R.string.action_add_new_location),
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.openChooseWeatherSourcesDialog(
-                                    Location(isCurrentPosition = true)
-                                        .applyDefaultPreset((requireActivity() as MainActivity).sourceManager)
-                                )
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.MyLocation,
-                                contentDescription = stringResource(R.string.location_current),
-                                modifier = Modifier.size(ButtonDefaults.IconSize)
-                            )
-                            Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
-                            Text(
-                                text = stringResource(R.string.action_add_current_location),
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                        if (BreezyWeather.instance.debugMode) {
-                            OutlinedButton(
-                                onClick = {
-                                    viewModel.openChooseDebugLocationDialog()
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.BugReport,
-                                    contentDescription = stringResource(R.string.settings_debug),
-                                    modifier = Modifier.size(ButtonDefaults.IconSize)
-                                )
-                                Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
-                                Text(
-                                    text = stringResource(R.string.action_add_debug_location),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    }
-                }
+                        .weight(1f)
+                        .graphicsLayer { alpha = compactTitleAlpha.floatValue }
+                )
+                LiquidGlassIconButton(
+                    icon = R.drawable.ic_settings,
+                    contentDescription = stringResource(R.string.action_settings),
+                    isLight = isLightList(),
+                    blurRoot = recyclerView,
+                    onClick = { activity?.let { IntentHelper.startSettingsActivity(it) } }
+                )
             }
         }
 
@@ -503,17 +372,176 @@ open class ManagementFragment : MainModuleFragment(), TouchReactor {
         }
     }
 
+    /**
+     * Header of the list, scrolling with the cards: large title, search, other ways to add a location,
+     * loading line and the notification / update check prompts.
+     */
+    @Composable
+    private fun ListHeader() {
+        val validLocationListState = viewModel.validLocationList.collectAsState()
+        var notificationDismissed by remember {
+            mutableStateOf(viewModel.statementManager.isPostNotificationDialogAlreadyShown)
+        }
+        var notificationAppUpdateCheckDismissed by remember {
+            mutableStateOf(viewModel.statementManager.isAppUpdateCheckDialogAlreadyShown)
+        }
+        val locationLoadingState = viewModel.locationListLoading.collectAsState()
+        val colors = remember { LocationListColors(isLightList()) }
+        val hasCurrentLocation = validLocationListState.value.any { it.isCurrentPosition }
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Room for the floating top buttons
+            Spacer(modifier = Modifier.height(with(LocalDensity.current) { topInset.intValue.toDp() } + TOP_ROW_HEIGHT))
+            Text(
+                text = stringResource(R.string.locations),
+                color = colors.content,
+                fontSize = 34.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 12.dp)
+            )
+
+            // Room for the liquid glass search capsule, which lies over the list (see [searchBar]) so it
+            // can stay pinned at the top while the cards scroll under it
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(dimensionResource(R.dimen.location_search_bar_height))
+                    .onGloballyPositioned {
+                        searchSlotTop = it.positionInRoot().y.roundToInt()
+                        updateSearchBarPosition()
+                    }
+            )
+
+            // Other ways to add a location (were floating action buttons)
+            if (!hasCurrentLocation || BreezyWeather.instance.debugMode) {
+                Row(
+                    modifier = Modifier
+                        .padding(start = 16.dp, end = 16.dp, top = 10.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (!hasCurrentLocation) {
+                        LiquidGlassChip(
+                            icon = R.drawable.ic_location_arrow,
+                            text = stringResource(R.string.action_add_current_location),
+                            isLight = isLightList(),
+                            blurRoot = recyclerView,
+                            onClick = {
+                                viewModel.openChooseWeatherSourcesDialog(
+                                    Location(isCurrentPosition = true)
+                                        .applyDefaultPreset((requireActivity() as MainActivity).sourceManager)
+                                )
+                            }
+                        )
+                    }
+                    if (BreezyWeather.instance.debugMode) {
+                        LiquidGlassChip(
+                            icon = R.drawable.ic_bug_report,
+                            text = stringResource(R.string.location_list_debug),
+                            isLight = isLightList(),
+                            blurRoot = recyclerView,
+                            onClick = { viewModel.openChooseDebugLocationDialog() }
+                        )
+                    }
+                }
+            }
+
+            // Thin loading line, keeps its room so the list doesn't jump
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .fillMaxWidth()
+                    .height(2.dp)
+            ) {
+                if (locationLoadingState.value) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxSize(),
+                        color = colors.content,
+                        trackColor = colors.glass
+                    )
+                }
+            }
+
+            var hasNotificationPermission: Boolean? = null
+            if (!notificationDismissed || !notificationAppUpdateCheckDismissed) {
+                val notificationPermissionState = rememberMultiplePermissionsState(
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        listOf(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        // permission not needed
+                        emptyList()
+                    }
+                )
+                hasNotificationPermission = notificationPermissionState.permissions.isEmpty() ||
+                    notificationPermissionState.permissions[0].status == PermissionStatus.Granted
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                AnimatedVisibilitySlideVertically(
+                    hasNotificationPermission == false && !notificationDismissed
+                ) {
+                    GlassNotificationCard(
+                        colors = colors,
+                        title = stringResource(R.string.dialog_permissions_notification_title),
+                        summary = stringResource(R.string.dialog_permissions_notification_content),
+                        action = stringResource(R.string.action_allow),
+                        onClick = {
+                            viewModel.statementManager.setPostNotificationDialogAlreadyShown()
+                            notificationDismissed = true
+
+                            PermissionHelper.requestPermissionWithFallback(
+                                activity = requireActivity(),
+                                permission = Manifest.permission.POST_NOTIFICATIONS,
+                                fallback = {
+                                    IntentHelper.startNotificationSettingsActivity(requireActivity())
+                                }
+                            )
+                        },
+                        onClose = {
+                            viewModel.statementManager.setPostNotificationDialogAlreadyShown()
+                            notificationDismissed = true
+                            /*
+                             * We could turn off alert notification from SettingsManager, but
+                             * it’s best not to, as the user can still enable notification
+                             * permission again from Android settings, and there is a
+                             * permission check before sending any notification even if
+                             * preference is enabled.
+                             */
+                        }
+                    )
+                }
+            }
+            if (BreezyWeather.instance.isGitHubUpdateCheckerEnabled) {
+                AnimatedVisibilitySlideVertically(
+                    hasNotificationPermission == true && !notificationAppUpdateCheckDismissed
+                ) {
+                    GlassNotificationCard(
+                        colors = colors,
+                        title = stringResource(R.string.dialog_app_update_check_title),
+                        summary = stringResource(R.string.dialog_app_update_check_content),
+                        action = stringResource(R.string.action_enable),
+                        onClick = {
+                            viewModel.statementManager.setAppUpdateCheckDialogAlreadyShown()
+                            notificationAppUpdateCheckDismissed = true
+                            SettingsManager.getInstance(requireContext()).isAppUpdateCheckEnabled = true
+                        },
+                        onClose = {
+                            viewModel.statementManager.setAppUpdateCheckDialogAlreadyShown()
+                            notificationAppUpdateCheckDismissed = true
+                        }
+                    )
+                }
+            }
+
+        }
+    }
+
     override fun setSystemBarStyle() {
         // do nothing.
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val firstHolderPosition = layout.findFirstVisibleItemPosition()
-        adapter.notifyItemRangeChanged(
-            firstHolderPosition,
-            layout.findLastVisibleItemPosition() - firstHolderPosition + 1
-        )
+        adapter.notifyItemRangeChanged(0, adapter.itemCount)
     }
 
     private fun initModel() {
@@ -531,11 +559,19 @@ open class ManagementFragment : MainModuleFragment(), TouchReactor {
                     viewModel.setLocation(formattedId)
                     parentFragmentManager.popBackStack()
                 }
-            ) { holder ->
-                itemTouchHelper.startDrag(holder)
+            )
+        val header = ComposeView(requireContext()).apply {
+            setContent {
+                BreezyWeatherTheme {
+                    ListHeader()
+                }
             }
+        }
+        initSearchBar()
         recyclerView = RecyclerView(requireContext())
-        recyclerView.adapter = adapter
+        recyclerView.adapter = ConcatAdapter(LocationListHeaderAdapter(header), adapter)
+        recyclerView.setPadding(0, 0, 0, 0)
+        recyclerView.overScrollMode = View.OVER_SCROLL_NEVER
         recyclerView.layoutManager = LinearLayoutManager(
             requireActivity(),
             RecyclerView.VERTICAL,
@@ -545,9 +581,23 @@ open class ManagementFragment : MainModuleFragment(), TouchReactor {
             recyclerView.removeItemDecorationAt(0)
         }
         recyclerView.addItemDecoration(
-            Material3ListItemDecoration(
-                requireContext()
-            )
+            LocationListDecoration(requireContext(), if (isLightList()) Color.Black.toArgb() else Color.White.toArgb())
+        )
+        // Cards scroll under the navigation bar, but the last one can still scroll above it
+        recyclerView.clipToPadding = false
+        topBar = FrostedBar(requireContext())
+        topBar.setup(recyclerView, topBarTint(android.graphics.Color.BLACK))
+        updateBackdrop(viewModel.currentLocation.value?.location)
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) = updateSearchBarPosition()
+        })
+        recyclerView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> updateSearchBarPosition() }
+        // Blurs the cards scrolling under it: needs the list, so it is set up once both exist
+        LiquidGlass.applyFloating(
+            host = searchBar as ViewGroup,
+            cornerRadius = resources.getDimension(R.dimen.location_search_bar_height) / 2f,
+            tint = locationGlassTint(requireContext(), isLightList()),
+            blurRoot = recyclerView
         )
 
         itemTouchHelper = ItemTouchHelper(
@@ -584,9 +634,69 @@ open class ManagementFragment : MainModuleFragment(), TouchReactor {
                 viewModel.currentLocation.collect {
                     // New value received
                     adapter.update(viewModel.validLocationList.value, it?.location?.formattedId)
+                    updateBackdrop(it?.location)
                 }
             }
         }
+        lifecycleScope.launch {
+            // Keep the local times on the cards current while the list is open
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                adapter.notifyItemRangeChanged(0, adapter.itemCount)
+                while (true) {
+                    delay(60_000L - System.currentTimeMillis() % 60_000L)
+                    adapter.notifyItemRangeChanged(0, adapter.itemCount)
+                }
+            }
+        }
+    }
+
+    private fun initSearchBar() {
+        val isLight = isLightList()
+        val content = if (isLight) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+        val secondary = ColorUtils.setAlphaComponent(content, (0.72f * 255).toInt())
+        searchBar = LayoutInflater.from(requireContext()).inflate(R.layout.view_location_search_bar, null).apply {
+            visibility = View.INVISIBLE // until its slot in the header is known
+            setOnClickListener { callback?.onSearchBarClicked() }
+            findViewById<ImageView>(R.id.search_icon).imageTintList = ColorStateList.valueOf(secondary)
+            findViewById<TextView>(R.id.search_hint).apply {
+                setTextColor(secondary)
+                setTypeface(typeface, Typeface.BOLD)
+            }
+        }
+    }
+
+    /**
+     * Backdrop of the list: a dimmed tint of the selected location's sky at the top, fading to the plain
+     * background further down. It is the list's own background so the liquid glass (which blurs the list)
+     * has colors to frost even when no card is under it.
+     */
+    private fun updateBackdrop(location: Location?) {
+        val isLight = isLightList()
+        val base = if (isLight) android.graphics.Color.rgb(0xF2, 0xF2, 0xF7) else android.graphics.Color.BLACK
+        val daylight = WeatherViewController.isDaylight(location)
+        val kind = WeatherViewController.getWeatherKind(location)
+        val top = ColorUtils.blendARGB(SkyPalette.topColor(kind, daylight), base, if (isLight) 0.55f else 0.35f)
+        val middle = ColorUtils.blendARGB(SkyPalette.bottomColor(kind, daylight), base, if (isLight) 0.8f else 0.7f)
+        recyclerView.background = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(top, middle, base, base)
+        )
+        backdropTopColor.intValue = top
+        topBar.setTint(topBarTint(top))
+    }
+
+    /** The search capsule sits on its slot in the header, and stays at the top once that is scrolled away. */
+    private fun updateSearchBarPosition() {
+        if (!::searchBar.isInitialized || searchSlotTop < 0) return
+        val header = recyclerView.findViewHolderForAdapterPosition(0)?.itemView
+        val slotY = header?.let { it.top + searchSlotTop }
+        val pinnedY = topInset.intValue + requireContext().dpToPx(TOP_ROW_HEIGHT.value).roundToInt()
+        searchBarOffset.intValue = slotY?.coerceAtLeast(pinnedY) ?: pinnedY
+        // The large title sits right above the search slot: fade the compact one in over the last
+        // stretch before the search bar gets pinned
+        val fadeRange = requireContext().dpToPx(COMPACT_TITLE_FADE_DP)
+        compactTitleAlpha.floatValue = slotY?.let { (1f - (it - pinnedY) / fadeRange).coerceIn(0f, 1f) } ?: 1f
+        searchBar.visibility = View.VISIBLE
     }
 
     fun prepareReenterTransition() {
@@ -609,14 +719,14 @@ open class ManagementFragment : MainModuleFragment(), TouchReactor {
         adapter.update(from, to)
     }
 
-    private fun ensureResourceProvider() {
-        val iconProvider = SettingsManager
-            .getInstance(requireContext())
-            .iconProvider
-        if (resourceProvider == null || resourceProvider!!.packageName != iconProvider) {
-            resourceProvider = ResourcesProviderFactory.newInstance
-        }
-    }
+    /**
+     * The list follows the location screens: dark (white text on black, like iOS weather) day and night,
+     * unless the user picked "Always light".
+     */
+    protected fun isLightList(): Boolean = ThemeManager.isLightTheme(
+        requireContext(),
+        viewModel.currentLocation.value?.location
+    )
 
     @Composable
     fun DebugLocationScreen(
