@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App -->
-    <string name="brand_name" translatable="false">No Name Weather</string>
+    <string name="brand_name" translatable="false">Frosty Weather</string>
+
+    <!-- Overrides of upstream strings that mention Breezy Weather by name -->
+    <string name="content_provider_permission_label">Read Frosty Weather data</string>
+    <string name="content_provider_permission_description">get weather information from Frosty Weather, including the coordinates of your locations, such as your current location if you added it</string>
 </resources>
