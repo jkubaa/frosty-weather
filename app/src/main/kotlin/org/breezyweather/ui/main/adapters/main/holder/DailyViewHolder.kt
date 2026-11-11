@@ -16,42 +16,40 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.content.ContextCompat
-import androidx.core.view.children
 import breezyweather.domain.location.model.Location
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.button.MaterialButtonGroup
+import breezyweather.domain.weather.model.Daily
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
+import org.breezyweather.common.extensions.formatMeasure
+import org.breezyweather.common.extensions.formatPercent
 import org.breezyweather.common.extensions.getThemeColor
+import org.breezyweather.common.options.appearance.DetailScreen
+import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.domain.settings.SettingsManager
-import org.breezyweather.ui.common.adapters.ButtonAdapter
-import org.breezyweather.ui.common.widgets.trend.TrendLayoutManager
-import org.breezyweather.ui.common.widgets.trend.TrendRecyclerView
-import org.breezyweather.ui.main.adapters.trend.DailyTrendAdapter
-import org.breezyweather.ui.main.widgets.TrendRecyclerViewScrollBar
-import org.breezyweather.ui.theme.ThemeManager
+import org.breezyweather.domain.weather.model.getWeek
+import org.breezyweather.ui.main.widgets.TemperatureRangeBarView
+import org.breezyweather.ui.theme.resource.ResourceHelper
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
+import org.breezyweather.unit.formatting.UnitWidth
+import org.breezyweather.unit.temperature.TemperatureUnit
 
+/**
+ * 10-day forecast, iOS weather style: one row per day with its name, condition icon (and chance of
+ * precipitation), low, a temperature range bar on a shared scale, and high. Tapping a day opens its details.
+ */
 class DailyViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
     LayoutInflater.from(parent.context).inflate(R.layout.container_main_daily_trend_card, parent, false)
 ) {
     private val subtitle: TextView = itemView.findViewById(R.id.daily_block_subtitle)
-    private val buttonGroup: MaterialButtonGroup = itemView.findViewById(R.id.daily_block_button_group)
-    private val trendRecyclerView: TrendRecyclerView = itemView.findViewById(R.id.daily_block_trendRecyclerView)
-    private val scrollBar = TrendRecyclerViewScrollBar()
+    private val rows: LinearLayout = itemView.findViewById(R.id.daily_block_rows)
 
-    init {
-        trendRecyclerView.setHasFixedSize(true)
-        trendRecyclerView.addItemDecoration(scrollBar)
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
+    // selectedTab: the old chart had metric tabs; the 10-day list only shows temperatures
     override fun onBindView(
         activity: BreezyActivity,
         location: Location,
@@ -72,90 +70,114 @@ class DailyViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
             subtitle.text = weather.current?.dailyForecast
         }
 
-        val trendAdapter = DailyTrendAdapter(activity, trendRecyclerView).apply {
-            bindData(location)
-        }
-        val buttonList: MutableList<ButtonAdapter.Button> = trendAdapter.adapters.map {
-            object : ButtonAdapter.Button {
-                override val name = it.getDisplayName(activity)
-            }
-        }.toMutableList()
-        selectedTab?.let { tab ->
-            buttonList.indexOfFirst { it.name == tab }.let {
-                if (it >= 0) {
-                    trendAdapter.selectedIndex = it
-                } else {
-                    setSelectedTab(null) // Reset
-                }
-            }
-        }
+        // From today (no past days), like iOS
+        val firstIndex = weather.todayIndex ?: 0
+        val days = weather.dailyForecast.withIndex().drop(firstIndex).take(MAX_DAYS)
 
-        if (buttonList.size < 2) {
-            buttonGroup.visibility = View.GONE
-        } else {
-            buttonGroup.visibility = View.VISIBLE
-            // Dirty trick to get the button group to actually redraw with the correct styles AND the overflow menu
-            while (
-                buttonGroup.children
-                    .filter { it is MaterialButton && it.tag != MaterialButtonGroup.OVERFLOW_BUTTON_TAG }
-                    .count() != 0
-            ) {
-                buttonGroup.children
-                    .filter { it is MaterialButton && it.tag != MaterialButtonGroup.OVERFLOW_BUTTON_TAG }
-                    .forEach {
-                        buttonGroup.removeView(it)
-                    }
+        // All bars share one scale: coldest to warmest temperature of the shown days
+        val celsiusRanges = days.map { it.value.celsiusRange() }
+        val scaleMin = celsiusRanges.mapNotNull { it.first }.minOrNull()
+        val scaleMax = celsiusRanges.mapNotNull { it.second }.maxOrNull()
+
+        val temperatureUnit = SettingsManager.getInstance(activity).getTemperatureUnit(activity)
+        val contentColor = activity.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse)
+        val inflater = LayoutInflater.from(activity)
+
+        rows.removeAllViews()
+        days.forEachIndexed { rowIndex, (dailyIndex, daily) ->
+            val row = inflater.inflate(R.layout.item_glass_daily_row, rows, false)
+            val dayText: TextView = row.findViewById(R.id.daily_row_day)
+            val icon: ImageView = row.findViewById(R.id.daily_row_icon)
+            val precipitationText: TextView = row.findViewById(R.id.daily_row_precipitation)
+            val lowText: TextView = row.findViewById(R.id.daily_row_low)
+            val highText: TextView = row.findViewById(R.id.daily_row_high)
+            val rangeBar: TemperatureRangeBarView = row.findViewById(R.id.daily_row_range)
+
+            val isToday = dailyIndex == weather.todayIndex
+            val dayName = if (isToday) {
+                activity.getString(R.string.daily_today_short)
+            } else {
+                daily.getWeek(location, activity)
             }
-            buttonGroup.children
-                .filter { it is MaterialButton && it.tag == MaterialButtonGroup.OVERFLOW_BUTTON_TAG }
-                .forEach {
-                    it.contentDescription = context.getString(R.string.action_more)
-                }
-            buttonList.forEachIndexed { index, button ->
-                buttonGroup.addView(
-                    MaterialButton(
-                        context,
-                        null,
-                        com.google.android.material.R.attr.materialButtonStyle
-                    ).apply {
-                        text = button.name
-                        isCheckable = true
-                        isChecked = index == trendAdapter.selectedIndex
-                        setOnClickListener {
-                            trendAdapter.selectedIndex = index
-                            setSelectedTab(button.name)
-                            buttonGroup.children
-                                .filter { it is MaterialButton && it.tag != MaterialButtonGroup.OVERFLOW_BUTTON_TAG }
-                                .forEach { button ->
-                                    (button as MaterialButton).isChecked = false
-                                }
-                            isChecked = true
-                        }
+            dayText.text = dayName
+
+            val weatherCode = daily.day?.weatherCode ?: daily.night?.weatherCode
+            icon.setImageDrawable(weatherCode?.let { ResourceHelper.getWeatherIcon(provider, it, true) })
+
+            val precipitation = listOfNotNull(
+                daily.day?.precipitationProbability?.total,
+                daily.night?.precipitationProbability?.total
+            ).maxByOrNull { it.inPercent }
+            val precipitationLabel = GlassForecastFormat.precipitation(activity, precipitation)
+            precipitationText.visibility = if (precipitationLabel != null) View.VISIBLE else View.GONE
+            precipitationText.text = precipitationLabel
+
+            val (low, high) = daily.lowAndHigh()
+            lowText.text = low?.let { GlassForecastFormat.degrees(activity, it, temperatureUnit) }
+            highText.text = high?.let { GlassForecastFormat.degrees(activity, it, temperatureUnit) }
+
+            rangeBar.setTrackColor(contentColor)
+            if (scaleMin != null && scaleMax != null) {
+                rangeBar.visibility = View.VISIBLE
+                rangeBar.setRange(
+                    scaleMin = scaleMin,
+                    scaleMax = scaleMax,
+                    low = celsiusRanges[rowIndex].first,
+                    high = celsiusRanges[rowIndex].second,
+                    current = if (isToday) {
+                        weather.current?.temperature?.temperature?.toDouble(TemperatureUnit.CELSIUS)
+                    } else {
+                        null
                     }
                 )
+            } else {
+                rangeBar.visibility = View.INVISIBLE
             }
-        }
-        trendRecyclerView.layoutManager = TrendLayoutManager(context)
-        trendRecyclerView.setLineColor(
-            context.getThemeColor(com.google.android.material.R.attr.colorOutline)
-        )
-        trendRecyclerView.setTextColor(
-            ContextCompat.getColor(
-                context,
-                if (ThemeManager.isLightTheme(context, location)) {
-                    R.color.colorTextGrey
-                } else {
-                    R.color.colorTextGrey2nd
+
+            row.contentDescription = listOfNotNull(
+                dayName,
+                high?.let {
+                    activity.getString(R.string.daytime) + activity.getString(R.string.colon_separator) +
+                        it.formatMeasure(activity, temperatureUnit, unitWidth = UnitWidth.LONG)
+                },
+                low?.let {
+                    activity.getString(R.string.nighttime) + activity.getString(R.string.colon_separator) +
+                        it.formatMeasure(activity, temperatureUnit, unitWidth = UnitWidth.LONG)
+                },
+                precipitation?.let {
+                    activity.getString(R.string.precipitation_probability) +
+                        activity.getString(R.string.colon_separator) + it.formatPercent(activity)
                 }
-            )
-        )
-        trendRecyclerView.adapter = trendAdapter
-        trendRecyclerView.setKeyLineVisibility(
-            SettingsManager.getInstance(context).isTrendHorizontalLinesEnabled
-        )
-        weather.todayIndex?.let { todayIndex ->
-            trendRecyclerView.scrollToPosition(todayIndex)
+            ).joinToString(activity.getString(org.breezyweather.unit.R.string.locale_separator))
+
+            row.setOnClickListener {
+                if (activity.isActivityResumed) {
+                    IntentHelper.startDailyWeatherActivity(
+                        activity,
+                        location.formattedId,
+                        dailyIndex,
+                        DetailScreen.TAG_CONDITIONS
+                    )
+                }
+            }
+            rows.addView(row)
         }
-        scrollBar.resetColor(activity)
+    }
+
+    /** Low and high of the day: Breezy sources give daytime and nighttime temperatures. */
+    private fun Daily.lowAndHigh() = listOfNotNull(
+        day?.temperature?.temperature,
+        night?.temperature?.temperature
+    ).let { temperatures ->
+        temperatures.minByOrNull { it.toDouble(TemperatureUnit.CELSIUS) } to
+            temperatures.maxByOrNull { it.toDouble(TemperatureUnit.CELSIUS) }
+    }
+
+    private fun Daily.celsiusRange(): Pair<Double?, Double?> = lowAndHigh().let { (low, high) ->
+        low?.toDouble(TemperatureUnit.CELSIUS) to high?.toDouble(TemperatureUnit.CELSIUS)
+    }
+
+    companion object {
+        private const val MAX_DAYS = 10
     }
 }

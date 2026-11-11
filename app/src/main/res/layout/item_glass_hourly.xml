@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One hour of the hourly strip: hour, icon with the chance of precipitation, temperature -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="58dp"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingVertical="4dp">
+
+    <TextView
+        android:id="@+id/hourly_item_hour"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:textSize="15sp"
+        android:textFontWeight="600"
+        android:textColor="?attr/colorSurfaceInverse"
+        tools:text="Now" />
+
+    <!-- Fixed height so the temperatures stay aligned whether or not a percentage shows -->
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="46dp"
+        android:layout_marginTop="6dp">
+
+        <ImageView
+            android:id="@+id/hourly_item_icon"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="center_horizontal"
+            android:importantForAccessibility="no" />
+
+        <TextView
+            android:id="@+id/hourly_item_precipitation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:includeFontPadding="false"
+            android:textSize="11sp"
+            android:textFontWeight="600"
+            android:textColor="@color/glass_precipitation"
+            android:visibility="gone"
+            tools:text="30%"
+            tools:visibility="visible" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/hourly_item_temperature"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:textSize="19sp"
+        android:textFontWeight="500"
+        android:textColor="?attr/colorSurfaceInverse"
+        tools:text="21°" />
+
+</LinearLayout>
