@@ -5,7 +5,6 @@
     android:layout_margin="0dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:backgroundTint="@color/alert_background"
     app:shapeAppearance="@style/ShapeAppearance.Material3.Corner.ExtraLarge"
     app:strokeWidth="0dp">
 

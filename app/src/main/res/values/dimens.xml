@@ -22,6 +22,15 @@
     <dimen name="material3_card_settings_small_separator">2dp</dimen>
     <dimen name="material3_card_settings_large_separator">16dp</dimen>
     <dimen name="material3_card_list_item_corner_radius">16dp</dimen>
+
+    <!-- Liquid glass -->
+    <dimen name="glass_corner_radius">26dp</dimen>
+    <dimen name="glass_capsule_height">48dp</dimen>
+    <dimen name="glass_capsule_margin_bottom">12dp</dimen>
+    <dimen name="glass_capsule_content_clearance">84dp</dimen>
+    <dimen name="glass_hero_temperature_text_size">104sp</dimen>
+    <dimen name="glass_hero_location_text_size">34sp</dimen>
+    <dimen name="glass_chip_corner_radius">16dp</dimen>
     <dimen name="material3_card_list_item_inner_radius">12dp</dimen>
     <dimen name="material3_widget_corner_radius">16dp</dimen>
     <dimen name="material3_widget_inner_radius">12dp</dimen>

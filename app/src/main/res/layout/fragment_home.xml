@@ -76,17 +76,29 @@
 
             </org.breezyweather.ui.common.widgets.SwipeSwitchLayout>
 
-            <org.breezyweather.ui.common.widgets.InkPageIndicator
-                android:id="@+id/indicator"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="@dimen/normal_margin"
-                android:alpha="0"
+            <!-- Floating liquid glass capsule holding the location page dots -->
+            <FrameLayout
+                android:id="@+id/indicatorCapsule"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/glass_capsule_height"
                 android:layout_gravity="bottom|center_horizontal"
-                app:layout_behavior="org.breezyweather.ui.common.behaviors.FloatingAboveSnackbarBehavior"
-                app:dotDiameter="8dp"
-                app:dotGap="8dp"
-                app:animationDuration="300" />
+                android:layout_marginBottom="@dimen/glass_capsule_margin_bottom"
+                android:minWidth="96dp"
+                android:paddingStart="22dp"
+                android:paddingEnd="22dp"
+                android:visibility="gone"
+                app:layout_behavior="org.breezyweather.ui.common.behaviors.FloatingAboveSnackbarBehavior">
+
+                <org.breezyweather.ui.common.widgets.InkPageIndicator
+                    android:id="@+id/indicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    app:dotDiameter="8dp"
+                    app:dotGap="10dp"
+                    app:animationDuration="300" />
+
+            </FrameLayout>
 
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

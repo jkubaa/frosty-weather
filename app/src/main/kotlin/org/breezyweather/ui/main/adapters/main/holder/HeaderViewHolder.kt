@@ -23,7 +23,7 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.RelativeLayout
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import breezyweather.domain.location.model.Location
@@ -31,8 +31,10 @@ import org.breezyweather.BreezyWeather
 import org.breezyweather.R
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.formatMeasure
+import org.breezyweather.domain.location.model.getPlace
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.domain.weather.model.getTemperatureRangeSummary
+import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.common.widgets.NumberAnimTextView
 import org.breezyweather.ui.main.widgets.TextRelativeClock
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
@@ -47,7 +49,10 @@ class HeaderViewHolder(parent: ViewGroup) : AbstractMainViewHolder(
 ) {
     private val timezoneText: TextView = itemView.findViewById(R.id.container_main_header_timezone)
     private val refreshTimeText: TextRelativeClock = itemView.findViewById(R.id.refreshTimeText)
-    private val mTemperatureContainer: RelativeLayout = itemView.findViewById(R.id.container_main_header_temperature)
+    private val mLocationCaption: TextView = itemView.findViewById(R.id.container_main_header_location_caption)
+    private val mLocationName: TextView = itemView.findViewById(R.id.container_main_header_location_name)
+    private val mTemperatureContainer: LinearLayout = itemView.findViewById(R.id.container_main_header_temperature)
+    private val mTemperatureBalance: View = itemView.findViewById(R.id.container_main_header_temperature_balance)
     private val mTemperature: NumberAnimTextView = itemView.findViewById(R.id.container_main_header_temperature_value)
     private val mTemperatureUnitView: TextView = itemView.findViewById(R.id.container_main_header_temperature_unit)
     private val mWeatherText: TextView = itemView.findViewById(R.id.container_main_header_weather_condition_description)
@@ -65,6 +70,15 @@ class HeaderViewHolder(parent: ViewGroup) : AbstractMainViewHolder(
         itemAnimationEnabled: Boolean,
     ) {
         super.onBindView(context, location, provider, listAnimationEnabled, itemAnimationEnabled)
+
+        // Location
+        mLocationName.text = location.getPlace(context)
+        mLocationCaption.visibility = if (location.isCurrentPosition) View.VISIBLE else View.GONE
+
+        // Liquid glass chips
+        val chipRadius = context.resources.getDimension(R.dimen.glass_chip_corner_radius)
+        mFeelsLike.background = LiquidGlass.background(mFeelsLike, chipRadius)
+        refreshTimeText.background = LiquidGlass.background(refreshTimeText, chipRadius)
 
         if (BreezyWeather.instance.debugMode) {
             timezoneText.visibility = View.VISIBLE
@@ -102,7 +116,14 @@ class HeaderViewHolder(parent: ViewGroup) : AbstractMainViewHolder(
                     .coerceAtLeast(1000.0) // at least 1 second
                     .coerceAtMost(2000.0) // no longer than 2 seconds
                     .milliseconds
-                mTemperatureUnitView.text = temperatureUnit.getNominativeUnit(context)
+                // Apple-style: a lone degree sign, the unit is set in the settings anyway
+                mTemperatureUnitView.text = "°"
+                // Balance the degree sign so the numerals stay optically centered
+                mTemperatureUnitView.post {
+                    mTemperatureBalance.layoutParams = mTemperatureBalance.layoutParams.apply {
+                        width = mTemperatureUnitView.width
+                    }
+                }
             } ?: run {
                 mTemperatureContainer.visibility = View.GONE
             }
