@@ -33,6 +33,10 @@ import org.breezyweather.common.options.appearance.DetailScreen
 import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.domain.weather.model.getWeek
+import org.breezyweather.ui.main.utils.ForecastMetric
+import org.breezyweather.ui.main.utils.ForecastMetrics
+import org.breezyweather.ui.main.utils.MetricCell
+import org.breezyweather.ui.main.widgets.FillBarView
 import org.breezyweather.ui.main.widgets.TemperatureRangeBarView
 import org.breezyweather.ui.theme.resource.ResourceHelper
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
@@ -48,8 +52,8 @@ class DailyViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
 ) {
     private val subtitle: TextView = itemView.findViewById(R.id.daily_block_subtitle)
     private val rows: LinearLayout = itemView.findViewById(R.id.daily_block_rows)
+    private val switcher = MetricSwitcher(itemView.findViewById(R.id.daily_block_switcher))
 
-    // selectedTab: the old chart had metric tabs; the 10-day list only shows temperatures
     override fun onBindView(
         activity: BreezyActivity,
         location: Location,
@@ -73,6 +77,94 @@ class DailyViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
         // From today (no past days), like iOS
         val firstIndex = weather.todayIndex ?: 0
         val days = weather.dailyForecast.withIndex().drop(firstIndex).take(MAX_DAYS)
+
+        // Metric switcher: conditions (temperature range bars) or another metric from the trend settings
+        val metrics = ForecastMetrics.dailyMetrics(activity, days.map { it.value })
+        fun show(metric: ForecastMetric) {
+            switcher.bind(metrics, metric) {
+                setSelectedTab(activity.getString(it.nameId))
+                show(it)
+            }
+            if (metric == ForecastMetric.CONDITIONS) {
+                bindConditionRows(activity, location, provider, days)
+            } else {
+                bindMetricRows(activity, location, days, metric)
+            }
+        }
+        show(metrics.firstOrNull { activity.getString(it.nameId) == selectedTab } ?: ForecastMetric.CONDITIONS)
+    }
+
+    /** One row per day for [metric]: day, arrow or dot, a fill bar, the value. */
+    private fun bindMetricRows(
+        activity: BreezyActivity,
+        location: Location,
+        days: List<IndexedValue<Daily>>,
+        metric: ForecastMetric,
+    ) {
+        val weather = location.weather!!
+        val contentColor = activity.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse)
+        val inflater = LayoutInflater.from(activity)
+        rows.removeAllViews()
+        days.forEach { (dailyIndex, daily) ->
+            val row = inflater.inflate(R.layout.item_glass_daily_metric_row, rows, false)
+            val cell = ForecastMetrics.dailyCell(activity, metric, daily)
+            val dayName = if (dailyIndex == weather.todayIndex) {
+                activity.getString(R.string.daily_today_short)
+            } else {
+                daily.getWeek(location, activity)
+            }
+            row.findViewById<TextView>(R.id.daily_metric_day).text = dayName
+            // Same layout on every row of a metric: the arrow column only exists for wind
+            row.findViewById<View>(R.id.daily_metric_graphic).visibility =
+                if (cell.graphic == MetricCell.Graphic.ARROW) View.VISIBLE else View.GONE
+            row.findViewById<ImageView>(R.id.daily_metric_arrow).apply {
+                visibility = if (cell.graphic == MetricCell.Graphic.ARROW && cell.degree != null) View.VISIBLE else View.GONE
+                cell.degree?.let { rotation = it }
+            }
+            row.findViewById<View>(R.id.daily_metric_dot).visibility = View.GONE
+            row.findViewById<FillBarView>(R.id.daily_metric_bar).apply {
+                visibility = if (cell.fraction != null || cell.graphic == MetricCell.Graphic.BAR) View.VISIBLE else View.INVISIBLE
+                setFill(cell.fraction, cell.color, contentColor)
+            }
+            row.findViewById<TextView>(R.id.daily_metric_value).text = cell.text ?: "-"
+            row.contentDescription = listOf(
+                dayName,
+                activity.getString(metric.nameId) + activity.getString(R.string.colon_separator) + (cell.text ?: "-")
+            ).joinToString(activity.getString(org.breezyweather.unit.R.string.locale_separator))
+            row.setOnClickListener {
+                if (activity.isActivityResumed) {
+                    IntentHelper.startDailyWeatherActivity(
+                        activity,
+                        location.formattedId,
+                        dailyIndex,
+                        metric.detailScreen()
+                    )
+                }
+            }
+            rows.addView(row)
+        }
+    }
+
+    /** Opens the details on the tab matching the metric. */
+    private fun ForecastMetric.detailScreen(): DetailScreen = when (this) {
+        ForecastMetric.PRECIPITATION -> DetailScreen.TAG_PRECIPITATION
+        ForecastMetric.WIND -> DetailScreen.TAG_WIND
+        ForecastMetric.AIR_QUALITY -> DetailScreen.TAG_AIR_QUALITY
+        ForecastMetric.UV_INDEX -> DetailScreen.TAG_UV_INDEX
+        ForecastMetric.HUMIDITY -> DetailScreen.TAG_HUMIDITY
+        ForecastMetric.PRESSURE -> DetailScreen.TAG_PRESSURE
+        ForecastMetric.VISIBILITY -> DetailScreen.TAG_VISIBILITY
+        else -> DetailScreen.TAG_CONDITIONS
+    }
+
+    /** Conditions: day, icon with chance of precipitation, low, temperature range bar, high. */
+    private fun bindConditionRows(
+        activity: BreezyActivity,
+        location: Location,
+        provider: ResourceProvider,
+        days: List<IndexedValue<Daily>>,
+    ) {
+        val weather = location.weather!!
 
         // All bars share one scale: coldest to warmest temperature of the shown days
         val celsiusRanges = days.map { it.value.celsiusRange() }

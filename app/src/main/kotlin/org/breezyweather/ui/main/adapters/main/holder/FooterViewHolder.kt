@@ -22,6 +22,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import androidx.annotation.CallSuper
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -57,7 +59,11 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.source.SourceFeature
 import org.breezyweather.R
+import kotlinx.coroutines.delay
+import org.breezyweather.common.extensions.currentLocale
+import org.breezyweather.common.extensions.getRelativeTime
 import org.breezyweather.common.extensions.splitKeeping
+import org.breezyweather.common.extensions.uncapitalize
 import org.breezyweather.common.source.HttpSource
 import org.breezyweather.domain.source.resourceName
 import org.breezyweather.ui.common.composables.AlertDialogLink
@@ -67,10 +73,18 @@ import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.ui.theme.weatherView.WeatherViewController
+import java.util.Date
+import kotlin.time.Duration.Companion.minutes
 
 class FooterViewHolder(
     private val composeView: ComposeView,
 ) : AbstractMainViewHolder(composeView) {
+
+    /** "Last updated 10 min. ago" */
+    private fun lastUpdatedText(refreshTime: Date): String = context.getString(
+        R.string.location_last_updated_x,
+        refreshTime.getRelativeTime(context).uncapitalize(context.currentLocale)
+    )
 
     @SuppressLint("SetTextI18n")
     @CallSuper
@@ -112,8 +126,19 @@ class FooterViewHolder(
             )
         }
 
+        val footerColor = Color(
+            delegate.getOnBackgroundColor(
+                context,
+                WeatherViewController.getWeatherKind(location),
+                WeatherViewController.isDaylight(location)
+            )
+        )
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         Row(
-            modifier = modifier
+            modifier = Modifier
                 .padding(dimensionResource(R.dimen.normal_margin).div(2))
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -159,6 +184,25 @@ class FooterViewHolder(
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold
             )
+        }
+
+        // Last refresh: tucked away at the very bottom (it used to be a chip in the hero)
+        location.weather?.base?.refreshTime?.let { refreshTime ->
+            val updatedText = remember(refreshTime) { mutableStateOf(lastUpdatedText(refreshTime)) }
+            LaunchedEffect(refreshTime) {
+                while (true) {
+                    updatedText.value = lastUpdatedText(refreshTime)
+                    delay(1.minutes)
+                }
+            }
+            Text(
+                text = updatedText.value,
+                color = footerColor.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = dimensionResource(R.dimen.normal_margin).div(2))
+            )
+        }
         }
 
         if (dialogOpenState.value) {

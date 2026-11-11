@@ -46,7 +46,6 @@ import org.breezyweather.common.extensions.getBlocksPerRow
 import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.common.extensions.isDarkMode
 import org.breezyweather.common.extensions.isMotionReduced
-import org.breezyweather.common.extensions.isTabletDevice
 import org.breezyweather.common.extensions.setSystemBarStyle
 import org.breezyweather.common.options.appearance.BackgroundAnimationMode
 import org.breezyweather.databinding.FragmentHomeBinding
@@ -333,7 +332,7 @@ class HomeFragment : MainModuleFragment() {
         // needs a denser body
         val bottomBarTint = ColorUtils.setAlphaComponent(
             surface,
-            ((if (LiquidGlass.isBlurSupported) 0.35f else 0.72f) * 255).toInt()
+            ((if (LiquidGlass.isBlurEnabled(requireContext())) 0.35f else 0.72f) * 255).toInt()
         )
         // Capsule and circles: all fully rounded, all blurring everything under them, cards included
         listOf(binding.editButton, binding.indicatorCapsule, binding.manageButton).forEach { host ->
@@ -393,6 +392,9 @@ class HomeFragment : MainModuleFragment() {
             recyclerViewAnimator = null
         }
 
+        // The content is rebuilt from the top (hero visible): hide the compact title, which would
+        // otherwise keep the visibility of the previous scroll position
+        toolbarTitleFraction = 0f
         updateDayNightColors()
 
         binding.switchLayout.reset()
@@ -452,13 +454,14 @@ class HomeFragment : MainModuleFragment() {
             WeatherView.WEATHER_KIND_NULL
         }
 
-        // Show "current position" icon:
-        // - On the left on mobile because it might not be visible on small displays otherwise
-        // - On the right on tablet because on the left it would be confused with the action icon
-        binding.toolbar.title =
-            (if (location?.isCurrentPosition == true && !requireContext().isTabletDevice) "⊙ " else "") +
-            (location?.getPlace(requireContext()) ?: "") +
-            (if (location?.isCurrentPosition == true && requireContext().isTabletDevice) " ⊙" else "")
+        // Compact title, name only: the current location is marked by the arrow in the hero and in the
+        // page dots (no more "⊙" prefix)
+        binding.toolbar.title = location?.getPlace(requireContext()) ?: ""
+        // iOS style: the current location's page shows an arrow instead of a dot
+        binding.indicator.arrowIndex = viewModel.validLocationList.value
+            .indexOfFirst { it.isCurrentPosition }
+            .takeIf { it >= 0 }
+
         binding.toolbar.subtitle = location?.weather?.current?.let { current ->
             val temperatureUnit = SettingsManager.getInstance(requireContext()).getTemperatureUnit(requireContext())
             listOfNotNull(
@@ -567,7 +570,7 @@ class HomeFragment : MainModuleFragment() {
         // 60 is 5 * 4 * 3, which allows us to divide from 1, 2, 3, 4 or 5 and have a whole number
         const val GRID_SPAN_COUNT = 60
 
-        private const val TOOLBAR_TITLE_FADE_START_DP = 120f
-        private const val TOOLBAR_TITLE_FADE_LENGTH_DP = 80f
+        private const val TOOLBAR_TITLE_FADE_START_DP = 70f
+        private const val TOOLBAR_TITLE_FADE_LENGTH_DP = 60f
     }
 }

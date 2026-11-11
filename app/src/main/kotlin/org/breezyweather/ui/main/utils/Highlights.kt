@@ -17,10 +17,13 @@
 package org.breezyweather.ui.main.utils
 
 import android.content.Context
+import android.graphics.Color
+import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
+import breezyweather.domain.weather.model.UV
 import breezyweather.domain.weather.reference.WeatherCode
 import org.breezyweather.R
 import org.breezyweather.common.extensions.currentLocale
@@ -30,8 +33,10 @@ import org.breezyweather.common.extensions.getFormattedTime
 import org.breezyweather.common.extensions.is12Hour
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.domain.weather.model.getLevel
+import org.breezyweather.domain.weather.model.getUVColor
 import org.breezyweather.domain.weather.model.getWeek
 import org.breezyweather.ui.main.adapters.main.holder.GlassForecastFormat
+import org.breezyweather.unit.formatting.UnitWidth
 import org.breezyweather.unit.formatting.format
 import org.breezyweather.unit.speed.SpeedUnit
 import org.breezyweather.unit.temperature.Temperature
@@ -42,12 +47,23 @@ import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.hours
 
 /**
- * One line of the Highlights card: a plain-language sentence and an optional detail line.
+ * One highlight, shown as a round gauge (watch-complication style):
+ * [value] (or the [icon] when there is no value) inside a ring filled to [fraction] in [color],
+ * with a short [label] and [sublabel] underneath, e.g. "Rain" / "Fri" around "97%",
+ * or "Sunset" / "5:01 PM" around a sunset icon.
+ *
+ * [title] and [detail] are the full plain-language sentence, read out by screen readers.
  */
 data class Highlight(
     @DrawableRes val icon: Int,
     val title: String,
     val detail: String? = null,
+    val label: String,
+    val sublabel: String? = null,
+    val value: String? = null,
+    /** Ring level, 0..1; null for a plain decorative ring around an icon or value */
+    val fraction: Float? = null,
+    @ColorInt val color: Int = Color.WHITE,
 )
 
 /**
@@ -71,7 +87,16 @@ object Highlights {
     /** Gust speed, in km/h, from which wind is worth a warning ("strong breeze" and up). */
     private const val NOTABLE_GUSTS_KMH = 50.0
 
+    /** Gust speed, in km/h, at which the gusts ring is full (storm). */
+    private const val FULL_GUSTS_KMH = 100.0
+
     private const val DAYS_AHEAD_FOR_PRECIPITATION = 6
+
+    private val WATER = Color.rgb(79, 175, 255)
+    private val WARM = Color.rgb(255, 149, 0)
+    private val COOL = Color.rgb(100, 190, 255)
+    private val SUN = Color.rgb(255, 204, 64)
+    private val WIND = Color.rgb(94, 230, 208)
 
     fun build(context: Context, location: Location, now: Date = Date()): List<Highlight> {
         val weather = location.weather ?: return emptyList()
@@ -91,13 +116,13 @@ object Highlights {
         return (highlights + listOfNotNull(filler)).take(MAX_HIGHLIGHTS)
     }
 
-    private fun precipitationKind(context: Context, weatherCode: WeatherCode?): String = context.getString(
-        if (weatherCode == WeatherCode.SNOW || weatherCode == WeatherCode.SLEET) {
-            R.string.highlight_snow
-        } else {
-            R.string.highlight_rain
-        }
-    )
+    private fun isSnow(weatherCode: WeatherCode?) = weatherCode == WeatherCode.SNOW || weatherCode == WeatherCode.SLEET
+
+    private fun precipitationKind(context: Context, weatherCode: WeatherCode?): String =
+        context.getString(if (isSnow(weatherCode)) R.string.highlight_snow else R.string.highlight_rain)
+
+    private fun time(context: Context, location: Location, date: Date) =
+        date.getFormattedTime(location, context, context.is12Hour)
 
     /** Within 24 hours: when it starts. Otherwise: the next likely day. Otherwise, a dry spell. */
     private fun precipitation(
@@ -107,16 +132,17 @@ object Highlights {
         upcomingDays: List<Daily>,
     ): Highlight? {
         next24Hours.firstOrNull { it.precipitationChance() >= LIKELY_PRECIPITATION_PERCENT }?.let { hourly ->
+            val kind = precipitationKind(context, hourly.weatherCode)
+            val chance = hourly.precipitationProbability?.total
             return Highlight(
                 icon = R.drawable.ic_umbrella,
-                title = context.getString(
-                    R.string.highlight_precipitation_around,
-                    precipitationKind(context, hourly.weatherCode),
-                    hourly.date.getFormattedTime(location, context, context.is12Hour)
-                ),
-                detail = hourly.precipitationProbability?.total?.let {
-                    context.getString(R.string.highlight_chance, it.formatPercent(context))
-                }
+                title = context.getString(R.string.highlight_precipitation_around, kind, time(context, location, hourly.date)),
+                detail = chance?.let { context.getString(R.string.highlight_chance, it.formatPercent(context)) },
+                label = kind,
+                sublabel = time(context, location, hourly.date),
+                value = chance?.formatPercent(context, UnitWidth.NARROW),
+                fraction = chance?.inPercent?.div(100)?.toFloat(),
+                color = WATER
             )
         }
 
@@ -134,7 +160,12 @@ object Highlights {
                 } else {
                     context.getString(R.string.highlight_precipitation_on, kind, daily.getWeek(location, context, full = true))
                 },
-                detail = chance?.let { context.getString(R.string.highlight_chance, it.formatPercent(context)) }
+                detail = chance?.let { context.getString(R.string.highlight_chance, it.formatPercent(context)) },
+                label = kind,
+                sublabel = if (i == 0) context.getString(R.string.daily_tomorrow) else daily.getWeek(location, context),
+                value = chance?.formatPercent(context, UnitWidth.NARROW),
+                fraction = chance?.inPercent?.div(100)?.toFloat(),
+                color = WATER
             )
         }
 
@@ -142,7 +173,13 @@ object Highlights {
         val hasProbabilities = next24Hours.any { it.precipitationProbability?.total != null } ||
             days.any { it.day?.precipitationProbability?.total != null }
         return if (hasProbabilities) {
-            Highlight(icon = R.drawable.ic_sunshine_duration, title = context.getString(R.string.highlight_dry))
+            Highlight(
+                icon = R.drawable.ic_sunshine_duration,
+                title = context.getString(R.string.highlight_dry),
+                label = context.getString(R.string.highlight_label_dry),
+                sublabel = context.getString(R.string.highlight_label_coming_days),
+                color = SUN
+            )
         } else {
             null
         }
@@ -159,17 +196,22 @@ object Highlights {
             if (abs(changeCelsius) >= NOTABLE_TEMPERATURE_CHANGE_CELSIUS) {
                 val change = abs(tomorrowHigh.toDouble(unit) - todayHigh.toDouble(unit)).roundToInt()
                     .format(decimals = 0, locale = context.currentLocale) + "°"
+                val warmer = changeCelsius > 0
                 return Highlight(
-                    icon = if (changeCelsius > 0) R.drawable.ic_mode_heat else R.drawable.ic_mode_cool,
+                    icon = if (warmer) R.drawable.ic_mode_heat else R.drawable.ic_mode_cool,
                     title = context.getString(
-                        if (changeCelsius > 0) R.string.highlight_warmer_tomorrow else R.string.highlight_cooler_tomorrow,
+                        if (warmer) R.string.highlight_warmer_tomorrow else R.string.highlight_cooler_tomorrow,
                         change
                     ),
                     detail = context.getString(
                         R.string.highlight_highs,
                         degrees(context, todayHigh, unit),
                         degrees(context, tomorrowHigh, unit)
-                    )
+                    ),
+                    label = context.getString(R.string.daily_tomorrow),
+                    sublabel = context.getString(if (warmer) R.string.highlight_label_warmer else R.string.highlight_label_cooler),
+                    value = (if (warmer) "+" else "−") + change,
+                    color = if (warmer) WARM else COOL
                 )
             }
         }
@@ -183,21 +225,27 @@ object Highlights {
                 R.string.highlight_warmest_day,
                 warmest.getWeek(location, context, full = true),
                 degrees(context, warmestHigh, unit)
-            )
+            ),
+            label = context.getString(R.string.highlight_label_warmest),
+            sublabel = warmest.getWeek(location, context),
+            value = degrees(context, warmestHigh, unit),
+            color = WARM
         )
     }
 
     private fun uvPeak(context: Context, location: Location, next24Hours: List<Hourly>): Highlight? {
         val peak = next24Hours.maxByOrNull { it.uV?.index ?: -1.0 } ?: return null
         val uv = peak.uV?.takeIf { (it.index ?: 0.0) >= NOTABLE_UV_INDEX } ?: return null
+        val index = uv.index!!.roundToInt().format(decimals = 0, locale = context.currentLocale)
         return Highlight(
             icon = R.drawable.ic_uv,
-            title = context.getString(
-                R.string.highlight_uv_peak,
-                uv.index!!.roundToInt().format(decimals = 0, locale = context.currentLocale),
-                peak.date.getFormattedTime(location, context, context.is12Hour)
-            ),
-            detail = uv.getLevel(context)
+            title = context.getString(R.string.highlight_uv_peak, index, time(context, location, peak.date)),
+            detail = uv.getLevel(context),
+            label = context.getString(R.string.highlight_label_uv),
+            sublabel = time(context, location, peak.date),
+            value = index,
+            fraction = (uv.index!! / UV.UV_INDEX_EXCESSIVE).toFloat(),
+            color = uv.getUVColor(context)
         )
     }
 
@@ -213,8 +261,13 @@ object Highlights {
             title = context.getString(
                 R.string.highlight_gusts,
                 gusts.formatMeasure(context),
-                peak.date.getFormattedTime(location, context, context.is12Hour)
-            )
+                time(context, location, peak.date)
+            ),
+            label = context.getString(R.string.wind_gusts_short),
+            sublabel = time(context, location, peak.date),
+            value = gusts.formatMeasure(context, valueWidth = UnitWidth.NARROW, unitWidth = UnitWidth.NARROW),
+            fraction = (gusts.toDouble(SpeedUnit.KILOMETER_PER_HOUR) / FULL_GUSTS_KMH).toFloat(),
+            color = WIND
         )
     }
 
@@ -222,14 +275,20 @@ object Highlights {
     private fun nextSunEvent(context: Context, location: Location, upcomingDays: List<Daily>, now: Date): Highlight? {
         val events = upcomingDays.take(2).flatMap { daily ->
             listOfNotNull(
-                daily.sun?.riseDate?.let { it to R.string.highlight_sunrise },
-                daily.sun?.setDate?.let { it to R.string.highlight_sunset }
+                daily.sun?.riseDate?.let { it to true },
+                daily.sun?.setDate?.let { it to false }
             )
         }
-        val (date, stringId) = events.filter { it.first.after(now) }.minByOrNull { it.first.time } ?: return null
+        val (date, isSunrise) = events.filter { it.first.after(now) }.minByOrNull { it.first.time } ?: return null
         return Highlight(
             icon = R.drawable.ic_twilight,
-            title = context.getString(stringId, date.getFormattedTime(location, context, context.is12Hour))
+            title = context.getString(
+                if (isSunrise) R.string.highlight_sunrise else R.string.highlight_sunset,
+                time(context, location, date)
+            ),
+            label = context.getString(if (isSunrise) R.string.highlight_label_sunrise else R.string.highlight_label_sunset),
+            sublabel = time(context, location, date),
+            color = SUN
         )
     }
 

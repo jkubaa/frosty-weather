@@ -1,60 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One highlight: divider, then icon | sentence (and a detail line) -->
+<!--
+    One highlight as a round gauge (watch-complication style): a ring with a value or icon inside,
+    then a short label and sub-label, e.g. "97%" / "Rain" / "Fri", or a sunset icon / "Sunset" / "5:01 PM".
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
+    android:layout_width="0dp"
     android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:layout_weight="1"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingVertical="10dp"
+    android:focusable="true"
+    android:screenReaderFocusable="true">
 
-    <View style="@style/glass_divider" />
+    <FrameLayout
+        android:layout_width="@dimen/glass_highlight_gauge_size"
+        android:layout_height="@dimen/glass_highlight_gauge_size">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="52dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingVertical="10dp"
-        android:focusable="true"
-        android:screenReaderFocusable="true">
+        <org.breezyweather.ui.main.widgets.RingGaugeView
+            android:id="@+id/highlight_gauge"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/highlight_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:maxLines="1"
+            android:includeFontPadding="false"
+            android:textSize="17sp"
+            android:textFontWeight="600"
+            android:textColor="?attr/colorSurfaceInverse"
+            tools:text="97%" />
 
         <ImageView
             android:id="@+id/highlight_icon"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center"
             android:importantForAccessibility="no"
+            android:visibility="gone"
             app:tint="?attr/colorSurfaceInverse"
-            tools:src="@drawable/ic_umbrella" />
+            tools:src="@drawable/ic_twilight" />
+    </FrameLayout>
 
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="14dp"
-            android:orientation="vertical">
+    <TextView
+        android:id="@+id/highlight_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center_horizontal"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textSize="13sp"
+        android:textFontWeight="600"
+        android:textColor="?attr/colorSurfaceInverse"
+        tools:text="Rain" />
 
-            <TextView
-                android:id="@+id/highlight_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textFontWeight="500"
-                android:textColor="?attr/colorSurfaceInverse"
-                tools:text="Rain likely around 3:00 PM" />
-
-            <TextView
-                android:id="@+id/highlight_detail"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textSize="13sp"
-                android:textColor="?attr/colorSurfaceInverse"
-                android:alpha="0.65"
-                android:visibility="gone"
-                tools:text="60% chance"
-                tools:visibility="visible" />
-        </LinearLayout>
-    </LinearLayout>
+    <TextView
+        android:id="@+id/highlight_sublabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textSize="12sp"
+        android:alpha="0.7"
+        android:textColor="?attr/colorSurfaceInverse"
+        tools:text="Fri" />
 
 </LinearLayout>

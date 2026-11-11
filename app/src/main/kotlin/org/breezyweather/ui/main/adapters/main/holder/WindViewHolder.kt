@@ -16,12 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
-import androidx.appcompat.content.res.AppCompatResources
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
@@ -34,12 +29,8 @@ import org.breezyweather.domain.weather.model.getDirection
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.UnitWidth
 
-class WindViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
-    LayoutInflater.from(parent.context).inflate(R.layout.container_main_wind, parent, false)
-) {
-    private val windDirectionView: ImageView = itemView.findViewById(R.id.wind_direction)
-    private val windSpeedValueView: TextView = itemView.findViewById(R.id.wind_speed_value)
-    private val windDetailView: TextView = itemView.findViewById(R.id.visibility_description)
+/** Wind tile: speed, gusts, where it comes from, and a compass. */
+class WindViewHolder(parent: ViewGroup) : GlassTileViewHolder(parent, R.drawable.ic_wind, R.string.wind) {
 
     override fun onBindView(
         activity: BreezyActivity,
@@ -50,50 +41,32 @@ class WindViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
 
-        val talkBackBuilder = StringBuilder(context.getString(R.string.wind))
-
-        location.weather?.current?.wind?.let { wind ->
-            talkBackBuilder.append(context.getString(R.string.colon_separator))
-            talkBackBuilder.append(wind.getContentDescription(context))
-
-            wind.speed?.let { speed ->
-                windSpeedValueView.text = UnitUtils.formatUnitsHalfSize(
-                    speed.formatMeasure(context, valueWidth = UnitWidth.NARROW)
-                )
-            }
-
-            wind.degree?.let { degree ->
-                if (degree != -1.0) {
-                    windDirectionView.visibility = View.VISIBLE
-                    windDirectionView.setImageDrawable(
-                        AppCompatResources.getDrawable(context, R.drawable.wind_arrow)
-                    )
-                    windDirectionView.rotation = degree.toFloat()
-                } else {
-                    windDirectionView.visibility = View.VISIBLE
-                    windDirectionView.setImageDrawable(
-                        AppCompatResources.getDrawable(context, R.drawable.wind_variable)
-                    )
-                }
-            } ?: run {
-                windDirectionView.visibility = View.GONE
-            }
-
-            windDetailView.text = if (wind.speed != null && wind.gusts != null && wind.gusts!! > wind.speed!!) {
+        val wind = location.weather?.current?.wind
+        setValue(
+            wind?.speed?.let { UnitUtils.formatUnitsHalfSize(it.formatMeasure(context, valueWidth = UnitWidth.NARROW)) }
+        )
+        val speed = wind?.speed
+        setLabel(
+            wind?.gusts?.takeIf { speed == null || it > speed }?.let {
                 context.getString(R.string.wind_gusts_short) +
                     context.getString(R.string.colon_separator) +
-                    wind.gusts!!.formatMeasure(context, valueWidth = UnitWidth.NARROW)
-            } else {
-                wind.getDirection(context, short = true)?.let {
-                    if (wind.degree!! in 0.0..360.0) {
-                        context.getString(R.string.wind_origin, it)
-                    } else {
-                        it
-                    }
-                } ?: ""
+                    it.formatMeasure(context, valueWidth = UnitWidth.NARROW)
             }
-        }
+        )
+        // -1 (or anything out of range): variable direction, no arrow
+        val degree = wind?.degree?.takeIf { it in 0.0..360.0 }
+        showCompass(degree?.toFloat())
+        setAccent(TileColors.WIND)
+        setDescription(
+            wind?.getDirection(context, short = true)?.let {
+                if (degree != null) context.getString(R.string.wind_origin, it) else it
+            }
+        )
 
+        val talkBackBuilder = StringBuilder(context.getString(R.string.wind))
+        wind?.let {
+            talkBackBuilder.append(context.getString(R.string.colon_separator)).append(it.getContentDescription(context))
+        }
         itemView.contentDescription = talkBackBuilder.toString()
         itemView.setOnClickListener {
             IntentHelper.startDailyWeatherActivity(

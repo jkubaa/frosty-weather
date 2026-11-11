@@ -16,11 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
-import androidx.appcompat.content.res.AppCompatResources
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
@@ -32,12 +28,12 @@ import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.UnitWidth
 
-class HumidityViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
-    LayoutInflater.from(parent.context).inflate(R.layout.container_main_humidity, parent, false)
+/** Humidity tile: relative humidity, and the dew point underneath. */
+class HumidityViewHolder(parent: ViewGroup) : GlassTileViewHolder(
+    parent,
+    R.drawable.ic_humidity_percentage,
+    R.string.humidity
 ) {
-    private val humidityValueView: TextView = itemView.findViewById(R.id.humidity_value)
-    private val wavesBackgroundView: ImageView = itemView.findViewById(R.id.waves_background)
-    private val dewPointValueView: TextView = itemView.findViewById(R.id.dew_point_value)
 
     override fun onBindView(
         activity: BreezyActivity,
@@ -48,43 +44,38 @@ class HumidityViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
 
+        val current = location.weather!!.current
+        val humidity = current?.relativeHumidity?.formatPercent(context, UnitWidth.NARROW)
+        val dewPoint = current?.dewPoint?.formatMeasure(
+            context,
+            SettingsManager.getInstance(context).getTemperatureUnit(context),
+            valueWidth = UnitWidth.NARROW,
+            unitWidth = UnitWidth.NARROW
+        )
+        setValue(humidity)
+        setLabel(null)
+        setAccent(TileColors.WATER)
+        // The next 12 hours of humidity
+        showBars(
+            location.weather!!.nextHourlyForecast.take(12).map { h ->
+                h.relativeHumidity?.inPercent?.let { (it / 100).toFloat() }
+            },
+            TileColors.WATER
+        )
+        setDescription(
+            dewPoint?.let { context.getString(R.string.dew_point) + context.getString(R.string.colon_separator) + it }
+        )
+
         val talkBackBuilder = StringBuilder(context.getString(R.string.humidity))
-        location.weather!!.current?.let { current ->
-            current.relativeHumidity?.let { relativeHumidity ->
-                humidityValueView.text = relativeHumidity.formatPercent(context, UnitWidth.NARROW)
-
-                if (relativeHumidity.inPercent in 0.0..100.0) {
-                    wavesBackgroundView.setImageDrawable(
-                        AppCompatResources.getDrawable(
-                            context,
-                            when (relativeHumidity.inPercent) {
-                                in 0.0..20.0 -> R.drawable.humidity_percent_7
-                                in 20.0..40.0 -> R.drawable.humidity_percent_30
-                                in 60.0..80.0 -> R.drawable.humidity_percent_75
-                                in 80.0..100.0 -> R.drawable.humidity_percent_90
-                                else -> R.drawable.humidity_percent_50
-                            }
-                        )
-                    )
-                }
-                talkBackBuilder.append(context.getString(R.string.colon_separator))
-                talkBackBuilder.append(humidityValueView.text)
-            }
-            dewPointValueView.text = current.dewPoint?.formatMeasure(
-                context,
-                SettingsManager.getInstance(context).getTemperatureUnit(context),
-                valueWidth = UnitWidth.NARROW,
-                unitWidth = UnitWidth.NARROW
-            )
-
-            current.dewPoint?.let {
-                talkBackBuilder.append(context.getString(org.breezyweather.unit.R.string.locale_separator))
-                talkBackBuilder.append(context.getString(R.string.dew_point))
-                talkBackBuilder.append(context.getString(R.string.colon_separator))
-                talkBackBuilder.append(dewPointValueView.text)
-            }
+        humidity?.let {
+            talkBackBuilder.append(context.getString(R.string.colon_separator)).append(it)
         }
-
+        dewPoint?.let {
+            talkBackBuilder.append(context.getString(org.breezyweather.unit.R.string.locale_separator))
+                .append(context.getString(R.string.dew_point))
+                .append(context.getString(R.string.colon_separator))
+                .append(it)
+        }
         itemView.contentDescription = talkBackBuilder.toString()
         itemView.setOnClickListener {
             IntentHelper.startDailyWeatherActivity(

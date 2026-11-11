@@ -27,10 +27,17 @@
     <dimen name="glass_corner_radius">26dp</dimen>
     <dimen name="glass_capsule_height">48dp</dimen>
     <dimen name="glass_capsule_margin_bottom">12dp</dimen>
-    <dimen name="glass_bottom_bar_margin_horizontal">16dp</dimen>
+    <!-- Edit and list buttons near the screen edges, page dots centered between them (iOS weather) -->
+    <dimen name="glass_bottom_bar_margin_horizontal">20dp</dimen>
+    <!-- Keeps the page dots capsule between the edit and list buttons: button size + gap -->
+    <dimen name="glass_bottom_bar_capsule_inset">56dp</dimen>
+    <!-- Fixed value column in the 10-day metric rows, so the bars all line up (fits "0.3 in  97%") -->
+    <dimen name="glass_daily_metric_value_width">112dp</dimen>
+    <dimen name="glass_highlight_gauge_size">62dp</dimen>
     <dimen name="glass_capsule_content_clearance">84dp</dimen>
-    <dimen name="glass_hero_temperature_text_size">104sp</dimen>
-    <dimen name="glass_hero_location_text_size">34sp</dimen>
+    <dimen name="glass_hero_temperature_text_size">80sp</dimen>
+    <dimen name="glass_hero_temperature_unit_text_size">60sp</dimen>
+    <dimen name="glass_hero_location_text_size">32sp</dimen>
     <dimen name="glass_chip_corner_radius">16dp</dimen>
     <dimen name="material3_card_list_item_inner_radius">12dp</dimen>
     <dimen name="material3_widget_corner_radius">16dp</dimen>

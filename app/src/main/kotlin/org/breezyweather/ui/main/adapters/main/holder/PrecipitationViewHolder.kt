@@ -16,7 +16,6 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
 import breezyweather.domain.location.model.Location
@@ -33,11 +32,15 @@ import org.breezyweather.unit.formatting.UnitWidth
 import java.util.Calendar
 import java.util.Date
 
-class PrecipitationViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
-    LayoutInflater.from(parent.context).inflate(R.layout.container_main_precipitation, parent, false)
+/** Precipitation tile: total for the current half of the day, and which half (and kind) it is. */
+class PrecipitationViewHolder(parent: ViewGroup) : GlassTileViewHolder(
+    parent,
+    R.drawable.ic_precipitation,
+    R.string.precipitation
 ) {
-    private val precipitationValueView: TextView = itemView.findViewById(R.id.precipitation_value)
-    private val precipitationAmountView: TextView = itemView.findViewById(R.id.precipitation_amount)
+    // The glass tile's value and description lines
+    private val precipitationValueView: TextView get() = valueView
+    private val precipitationAmountView: TextView get() = descriptionView
 
     override fun onBindView(
         activity: BreezyActivity,
@@ -47,6 +50,16 @@ class PrecipitationViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
         itemAnimationEnabled: Boolean,
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
+        setLabel(null)
+        setAccent(TileColors.WATER)
+        // Chance of precipitation over the next 12 hours
+        showBars(
+            location.weather?.nextHourlyForecast.orEmpty().take(12).map { h ->
+                h.precipitationProbability?.total?.inPercent?.let { (it / 100).toFloat() }
+            },
+            TileColors.WATER
+        )
+        precipitationAmountView.visibility = android.view.View.VISIBLE
 
         val talkBackBuilder = StringBuilder(context.getString(R.string.precipitation))
         location.weather?.let { weather ->

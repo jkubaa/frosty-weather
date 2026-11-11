@@ -77,9 +77,9 @@
             <FrameLayout
                 android:id="@+id/bottomBar"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/glass_capsule_height"
-                android:layout_gravity="bottom"
                 android:layout_marginHorizontal="@dimen/glass_bottom_bar_margin_horizontal"
+                android:layout_height="@dimen/glass_capsule_height"
+                android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="@dimen/glass_capsule_margin_bottom"
                 app:layout_behavior="org.breezyweather.ui.common.behaviors.FloatingAboveSnackbarBehavior">
 
@@ -110,18 +110,24 @@
                     android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:minWidth="96dp"
+                    android:layout_marginHorizontal="@dimen/glass_bottom_bar_capsule_inset"
                     android:visibility="gone">
 
-                    <org.breezyweather.ui.common.widgets.InkPageIndicator
-                        android:id="@+id/indicator"
+                    <!-- Page dots (the current location shows as an arrow), centered in the capsule -->
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:layout_marginStart="22dp"
-                        android:layout_marginEnd="22dp"
-                        app:dotDiameter="8dp"
-                        app:dotGap="10dp"
-                        app:animationDuration="300" />
+                        android:layout_marginStart="20dp"
+                        android:layout_marginEnd="20dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                    <org.breezyweather.ui.common.widgets.PageDotsView
+                        android:id="@+id/indicator"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                    </LinearLayout>
 
                 </FrameLayout>
 
