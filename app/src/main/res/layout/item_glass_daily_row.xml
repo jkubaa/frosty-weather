@@ -29,15 +29,16 @@
 
         <!-- Icon with the chance of precipitation under it -->
         <LinearLayout
-            android:layout_width="44dp"
+            android:layout_width="48dp"
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
             android:orientation="vertical">
 
+            <!-- The frosted art has built-in padding, so it is drawn larger than a glyph would be -->
             <ImageView
                 android:id="@+id/daily_row_icon"
-                android:layout_width="26dp"
-                android:layout_height="26dp"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
                 android:importantForAccessibility="no" />
 
             <TextView

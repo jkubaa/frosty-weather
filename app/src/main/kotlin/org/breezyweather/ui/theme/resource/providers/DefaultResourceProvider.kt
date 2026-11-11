@@ -17,13 +17,11 @@
 package org.breezyweather.ui.theme.resource.providers
 
 import android.animation.Animator
-import android.animation.AnimatorInflater
 import android.content.Context
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 import android.net.Uri
 import androidx.annotation.DrawableRes
-import androidx.annotation.IntRange
 import androidx.annotation.Size
 import androidx.core.content.res.ResourcesCompat
 import breezyweather.domain.weather.reference.WeatherCode
@@ -40,7 +38,6 @@ class DefaultResourceProvider : ResourceProvider() {
     override var providerName: String? = null
     override val providerIcon: Drawable?
     private var mDrawableFilter: Map<String, String>? = null
-    private var mAnimatorFilter: Map<String, String>? = null
     private var mShortcutFilter: Map<String, String>? = null
 
     init {
@@ -50,11 +47,9 @@ class DefaultResourceProvider : ResourceProvider() {
         val res = mContext.resources
         try {
             mDrawableFilter = XmlHelper.getFilterMap(res.getXml(R.xml.icon_provider_drawable_filter))
-            mAnimatorFilter = XmlHelper.getFilterMap(res.getXml(R.xml.icon_provider_animator_filter))
             mShortcutFilter = XmlHelper.getFilterMap(res.getXml(R.xml.icon_provider_shortcut_filter))
         } catch (e: Exception) {
             mDrawableFilter = HashMap()
-            mAnimatorFilter = HashMap()
             mShortcutFilter = HashMap()
         }
     }
@@ -62,22 +57,19 @@ class DefaultResourceProvider : ResourceProvider() {
     override val packageName: String
         get() = mContext.packageName
 
-    // weather icon.
+    // weather icon: the bundled frosted art (see FrostedWeatherIcons).
     override fun getWeatherIcon(code: WeatherCode?, dayTime: Boolean): Drawable {
-        return getDrawable(getWeatherIconName(code, dayTime))!!
+        return ResourcesCompat.getDrawable(mContext.resources, FrostedWeatherIcons.get(code, dayTime), null)!!
     }
 
     override fun getWeatherIconUri(code: WeatherCode?, dayTime: Boolean): Uri {
-        return getDrawableUri(getWeatherIconName(code, dayTime))
+        return getDrawableUri(mContext.resources.getResourceEntryName(FrostedWeatherIcons.get(code, dayTime)))
     }
 
+    /** The frosted art is a single flat image: no layers to animate separately. */
     @Size(3)
     override fun getWeatherIcons(code: WeatherCode?, dayTime: Boolean): Array<Drawable?> {
-        return arrayOf(
-            getDrawable(getWeatherIconName(code, dayTime, 1)),
-            getDrawable(getWeatherIconName(code, dayTime, 2)),
-            getDrawable(getWeatherIconName(code, dayTime, 3))
-        )
+        return arrayOf(getWeatherIcon(code, dayTime), null, null)
     }
 
     private fun getDrawable(resName: String): Drawable? {
@@ -92,54 +84,10 @@ class DefaultResourceProvider : ResourceProvider() {
         }
     }
 
-    private fun getWeatherIconName(code: WeatherCode?, daytime: Boolean): String {
-        return getFilterResource(
-            mDrawableFilter,
-            innerGetWeatherIconName(code, daytime)
-        )
-    }
-
-    private fun getWeatherIconName(
-        code: WeatherCode?,
-        daytime: Boolean,
-        @IntRange(from = 1, to = 3) index: Int,
-    ): String {
-        return getFilterResource(
-            mDrawableFilter,
-            innerGetWeatherIconName(code, daytime) + Constants.SEPARATOR + index
-        )
-    }
-
-    // animator.
+    // animator: none for the single-layer frosted art.
     @Size(3)
     override fun getWeatherAnimators(code: WeatherCode?, dayTime: Boolean): Array<Animator?> {
-        return arrayOf(
-            getAnimator(getWeatherAnimatorName(code, dayTime, 1)),
-            getAnimator(getWeatherAnimatorName(code, dayTime, 2)),
-            getAnimator(getWeatherAnimatorName(code, dayTime, 3))
-        )
-    }
-
-    private fun getAnimator(resName: String): Animator? {
-        return try {
-            AnimatorInflater.loadAnimator(
-                mContext,
-                getResId(mContext, resName, "animator")
-            )
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun getWeatherAnimatorName(
-        code: WeatherCode?,
-        daytime: Boolean,
-        @IntRange(from = 1, to = 3) index: Int,
-    ): String {
-        return getFilterResource(
-            mAnimatorFilter,
-            innerGetWeatherAnimatorName(code, daytime) + Constants.SEPARATOR + index
-        )
+        return arrayOf(null, null, null)
     }
 
     // minimal.
@@ -259,12 +207,6 @@ class DefaultResourceProvider : ResourceProvider() {
         }
 
         private fun innerGetWeatherIconName(code: WeatherCode?, daytime: Boolean): String {
-            return Constants.getResourcesName(code) +
-                Constants.SEPARATOR +
-                if (daytime) Constants.DAY else Constants.NIGHT
-        }
-
-        private fun innerGetWeatherAnimatorName(code: WeatherCode?, daytime: Boolean): String {
             return Constants.getResourcesName(code) +
                 Constants.SEPARATOR +
                 if (daytime) Constants.DAY else Constants.NIGHT

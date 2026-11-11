@@ -22,13 +22,14 @@
     <!-- Fixed height so the temperatures stay aligned whether or not a percentage shows -->
     <FrameLayout
         android:layout_width="wrap_content"
-        android:layout_height="46dp"
-        android:layout_marginTop="6dp">
+        android:layout_height="50dp"
+        android:layout_marginTop="4dp">
 
+        <!-- The frosted art has built-in padding, so it is drawn larger than a glyph would be -->
         <ImageView
             android:id="@+id/hourly_item_icon"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:layout_gravity="center_horizontal"
             android:importantForAccessibility="no" />
 
