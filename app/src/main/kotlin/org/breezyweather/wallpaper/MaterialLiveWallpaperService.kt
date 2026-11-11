@@ -33,7 +33,6 @@ import android.view.SurfaceHolder
 import androidx.annotation.RequiresApi
 import androidx.annotation.Size
 import androidx.core.content.ContextCompat
-import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.withTranslation
 import breezyweather.data.location.LocationRepository
 import breezyweather.data.weather.WeatherRepository
@@ -53,6 +52,7 @@ import org.breezyweather.ui.theme.weatherView.WeatherViewController
 import org.breezyweather.ui.theme.weatherView.materialWeatherView.DelayRotateController
 import org.breezyweather.ui.theme.weatherView.materialWeatherView.IntervalComputer
 import org.breezyweather.ui.theme.weatherView.materialWeatherView.MaterialWeatherView
+import org.breezyweather.ui.theme.weatherView.materialWeatherView.SkyPalette
 import org.breezyweather.ui.theme.weatherView.materialWeatherView.WeatherImplementorFactory
 import javax.inject.Inject
 import kotlin.math.abs
@@ -260,11 +260,8 @@ class MaterialLiveWallpaperService : WallpaperService() {
         }
 
         private fun setWeatherBackgroundDrawable() {
-            mBackground = ResourcesCompat.getDrawable(
-                resources,
-                WeatherImplementorFactory.getBackgroundId(mWeatherKind, mDaytime),
-                null
-            )
+            // Same iOS-weather-like skies as the main screen
+            mBackground = SkyPalette.gradient(mWeatherKind, mDaytime)
             mBackground?.let {
                 it.setBounds(0, 0, mSizes[0], mSizes[1])
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {

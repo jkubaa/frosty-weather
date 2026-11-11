@@ -169,16 +169,16 @@ class RainImplementor(
                     rainCount = RAIN_COUNT
                     mThunder = null
                     colors = intArrayOf(
-                        Color.rgb(223, 179, 114),
-                        Color.rgb(152, 175, 222),
+                        Color.rgb(206, 222, 242),
+                        Color.rgb(172, 196, 230),
                         Color.rgb(255, 255, 255)
                     )
                 } else {
                     rainCount = RAIN_COUNT
                     mThunder = null
                     colors = intArrayOf(
-                        Color.rgb(182, 142, 82),
-                        Color.rgb(88, 92, 113),
+                        Color.rgb(150, 170, 200),
+                        Color.rgb(120, 136, 162),
                         Color.rgb(255, 255, 255)
                     )
                 }
@@ -187,16 +187,16 @@ class RainImplementor(
                     rainCount = RAIN_COUNT
                     mThunder = Thunder()
                     colors = intArrayOf(
-                        Color.rgb(182, 142, 82),
-                        -0x93aa6e,
+                        Color.rgb(150, 170, 200),
+                        Color.rgb(140, 160, 190),
                         Color.rgb(255, 255, 255)
                     )
                 } else {
                     rainCount = RAIN_COUNT
                     mThunder = Thunder()
                     colors = intArrayOf(
-                        Color.rgb(182, 142, 82),
-                        Color.rgb(88, 92, 113),
+                        Color.rgb(150, 170, 200),
+                        Color.rgb(120, 136, 162),
                         Color.rgb(255, 255, 255)
                     )
                 }
@@ -271,7 +271,8 @@ class RainImplementor(
             )
             for (r in mRains) {
                 mPaint.color = r.color
-                mPaint.alpha = ((1 - scrollRate) * 255).toInt()
+                // Thin, see-through streaks (iOS weather style) rather than solid ones
+                mPaint.alpha = ((1 - scrollRate) * 0.6f * 255).toInt()
                 canvas.drawRoundRect(r.rectF, r.width / 2f, r.width / 2f, mPaint)
             }
             mThunder?.let {
