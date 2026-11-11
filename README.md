@@ -16,8 +16,7 @@
 
 Frosty Weather keeps the weather data, sources and features of Breezy Weather, and focuses on the look of the app:
 
-- A redesigned user interface following the design language of our widgets *(work in progress)*
-- Its own app name, icon and `applicationId` (`io.github.jkubaa.frostyweather`), so it can be installed alongside Breezy Weather
+- A redesigned user interface introducing a glass UI
 
 For the full list of features and supported weather sources, see the [upstream Breezy Weather README](https://github.com/breezy-weather/breezy-weather#readme).
 
@@ -39,13 +38,3 @@ See [PRIVACY.md](PRIVACY.md).
 ## Credits
 
 Frosty Weather is based on [Breezy Weather](https://github.com/breezy-weather/breezy-weather), © Breezy Weather contributors, licensed under LGPL-3.0. All credit for the original app, its weather sources and its features goes to them. “Breezy Weather” and its logo belong to their respective owners and are not used to brand this fork.
-
-## Notes for building
-
-To keep this fork compliant with the upstream license terms:
-
-- Do **NOT** use the `breezy` Gradle flag (`-Pbreezy`) when compiling releases you plan to distribute: it enables Breezy Weather’s name and logo
-- The app name is set in [`app/src/res_fork/values/strings.xml`](app/src/res_fork/values/strings.xml)
-- The app icons live in the [`app/src/res_fork`](app/src/res_fork) folders
-- The `applicationId` is set in [`app/build.gradle.kts`](app/build.gradle.kts)
-- Links shown in the app (source code, issues, privacy policy…) are the `app.*` properties in [`gradle.properties`](gradle.properties)
