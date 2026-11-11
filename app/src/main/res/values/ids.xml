@@ -8,5 +8,9 @@
     <item type="id" name="tag_icon_bottom" />
 
     <item type="id" name="tag_liquid_glass_overlay" />
+    <item type="id" name="tag_liquid_glass_tint" />
+    <item type="id" name="tag_liquid_glass_blur" />
+    <item type="id" name="tag_liquid_glass_blur_root" />
+    <item type="id" name="glass_backdrop" />
 
 </resources>

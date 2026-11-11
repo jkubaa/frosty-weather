@@ -55,6 +55,7 @@ import com.google.android.material.card.MaterialCardView
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.utils.helpers.IntentHelper
+import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.domain.weather.model.getFormattedDates
 import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
@@ -76,7 +77,8 @@ class AlertViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
         // Warm-tinted liquid glass for alerts
-        (itemView as MaterialCardView).setCardBackgroundColor(
+        LiquidGlass.setTint(
+            itemView as MaterialCardView,
             ColorUtils.setAlphaComponent(
                 ContextCompat.getColor(activity, R.color.alert_background),
                 (0.62f * 255).toInt()

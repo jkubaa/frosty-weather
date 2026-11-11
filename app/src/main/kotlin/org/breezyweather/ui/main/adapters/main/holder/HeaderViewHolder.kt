@@ -37,6 +37,7 @@ import org.breezyweather.domain.weather.model.getTemperatureRangeSummary
 import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.common.widgets.NumberAnimTextView
 import org.breezyweather.ui.main.widgets.TextRelativeClock
+import org.breezyweather.ui.theme.weatherView.WeatherViewController
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.UnitWidth
 import org.breezyweather.unit.formatting.format
@@ -96,9 +97,12 @@ class HeaderViewHolder(parent: ViewGroup) : AbstractMainViewHolder(
 
         val temperatureUnit = SettingsManager.getInstance(context).getTemperatureUnit(context)
         location.weather?.current?.let { current ->
-            if (!current.weatherText.isNullOrEmpty()) {
+            // Apple-style: always show a condition, falling back to the generic label of the weather code
+            val conditionText = current.weatherText?.takeIf { it.isNotEmpty() }
+                ?: current.weatherCode?.let { WeatherViewController.getWeatherText(it) }
+            if (!conditionText.isNullOrEmpty()) {
                 mWeatherText.visibility = View.VISIBLE
-                mWeatherText.text = current.weatherText
+                mWeatherText.text = conditionText
             } else {
                 mWeatherText.visibility = View.GONE
             }

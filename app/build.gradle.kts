@@ -458,6 +458,7 @@ dependencies {
     implementation(projects.uiWeatherView)
     implementation(projects.weatherUnit)
     implementation(libs.breezy.datasharing.lib)
+    implementation(libs.blurview)
 
     implementation(libs.kotlinx.collections.immutable)
 

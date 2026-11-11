@@ -84,8 +84,6 @@
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="@dimen/glass_capsule_margin_bottom"
                 android:minWidth="96dp"
-                android:paddingStart="22dp"
-                android:paddingEnd="22dp"
                 android:visibility="gone"
                 app:layout_behavior="org.breezyweather.ui.common.behaviors.FloatingAboveSnackbarBehavior">
 
@@ -94,6 +92,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
+                    android:layout_marginStart="22dp"
+                    android:layout_marginEnd="22dp"
                     app:dotDiameter="8dp"
                     app:dotGap="10dp"
                     app:animationDuration="300" />

@@ -23,6 +23,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
@@ -103,8 +104,16 @@ class HomeFragment : MainModuleFragment() {
             .getInstance(requireContext())
             .weatherThemeDelegate
             .getWeatherView(requireContext())
+        // The weather view lives in its own container: it is the backdrop the liquid glass cards blur
+        val glassBackdrop = FrameLayout(requireContext()).apply {
+            id = R.id.glass_backdrop
+            addView(
+                weatherView as View,
+                FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            )
+        }
         (binding.switchLayout.parent.parent.parent as CoordinatorLayout).addView(
-            weatherView as View,
+            glassBackdrop,
             0,
             CoordinatorLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -327,9 +336,18 @@ class HomeFragment : MainModuleFragment() {
         binding.refreshLayout.setProgressBackgroundColorSchemeColor(
             requireContext().getThemeColor(com.google.android.material.R.attr.colorSurface)
         )
-        binding.indicatorCapsule.background = LiquidGlass.background(
-            binding.indicatorCapsule,
-            resources.getDimension(R.dimen.glass_capsule_height) / 2f
+        val surface = requireContext().getThemeColor(com.google.android.material.R.attr.colorSurface)
+        LiquidGlass.applyFloating(
+            host = binding.indicatorCapsule,
+            cornerRadius = resources.getDimension(R.dimen.glass_capsule_height) / 2f,
+            // Frosted, the capsule stays readable over the cards with a light tint; without blur it
+            // needs a denser body
+            tint = ColorUtils.setAlphaComponent(
+                surface,
+                ((if (LiquidGlass.isBlurSupported) 0.35f else 0.72f) * 255).toInt()
+            ),
+            // Blur everything under it, cards included
+            blurRoot = binding.root
         )
         updateIndicatorColors()
         updateToolbarTitleAlpha()
@@ -451,6 +469,7 @@ class HomeFragment : MainModuleFragment() {
             listOfNotNull(
                 current.temperature?.temperature?.let { "${it.toDouble(temperatureUnit).roundToInt()}°" },
                 current.weatherText?.takeIf { it.isNotEmpty() }
+                    ?: current.weatherCode?.let { WeatherViewController.getWeatherText(it) }
             ).joinToString("  ").takeIf { it.isNotEmpty() }
         }
         updateToolbarTitleAlpha()
