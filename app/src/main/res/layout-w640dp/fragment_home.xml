@@ -27,9 +27,6 @@
                 android:background="@android:color/transparent"
                 android:elevation="0dp"
                 android:paddingEnd="@dimen/small_margin"
-                app:navigationIcon="@drawable/ic_list"
-                app:navigationContentDescription="@string/action_location_list"
-                app:navigationIconTint="?attr/colorSurfaceInverse"
                 app:titleTextColor="?attr/colorSurfaceInverse"
                 app:titleTextAppearance="?attr/textAppearanceHeadline6"
                 tools:ignore="RtlSymmetry" />
@@ -73,27 +70,79 @@
 
             </org.breezyweather.ui.common.widgets.SwipeSwitchLayout>
 
-            <!-- Floating liquid glass capsule holding the location page dots -->
+            <!--
+                Floating liquid glass bottom bar, iOS weather style:
+                edit location (start), location page dots (center), location list (end).
+            -->
             <FrameLayout
-                android:id="@+id/indicatorCapsule"
-                android:layout_width="wrap_content"
+                android:id="@+id/bottomBar"
+                android:layout_width="match_parent"
                 android:layout_height="@dimen/glass_capsule_height"
-                android:layout_gravity="bottom|center_horizontal"
+                android:layout_gravity="bottom"
+                android:layout_marginHorizontal="@dimen/glass_bottom_bar_margin_horizontal"
                 android:layout_marginBottom="@dimen/glass_capsule_margin_bottom"
-                android:minWidth="96dp"
-                android:visibility="gone"
                 app:layout_behavior="org.breezyweather.ui.common.behaviors.FloatingAboveSnackbarBehavior">
 
-                <org.breezyweather.ui.common.widgets.InkPageIndicator
-                    android:id="@+id/indicator"
+                <FrameLayout
+                    android:id="@+id/editButton"
+                    android:layout_width="@dimen/glass_capsule_height"
+                    android:layout_height="@dimen/glass_capsule_height"
+                    android:layout_gravity="start|center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="@string/action_edit_location"
+                    android:foreground="?attr/selectableItemBackgroundBorderless"
+                    android:visibility="invisible"
+                    tools:visibility="visible">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_edit"
+                        app:tint="?attr/colorSurfaceInverse" />
+                </FrameLayout>
+
+                <FrameLayout
+                    android:id="@+id/indicatorCapsule"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_gravity="center"
-                    android:layout_marginStart="22dp"
-                    android:layout_marginEnd="22dp"
-                    app:dotDiameter="8dp"
-                    app:dotGap="10dp"
-                    app:animationDuration="300" />
+                    android:minWidth="96dp"
+                    android:visibility="gone">
+
+                    <org.breezyweather.ui.common.widgets.InkPageIndicator
+                        android:id="@+id/indicator"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="22dp"
+                        android:layout_marginEnd="22dp"
+                        app:dotDiameter="8dp"
+                        app:dotGap="10dp"
+                        app:animationDuration="300" />
+
+                </FrameLayout>
+
+                <FrameLayout
+                    android:id="@+id/manageButton"
+                    android:layout_width="@dimen/glass_capsule_height"
+                    android:layout_height="@dimen/glass_capsule_height"
+                    android:layout_gravity="end|center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="@string/action_location_list"
+                    android:foreground="?attr/selectableItemBackgroundBorderless">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_list"
+                        app:tint="?attr/colorSurfaceInverse" />
+                </FrameLayout>
 
             </FrameLayout>
 

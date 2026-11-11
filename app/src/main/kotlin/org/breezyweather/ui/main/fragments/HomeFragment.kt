@@ -25,7 +25,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
@@ -202,21 +201,15 @@ class HomeFragment : MainModuleFragment() {
             )
         }
 
-        binding.toolbar.setNavigationOnClickListener {
+        // iOS weather style: no buttons up top. The toolbar only carries the compact title that fades in
+        // on scroll; the actions live in the floating glass bottom bar ("Open in another app" moved to
+        // the edit location dialog).
+        binding.editButton.setOnClickListener {
+            callback?.onEditIconClicked()
+        }
+        binding.manageButton.setOnClickListener {
             callback?.onManageIconClicked()
         }
-        binding.toolbar.inflateMenu(R.menu.activity_main)
-        binding.toolbar.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.action_edit -> callback?.onEditIconClicked()
-                R.id.action_open_in_other_app -> callback?.onOpenInOtherAppIconClicked()
-            }
-            true
-        }
-        binding.toolbar.menu.findItem(R.id.action_edit).isVisible = false
-        binding.toolbar.menu.findItem(R.id.action_open_in_other_app).isVisible = false
-        // Needed to get the icon to show the correct color depending on dark mode
-        binding.toolbar.overflowIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_more_vert)
 
         binding.switchLayout.setOnSwitchListener(switchListener)
         binding.switchLayout.reset()
@@ -224,7 +217,7 @@ class HomeFragment : MainModuleFragment() {
         // Liquid glass: the page dots always live in a floating glass capsule (no auto-hide)
         binding.indicator.alpha = 1f
         updateDayNightColors()
-        binding.indicatorCapsule.doOnApplyWindowInsets { view, insets ->
+        binding.bottomBar.doOnApplyWindowInsets { view, insets ->
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 bottomMargin = insets.bottom +
                     resources.getDimensionPixelSize(R.dimen.glass_capsule_margin_bottom)
@@ -290,12 +283,11 @@ class HomeFragment : MainModuleFragment() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.currentLocation.collect {
                     if (it?.location != null) {
-                        binding.toolbar.menu.findItem(R.id.action_edit).isVisible = true
-                        binding.toolbar.menu.findItem(R.id.action_open_in_other_app).isVisible = true
+                        binding.editButton.visibility = View.VISIBLE
                         binding.emptyText.visibility = if (it.location.weather != null) View.GONE else View.VISIBLE
                     } else {
-                        binding.toolbar.menu.findItem(R.id.action_edit).isVisible = false
-                        binding.toolbar.menu.findItem(R.id.action_open_in_other_app).isVisible = false
+                        // Keeps its slot so the dots stay centered
+                        binding.editButton.visibility = View.INVISIBLE
                         binding.emptyText.visibility = View.GONE
                     }
                     if (it?.location != lastCurrentLocation) {
@@ -337,18 +329,21 @@ class HomeFragment : MainModuleFragment() {
             requireContext().getThemeColor(com.google.android.material.R.attr.colorSurface)
         )
         val surface = requireContext().getThemeColor(com.google.android.material.R.attr.colorSurface)
-        LiquidGlass.applyFloating(
-            host = binding.indicatorCapsule,
-            cornerRadius = resources.getDimension(R.dimen.glass_capsule_height) / 2f,
-            // Frosted, the capsule stays readable over the cards with a light tint; without blur it
-            // needs a denser body
-            tint = ColorUtils.setAlphaComponent(
-                surface,
-                ((if (LiquidGlass.isBlurSupported) 0.35f else 0.72f) * 255).toInt()
-            ),
-            // Blur everything under it, cards included
-            blurRoot = binding.root
+        // Frosted, the bottom bar stays readable over the cards with a light tint; without blur it
+        // needs a denser body
+        val bottomBarTint = ColorUtils.setAlphaComponent(
+            surface,
+            ((if (LiquidGlass.isBlurSupported) 0.35f else 0.72f) * 255).toInt()
         )
+        // Capsule and circles: all fully rounded, all blurring everything under them, cards included
+        listOf(binding.editButton, binding.indicatorCapsule, binding.manageButton).forEach { host ->
+            LiquidGlass.applyFloating(
+                host = host,
+                cornerRadius = resources.getDimension(R.dimen.glass_capsule_height) / 2f,
+                tint = bottomBarTint,
+                blurRoot = binding.root
+            )
+        }
         updateIndicatorColors()
         updateToolbarTitleAlpha()
     }
