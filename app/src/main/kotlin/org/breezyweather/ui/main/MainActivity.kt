@@ -27,6 +27,7 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -45,7 +47,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.IntentCompat
@@ -480,11 +484,22 @@ class MainActivity : BreezyActivity(), HomeFragment.Callback, ManagementFragment
                         _dialogPerLocationSettingsOpen.value = false
                     },
                     title = {
-                        Text(
-                            text = stringResource(R.string.action_edit_location),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.headlineSmall
-                        )
+                        // "Open in another app" lives here now that the home screen has no top bar menu
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = stringResource(R.string.action_edit_location),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.headlineSmall,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(onClick = { onOpenInOtherAppIconClicked() }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_open_in_new),
+                                    contentDescription = stringResource(R.string.action_open_in_other_app_description),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     },
                     text = {
                         LocationPreference(

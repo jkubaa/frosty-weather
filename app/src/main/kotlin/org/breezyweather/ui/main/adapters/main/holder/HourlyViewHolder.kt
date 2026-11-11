@@ -16,38 +16,49 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.content.ContextCompat
-import androidx.core.view.children
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import breezyweather.domain.location.model.Location
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.button.MaterialButtonGroup
+import breezyweather.domain.weather.model.Hourly
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
+import org.breezyweather.common.extensions.formatMeasure
+import org.breezyweather.common.extensions.formatPercent
+import org.breezyweather.common.extensions.getHour
 import org.breezyweather.common.extensions.getThemeColor
+import org.breezyweather.common.options.appearance.DetailScreen
+import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.domain.settings.SettingsManager
-import org.breezyweather.ui.common.adapters.ButtonAdapter
-import org.breezyweather.ui.common.widgets.trend.TrendLayoutManager
-import org.breezyweather.ui.common.widgets.trend.TrendRecyclerView
-import org.breezyweather.ui.main.adapters.trend.HourlyTrendAdapter
-import org.breezyweather.ui.main.widgets.TrendRecyclerViewScrollBar
-import org.breezyweather.ui.theme.ThemeManager
+import org.breezyweather.ui.main.utils.ForecastMetric
+import org.breezyweather.ui.main.utils.ForecastMetrics
+import org.breezyweather.ui.main.utils.MetricCell
+import org.breezyweather.ui.main.widgets.MiniBarsView
+import org.breezyweather.ui.theme.resource.ResourceHelper
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
+import org.breezyweather.unit.formatting.UnitWidth
+import kotlin.time.Duration.Companion.days
 
+/**
+ * Hourly forecast, iOS weather style: the source's summary, a metric switcher (conditions,
+ * precipitation, wind... from the user's hourly trend settings), then a horizontal strip of
+ * hour / graphic / value, starting with "Now". Tapping an hour opens the details of its day.
+ */
 class HourlyViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
     LayoutInflater.from(parent.context).inflate(R.layout.container_main_hourly_trend_card, parent, false)
 ) {
     private val subtitle: TextView = itemView.findViewById(R.id.hourly_block_subtitle)
-    private val buttonGroup: MaterialButtonGroup = itemView.findViewById(R.id.hourly_block_button_group)
-    private val trendRecyclerView: TrendRecyclerView = itemView.findViewById(R.id.hourly_block_trendRecyclerView)
-    private val scrollBar: TrendRecyclerViewScrollBar = TrendRecyclerViewScrollBar()
+    private val switcher = MetricSwitcher(itemView.findViewById(R.id.hourly_block_switcher))
+    private val list: RecyclerView = itemView.findViewById(R.id.hourly_block_list)
 
     init {
-        trendRecyclerView.setHasFixedSize(true)
-        trendRecyclerView.addItemDecoration(scrollBar)
+        list.layoutManager = LinearLayoutManager(parent.context, LinearLayoutManager.HORIZONTAL, false)
+        list.setHasFixedSize(true)
     }
 
     override fun onBindView(
@@ -70,84 +81,133 @@ class HourlyViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
             subtitle.text = weather.current?.hourlyForecast
         }
 
-        val trendAdapter = HourlyTrendAdapter(activity, trendRecyclerView).apply {
-            bindData(location)
-        }
-        val buttonList: MutableList<ButtonAdapter.Button> = trendAdapter.adapters.map {
-            object : ButtonAdapter.Button {
-                override val name = it.getDisplayName(activity)
+        val metrics = ForecastMetrics.hourlyMetrics(activity, weather)
+        fun show(metric: ForecastMetric) {
+            switcher.bind(metrics, metric) {
+                setSelectedTab(activity.getString(it.nameId))
+                show(it)
             }
-        }.toMutableList()
-        selectedTab?.let { tab ->
-            buttonList.indexOfFirst { it.name == tab }.let {
-                if (it >= 0) {
-                    trendAdapter.selectedIndex = it
-                } else {
-                    setSelectedTab(null) // Reset
+            list.adapter = HourlyStripAdapter(activity, location, provider, weather.nextHourlyForecast, metric)
+        }
+        show(metrics.firstOrNull { activity.getString(it.nameId) == selectedTab } ?: ForecastMetric.CONDITIONS)
+    }
+
+    private class HourlyStripAdapter(
+        private val activity: BreezyActivity,
+        private val location: Location,
+        private val provider: ResourceProvider,
+        private val hours: List<Hourly>,
+        private val metric: ForecastMetric,
+    ) : RecyclerView.Adapter<HourlyStripAdapter.ItemViewHolder>() {
+
+        private val temperatureUnit = SettingsManager.getInstance(activity).getTemperatureUnit(activity)
+        private val contentColor = activity.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse)
+
+        class ItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val hour: TextView = itemView.findViewById(R.id.hourly_item_hour)
+            val icon: ImageView = itemView.findViewById(R.id.hourly_item_icon)
+            val precipitation: TextView = itemView.findViewById(R.id.hourly_item_precipitation)
+            val bar: MiniBarsView = itemView.findViewById(R.id.hourly_item_bar)
+            val arrow: ImageView = itemView.findViewById(R.id.hourly_item_arrow)
+            val dot: View = itemView.findViewById(R.id.hourly_item_dot)
+            val value: TextView = itemView.findViewById(R.id.hourly_item_temperature)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ItemViewHolder(
+            LayoutInflater.from(parent.context).inflate(R.layout.item_glass_hourly, parent, false)
+        )
+
+        override fun getItemCount() = hours.size
+
+        override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
+            val hourly = hours[position]
+            val isNow = position == 0
+
+            val hourLabel = if (isNow) activity.getString(R.string.hourly_now) else hourly.date.getHour(location, activity)
+            holder.hour.text = hourLabel
+
+            val description = if (metric == ForecastMetric.CONDITIONS) {
+                bindConditions(holder, hourly, isNow)
+            } else {
+                bindMetric(holder, hourly)
+            }
+            holder.itemView.contentDescription = listOfNotNull(hourLabel, description)
+                .joinToString(activity.getString(org.breezyweather.unit.R.string.locale_separator))
+
+            holder.itemView.setOnClickListener {
+                if (activity.isActivityResumed) {
+                    // Same mapping as the former trend chart: the day this hour belongs to
+                    val dailyIndex = location.weather!!.dailyForecast.indexOfFirst {
+                        it.date.time > hourly.date.time - 1.days.inWholeMilliseconds
+                    }.takeIf { it != -1 }
+                    IntentHelper.startDailyWeatherActivity(
+                        activity,
+                        location.formattedId,
+                        dailyIndex,
+                        DetailScreen.TAG_CONDITIONS
+                    )
                 }
             }
         }
 
-        if (buttonList.size < 2) {
-            buttonGroup.visibility = View.GONE
-        } else {
-            buttonGroup.visibility = View.VISIBLE
-            // Dirty trick to get the button group to actually redraw with the correct styles AND the overflow menu
-            while (
-                buttonGroup.children
-                    .filter { it is MaterialButton && it.tag != MaterialButtonGroup.OVERFLOW_BUTTON_TAG }
-                    .count() != 0
-            ) {
-                buttonGroup.children
-                    .filter { it is MaterialButton && it.tag != MaterialButtonGroup.OVERFLOW_BUTTON_TAG }
-                    .forEach {
-                        buttonGroup.removeView(it)
-                    }
-            }
-            buttonGroup.children
-                .filter { it is MaterialButton && it.tag == MaterialButtonGroup.OVERFLOW_BUTTON_TAG }
-                .forEach {
-                    it.contentDescription = context.getString(R.string.action_more)
-                }
-            buttonList.forEachIndexed { index, button ->
-                buttonGroup.addView(
-                    MaterialButton(
-                        context,
-                        null,
-                        com.google.android.material.R.attr.materialButtonStyle
-                    ).apply {
-                        text = button.name
-                        isCheckable = true
-                        isChecked = index == trendAdapter.selectedIndex
-                        setOnClickListener {
-                            trendAdapter.selectedIndex = index
-                            setSelectedTab(button.name)
-                            buttonGroup.children
-                                .filter { it is MaterialButton && it.tag != MaterialButtonGroup.OVERFLOW_BUTTON_TAG }
-                                .forEach { button ->
-                                    (button as MaterialButton).isChecked = false
-                                }
-                            isChecked = true
-                        }
-                    }
-                )
-            }
-        }
-        trendRecyclerView.layoutManager = TrendLayoutManager(context)
-        trendRecyclerView.setLineColor(
-            context.getThemeColor(com.google.android.material.R.attr.colorOutline)
-        )
-        trendRecyclerView.setTextColor(
-            ContextCompat.getColor(
-                context,
-                if (ThemeManager.isLightTheme(context, location)) R.color.colorTextGrey else R.color.colorTextGrey2nd
+        /** Icon, chance of precipitation under it, temperature. Returns the spoken description. */
+        private fun bindConditions(holder: ItemViewHolder, hourly: Hourly, isNow: Boolean): String {
+            holder.bar.visibility = View.GONE
+            holder.arrow.visibility = View.GONE
+            holder.dot.visibility = View.GONE
+            holder.icon.visibility = View.VISIBLE
+            holder.icon.setImageDrawable(
+                hourly.weatherCode?.let { ResourceHelper.getWeatherIcon(provider, it, hourly.isDaylight) }
             )
-        )
-        trendRecyclerView.adapter = trendAdapter
-        trendRecyclerView.setKeyLineVisibility(
-            SettingsManager.getInstance(context).isTrendHorizontalLinesEnabled
-        )
 
-        scrollBar.resetColor(activity)
+            val precipitation = hourly.precipitationProbability?.total
+            val precipitationLabel = GlassForecastFormat.precipitation(activity, precipitation)
+            holder.precipitation.visibility = if (precipitationLabel != null) View.VISIBLE else View.GONE
+            holder.precipitation.text = precipitationLabel
+
+            // "Now" shows the observed temperature when there is one, like the hero
+            val temperature = if (isNow) {
+                location.weather?.current?.temperature?.temperature ?: hourly.temperature?.temperature
+            } else {
+                hourly.temperature?.temperature
+            }
+            holder.value.text = temperature?.let { GlassForecastFormat.degrees(activity, it, temperatureUnit) }
+            holder.value.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 19f)
+
+            return listOfNotNull(
+                hourly.weatherText,
+                temperature?.formatMeasure(activity, temperatureUnit, unitWidth = UnitWidth.LONG),
+                precipitation?.let {
+                    activity.getString(R.string.precipitation_probability) +
+                        activity.getString(R.string.colon_separator) + it.formatPercent(activity)
+                }
+            ).joinToString(activity.getString(org.breezyweather.unit.R.string.locale_separator))
+        }
+
+        /** Graphic for the selected metric, and its value. Returns the spoken description. */
+        private fun bindMetric(holder: ItemViewHolder, hourly: Hourly): String {
+            val cell = ForecastMetrics.hourlyCell(activity, metric, hourly)
+            holder.icon.visibility = View.GONE
+            holder.precipitation.visibility = View.GONE
+            holder.bar.visibility = if (cell.graphic == MetricCell.Graphic.BAR) View.VISIBLE else View.GONE
+            holder.arrow.visibility =
+                if (cell.graphic == MetricCell.Graphic.ARROW && cell.degree != null) View.VISIBLE else View.GONE
+            holder.dot.visibility =
+                if (cell.graphic == MetricCell.Graphic.DOT && cell.text != null) View.VISIBLE else View.GONE
+
+            when (cell.graphic) {
+                MetricCell.Graphic.BAR -> holder.bar.setBars(listOf(cell.fraction), cell.color, contentColor)
+                MetricCell.Graphic.ARROW -> cell.degree?.let { holder.arrow.rotation = it }
+                MetricCell.Graphic.DOT -> holder.dot.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(cell.color)
+                }
+                MetricCell.Graphic.NONE -> Unit
+            }
+            holder.value.text = cell.text ?: "-"
+            // Values with units ("1015 hPa", "12 mph") need more room than a temperature
+            holder.value.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, if ((cell.text?.length ?: 0) > 4) 13f else 17f)
+            return activity.getString(metric.nameId) + activity.getString(R.string.colon_separator) + (cell.text ?: "-")
+        }
     }
 }

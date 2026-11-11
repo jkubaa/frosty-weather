@@ -23,18 +23,20 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.RelativeLayout
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import breezyweather.domain.location.model.Location
-import org.breezyweather.BreezyWeather
 import org.breezyweather.R
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.formatMeasure
+import org.breezyweather.domain.location.model.getPlace
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.domain.weather.model.getTemperatureRangeSummary
+import org.breezyweather.ui.common.glass.GlassText
+import org.breezyweather.unit.temperature.TemperatureUnit
 import org.breezyweather.ui.common.widgets.NumberAnimTextView
-import org.breezyweather.ui.main.widgets.TextRelativeClock
+import org.breezyweather.ui.theme.weatherView.WeatherViewController
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.UnitWidth
 import org.breezyweather.unit.formatting.format
@@ -45,9 +47,9 @@ import kotlin.time.Duration.Companion.milliseconds
 class HeaderViewHolder(parent: ViewGroup) : AbstractMainViewHolder(
     LayoutInflater.from(parent.context).inflate(R.layout.container_main_header, parent, false)
 ) {
-    private val timezoneText: TextView = itemView.findViewById(R.id.container_main_header_timezone)
-    private val refreshTimeText: TextRelativeClock = itemView.findViewById(R.id.refreshTimeText)
-    private val mTemperatureContainer: RelativeLayout = itemView.findViewById(R.id.container_main_header_temperature)
+    private val mLocationCaption: TextView = itemView.findViewById(R.id.container_main_header_location_caption)
+    private val mLocationName: TextView = itemView.findViewById(R.id.container_main_header_location_name)
+    private val mTemperatureContainer: LinearLayout = itemView.findViewById(R.id.container_main_header_temperature)
     private val mTemperature: NumberAnimTextView = itemView.findViewById(R.id.container_main_header_temperature_value)
     private val mTemperatureUnitView: TextView = itemView.findViewById(R.id.container_main_header_temperature_unit)
     private val mWeatherText: TextView = itemView.findViewById(R.id.container_main_header_weather_condition_description)
@@ -66,25 +68,23 @@ class HeaderViewHolder(parent: ViewGroup) : AbstractMainViewHolder(
     ) {
         super.onBindView(context, location, provider, listAnimationEnabled, itemAnimationEnabled)
 
-        if (BreezyWeather.instance.debugMode) {
-            timezoneText.visibility = View.VISIBLE
-            timezoneText.text = arrayOf(location.countryCode, location.timeZone.id).joinToString(
-                context.getString(R.string.dot_separator)
-            )
-        }
+        // Location
+        mLocationName.text = location.getPlace(context)
+        mLocationCaption.visibility = if (location.isCurrentPosition) View.VISIBLE else View.GONE
 
-        location.weather?.base?.refreshTime?.let {
-            refreshTimeText.visibility = View.VISIBLE
-            refreshTimeText.setDate(it)
-        } ?: run {
-            refreshTimeText.visibility = View.GONE
-        }
+        // Frosted-glass look for the two big pieces of text
+        GlassText.apply(mLocationName)
+        GlassText.apply(mTemperature)
+        GlassText.apply(mTemperatureUnitView)
 
         val temperatureUnit = SettingsManager.getInstance(context).getTemperatureUnit(context)
         location.weather?.current?.let { current ->
-            if (!current.weatherText.isNullOrEmpty()) {
+            // Apple-style: always show a condition, falling back to the generic label of the weather code
+            val conditionText = current.weatherText?.takeIf { it.isNotEmpty() }
+                ?: current.weatherCode?.let { WeatherViewController.getWeatherText(it) }
+            if (!conditionText.isNullOrEmpty()) {
                 mWeatherText.visibility = View.VISIBLE
-                mWeatherText.text = current.weatherText
+                mWeatherText.text = conditionText
             } else {
                 mWeatherText.visibility = View.GONE
             }
@@ -102,7 +102,8 @@ class HeaderViewHolder(parent: ViewGroup) : AbstractMainViewHolder(
                     .coerceAtLeast(1000.0) // at least 1 second
                     .coerceAtMost(2000.0) // no longer than 2 seconds
                     .milliseconds
-                mTemperatureUnitView.text = temperatureUnit.getNominativeUnit(context)
+                // Apple-style: a lone degree sign, the unit is set in the settings anyway
+                mTemperatureUnitView.text = "°"
             } ?: run {
                 mTemperatureContainer.visibility = View.GONE
             }
@@ -135,11 +136,24 @@ class HeaderViewHolder(parent: ViewGroup) : AbstractMainViewHolder(
             }
         }
 
-        location.weather!!.getTemperatureRangeSummary(context, location, temperatureUnit)?.let {
+        // Today's high and low, iOS style: "H:59°  L:46°"
+        val todayTemperatures = listOfNotNull(
+            location.weather!!.today?.day?.temperature?.temperature,
+            location.weather!!.today?.night?.temperature?.temperature
+        )
+        if (todayTemperatures.isNotEmpty()) {
+            val high = todayTemperatures.maxBy { it.toDouble(TemperatureUnit.CELSIUS) }
+            val low = todayTemperatures.minBy { it.toDouble(TemperatureUnit.CELSIUS) }
             mTemperatureRange.visibility = View.VISIBLE
-            mTemperatureRange.text = it.first
-            mTemperatureRange.contentDescription = it.second
-        } ?: run {
+            mTemperatureRange.text = context.getString(
+                R.string.hero_high_low,
+                GlassForecastFormat.degrees(context, high, temperatureUnit),
+                GlassForecastFormat.degrees(context, low, temperatureUnit)
+            )
+            // Spoken: keep the full sentence from the summary when there is one
+            mTemperatureRange.contentDescription =
+                location.weather!!.getTemperatureRangeSummary(context, location, temperatureUnit)?.second
+        } else {
             mTemperatureRange.visibility = View.GONE
         }
     }

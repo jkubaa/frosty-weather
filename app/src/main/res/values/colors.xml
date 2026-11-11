@@ -135,4 +135,6 @@
     <!-- Material You -->
     <color name="sys_widget_background">#DCE2F9</color>
 
+    <!-- Liquid glass: chance of precipitation under forecast icons -->
+    <color name="glass_precipitation">#FF6FD3FF</color>
 </resources>

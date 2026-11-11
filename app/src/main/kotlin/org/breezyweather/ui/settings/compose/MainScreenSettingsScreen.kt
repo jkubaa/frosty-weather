@@ -36,6 +36,7 @@ import org.breezyweather.common.options.appearance.HourlyTrendDisplay
 import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.common.utils.helpers.SnackbarHelper
 import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.common.widgets.Material3Scaffold
 import org.breezyweather.ui.common.widgets.generateCollapsedScrollBehavior
 import org.breezyweather.ui.common.widgets.insets.FitStatusBarTopAppBar
@@ -44,6 +45,7 @@ import org.breezyweather.ui.settings.preference.clickablePreferenceItem
 import org.breezyweather.ui.settings.preference.composables.ListPreferenceView
 import org.breezyweather.ui.settings.preference.composables.PreferenceScreen
 import org.breezyweather.ui.settings.preference.composables.PreferenceViewWithCard
+import org.breezyweather.ui.settings.preference.composables.SliderPreferenceView
 import org.breezyweather.ui.settings.preference.composables.SwitchPreferenceView
 import org.breezyweather.ui.settings.preference.largeSeparatorItem
 import org.breezyweather.ui.settings.preference.listPreferenceItem
@@ -142,7 +144,6 @@ fun MainScreenSettingsScreen(
                     summaryOnId = R.string.settings_enabled,
                     summaryOffId = R.string.settings_disabled,
                     checked = SettingsManager.getInstance(context).isTrendHorizontalLinesEnabled,
-                    isLast = true,
                     onValueChanged = {
                         SettingsManager.getInstance(context).isTrendHorizontalLinesEnabled = it
                         updateWidgetIfNecessary(context) // Has some widgets with it
@@ -154,6 +155,30 @@ fun MainScreenSettingsScreen(
                         ) {
                             BreezyWeather.instance.recreateAllActivities()
                         }
+                    }
+                )
+            }
+            smallSeparatorItem()
+            // Liquid glass blur strength; applies to the main screen as soon as the slider is released
+            clickablePreferenceItem(R.string.settings_main_glass_blur_title) { id ->
+                val disabledLabel = stringResource(R.string.settings_disabled)
+                SliderPreferenceView(
+                    titleId = id,
+                    value = SettingsManager.getInstance(context).glassBlurIntensity,
+                    valueRange = 0..100,
+                    steps = 9,
+                    valueLabel = { if (it == 0) disabledLabel else "$it%" },
+                    summary = stringResource(
+                        if (LiquidGlass.isBlurSupported) {
+                            R.string.settings_main_glass_blur_summary
+                        } else {
+                            R.string.settings_main_glass_blur_unsupported
+                        }
+                    ),
+                    enabled = LiquidGlass.isBlurSupported,
+                    isLast = true,
+                    onValueChanged = {
+                        SettingsManager.getInstance(context).glassBlurIntensity = it
                     }
                 )
             }

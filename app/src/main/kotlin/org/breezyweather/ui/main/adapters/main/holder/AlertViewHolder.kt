@@ -48,10 +48,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import breezyweather.domain.location.model.Location
+import com.google.android.material.card.MaterialCardView
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.utils.helpers.IntentHelper
+import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.domain.weather.model.getFormattedDates
 import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
@@ -72,6 +76,14 @@ class AlertViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
         itemAnimationEnabled: Boolean,
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
+        // Warm-tinted liquid glass for alerts
+        LiquidGlass.setTint(
+            itemView as MaterialCardView,
+            ColorUtils.setAlphaComponent(
+                ContextCompat.getColor(activity, R.color.alert_background),
+                (0.62f * 255).toInt()
+            )
+        )
 
         // Don’t show if alertList only contains alerts in the past
         if (location.weather?.alertList?.any { it.endDate == null || it.endDate!!.time > Date().time } == true) {

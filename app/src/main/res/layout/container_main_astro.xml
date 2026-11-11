@@ -59,6 +59,7 @@
 
             <ImageView
                 android:id="@+id/title_icon"
+                android:alpha="0.6"
                 android:gravity="start"
                 android:layout_width="20sp"
                 android:layout_height="20sp"
@@ -75,8 +76,11 @@
                 android:accessibilityHeading="true"
                 android:textAppearance="?attr/textAppearanceLabelLarge"
                 android:textColor="?attr/colorSurfaceInverse"
-                android:textSize="@dimen/title_text_size"
-                android:textStyle="bold"
+                android:textSize="12sp"
+                android:textAllCaps="true"
+                android:letterSpacing="0.04"
+                android:alpha="0.6"
+                android:textFontWeight="600"
                 android:ellipsize="end"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

@@ -37,6 +37,47 @@
     <string name="daily_tomorrow">Tomorrow</string>
     <string name="daily_yesterday_short">Yda</string>
     <string name="daily_today_short">Today</string>
+    <string name="hourly_now">Now</string>
+    <!-- Hero: today's high and low. %1$s: high, %2$s: low (like "H:59°  L:46°") -->
+    <string name="hero_high_low">H:%1$s  L:%2$s</string>
+    <!-- UV tile: %1$s: highest UV index in the next 24 hours, %2$s: time -->
+    <string name="tile_uv_peak">Peaks at %1$s around %2$s</string>
+    <!-- Highlights card (liquid glass redesign) -->
+    <string name="highlights">Highlights</string>
+    <string name="highlight_rain">Rain</string>
+    <string name="highlight_snow">Snow</string>
+    <!-- %1$s: Rain or Snow, %2$s: time -->
+    <string name="highlight_precipitation_around">%1$s likely around %2$s</string>
+    <!-- %1$s: Rain or Snow -->
+    <string name="highlight_precipitation_tomorrow">%1$s likely tomorrow</string>
+    <!-- %1$s: Rain or Snow, %2$s: weekday -->
+    <string name="highlight_precipitation_on">%1$s likely on %2$s</string>
+    <string name="highlight_dry">No rain expected in the coming days</string>
+    <!-- %1$s: percentage -->
+    <string name="highlight_chance">%1$s chance</string>
+    <!-- %1$s: temperature difference, like 6° -->
+    <string name="highlight_warmer_tomorrow">Tomorrow will be %1$s warmer</string>
+    <string name="highlight_cooler_tomorrow">Tomorrow will be %1$s cooler</string>
+    <!-- %1$s: today's high, %2$s: tomorrow's high -->
+    <string name="highlight_highs">High today %1$s, tomorrow %2$s</string>
+    <!-- %1$s: weekday, %2$s: temperature -->
+    <string name="highlight_warmest_day">Warmest day: %1$s, up to %2$s</string>
+    <!-- %1$s: UV index, %2$s: time -->
+    <string name="highlight_uv_peak">UV index up to %1$s around %2$s</string>
+    <!-- %1$s: wind speed, %2$s: time -->
+    <string name="highlight_gusts">Gusts up to %1$s around %2$s</string>
+    <!-- %1$s: time -->
+    <string name="highlight_sunset">Sunset at %1$s</string>
+    <string name="highlight_sunrise">Sunrise at %1$s</string>
+    <!-- Highlights gauges: short labels under each ring -->
+    <string name="highlight_label_dry">No rain</string>
+    <string name="highlight_label_coming_days">Coming days</string>
+    <string name="highlight_label_warmer">Warmer</string>
+    <string name="highlight_label_cooler">Cooler</string>
+    <string name="highlight_label_warmest">Warmest</string>
+    <string name="highlight_label_uv">UV peak</string>
+    <string name="highlight_label_sunrise">Sunrise</string>
+    <string name="highlight_label_sunset">Sunset</string>
     <string name="daily_tomorrow_short">Tmw</string>
     <string name="daily_summary">Daily summary</string>
     <!-- Charts -->
@@ -808,6 +849,10 @@
     <string name="settings_main_hourly_trends_title">Hourly trends</string>
     <string name="settings_main_section_options">Options</string>
     <string name="settings_main_threshold_lines_on_charts">Threshold lines on charts</string>
+    <!-- Liquid glass blur intensity (Frosty Weather) -->
+    <string name="settings_main_glass_blur_title">Glass blur</string>
+    <string name="settings_main_glass_blur_summary">How frosted the cards and buttons look. 0 turns the blur off.</string>
+    <string name="settings_main_glass_blur_unsupported">Needs Android 12 or newer</string>
     <string name="settings_main_section_animations">Animations</string>
     <string name="settings_main_background_title">Weather-based background</string>
     <string name="settings_main_background_animation_title">Background animation</string>

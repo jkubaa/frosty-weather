@@ -6,6 +6,7 @@ adaptiveiconview = "0.0.3"
 agp = "9.5.1"
 appcompat = "1.8.0"
 annotationJvm = "1.11.0"
+blurview = "version-2.0.6"
 breezy-datasharing-lib = "628de1cfd5395e4501da3470e95b1d3fe59ee907"
 cardview = "1.0.0"
 compose-bom = "2026.09.00"
@@ -83,6 +84,7 @@ dagger-hilt-gradle = { group = "com.google.dagger", name = "hilt-android-gradle-
 hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hilt" }
 hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hilt" }
 javapoet = { group = "com.squareup", name = "javapoet", version.ref = "javapoet" }
+blurview = { group = "com.github.Dimezis", name = "BlurView", version.ref = "blurview" }
 jjwt-api = { group = "io.jsonwebtoken", name = "jjwt-api", version.ref = "jjwt" }
 jjwt-impl = { group = "io.jsonwebtoken", name = "jjwt-impl", version.ref = "jjwt" }
 jjwt-orgjson = { group = "io.jsonwebtoken", name = "jjwt-orgjson", version.ref = "jjwt" }

@@ -1,139 +1,151 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Frosty Weather hero header (liquid glass redesign):
+    location, condition and "feels like" on the left; a big thin temperature with today's
+    high / low on the right. The name and temperature use "glassy" text (see GlassText).
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/container_main_header"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
+    android:orientation="horizontal"
     android:background="@android:color/transparent"
-    android:foreground="@drawable/selectable_item_background"
-    android:gravity="bottom"
-    android:paddingStart="@dimen/small_margin"
-    android:paddingEnd="@dimen/small_margin"
-    android:paddingBottom="@dimen/normal_margin"
+    android:baselineAligned="false"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="28dp"
     tools:ignore="UnusedAttribute">
 
+    <!-- Left: where and what -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_weight="1"
+        android:layout_gravity="bottom"
+        android:orientation="vertical">
 
-        <org.breezyweather.ui.main.widgets.TextRelativeClock
-            android:id="@+id/refreshTimeText"
-            android:textSize="@dimen/content_text_size"
-            android:textColor="?attr/colorSurfaceInverse"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:drawablePadding="6dp"
-            android:gravity="center_vertical"
-            android:drawableStart="@drawable/ic_time"
-            android:backgroundTint="?attr/colorSurfaceInverse"
-            android:layout_marginBottom="@dimen/small_margin"
-            android:layout_gravity="start"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            style="@style/large_title_text"
-            tools:text="1 minute ago"
-            tools:ignore="RelativeOverlap,RtlHardcoded" />
-
+        <!-- "⌖ CURRENT LOCATION", only for the current position -->
         <TextView
-            android:id="@+id/container_main_header_timezone"
-            android:textSize="@dimen/content_text_size"
-            android:textColor="?attr/colorSurfaceInverse"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:backgroundTint="?attr/colorSurfaceInverse"
-            android:layout_marginBottom="@dimen/small_margin"
-            android:layout_gravity="end"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:textAlignment="textEnd"
-            android:visibility="gone"
-            style="@style/large_title_text"
-            tools:text="Europe/Berlin"
-            tools:ignore="RelativeOverlap,RtlHardcoded" />
-
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/container_main_header_weather_condition_description"
-        android:textStyle="bold"
-        android:includeFontPadding="false"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/small_margin"
-        android:layout_gravity="center"
-        android:textFontWeight="300"
-        android:textAppearance="?attr/textAppearanceTitleLarge"
-        android:textColor="?attr/colorSurfaceInverse"
-        tools:text="Sunny"
-        tools:ignore="RelativeOverlap,RtlHardcoded" />
-
-    <RelativeLayout
-        android:id="@+id/container_main_header_temperature"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <org.breezyweather.ui.common.widgets.NumberAnimTextView
-            android:id="@+id/container_main_header_temperature_value"
-            android:layout_width="wrap_content"
-            android:layout_marginTop="-10dp"
-            android:textSize="@dimen/main_title_text_size"
-            android:includeFontPadding="false"
-            android:singleLine="true"
-            android:letterSpacing="0"
-            android:textStyle="bold"
-            android:textFontWeight="700"
-            android:layout_centerHorizontal="true"
-            android:importantForAccessibility="no"
-            android:textColor="?attr/colorSurfaceInverse"
-            style="@style/large_title_text"
-            tools:text="11"
-            tools:ignore="RelativeOverlap,RtlSymmetry" />
-
-        <TextView
-            android:id="@+id/container_main_header_temperature_unit"
-            android:layout_marginTop="5dp"
-            android:textSize="50sp"
-            android:textFontWeight="700"
-            android:includeFontPadding="false"
+            android:id="@+id/container_main_header_location_caption"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_toEndOf="@+id/container_main_header_temperature_value"
-            android:importantForAccessibility="no"
+            android:drawableStart="@drawable/ic_location_arrow"
+            android:drawablePadding="4dp"
+            android:drawableTint="?attr/colorSurfaceInverse"
+            android:gravity="center_vertical"
+            android:text="@string/location_current"
+            android:textAllCaps="true"
+            android:letterSpacing="0.06"
+            android:textSize="12sp"
+            android:textFontWeight="600"
+            android:alpha="0.8"
             android:textColor="?attr/colorSurfaceInverse"
-            style="@style/large_title_text"
-            tools:text="°C" />
-    </RelativeLayout>
+            android:visibility="gone"
+            tools:visibility="visible" />
 
-    <TextView
-        android:id="@+id/container_main_header_feels_like"
-        android:textStyle="bold"
+        <TextView
+            android:id="@+id/container_main_header_location_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:lineSpacingMultiplier="0.95"
+            android:textSize="@dimen/glass_hero_location_text_size"
+            android:textFontWeight="600"
+            android:textColor="?attr/colorSurfaceInverse"
+            android:shadowColor="#33000000"
+            android:shadowRadius="14"
+            tools:text="Cupertino" />
+
+        <TextView
+            android:id="@+id/container_main_header_weather_condition_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="17sp"
+            android:textFontWeight="500"
+            android:textColor="?attr/colorSurfaceInverse"
+            android:shadowColor="#26000000"
+            android:shadowRadius="8"
+            tools:text="Mostly Clear" />
+
+        <TextView
+            android:id="@+id/container_main_header_feels_like"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="15sp"
+            android:alpha="0.75"
+            android:textColor="?attr/colorSurfaceInverse"
+            tools:text="Feels like 18°" />
+    </LinearLayout>
+
+    <!-- Right: how warm -->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:textFontWeight="300"
-        android:layout_marginTop="-10dp"
-        android:layout_marginBottom="8dp"
-        android:textAppearance="?attr/textAppearanceTitleLarge"
-        android:textColor="?attr/colorSurfaceInverse"
-        tools:text="Feels like 18°"
-        tools:ignore="RelativeOverlap,RtlHardcoded" />
+        android:layout_gravity="bottom"
+        android:layout_marginStart="12dp"
+        android:gravity="end"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/container_main_header_temperature_range"
-        android:textStyle="bold"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:textFontWeight="300"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        android:textColor="?attr/colorSurfaceInverse"
-        tools:text="Day: 30° • Night: 14°"
-        tools:ignore="RelativeOverlap,RtlHardcoded" />
+        <LinearLayout
+            android:id="@+id/container_main_header_temperature"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <org.breezyweather.ui.common.widgets.NumberAnimTextView
+                android:id="@+id/container_main_header_temperature_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/glass_hero_temperature_text_size"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:letterSpacing="-0.03"
+                android:textFontWeight="200"
+                android:importantForAccessibility="no"
+                android:textColor="?attr/colorSurfaceInverse"
+                android:shadowColor="#26000000"
+                android:shadowRadius="16"
+                tools:text="53" />
+
+            <TextView
+                android:id="@+id/container_main_header_temperature_unit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textSize="@dimen/glass_hero_temperature_unit_text_size"
+                android:textFontWeight="200"
+                android:includeFontPadding="false"
+                android:importantForAccessibility="no"
+                android:textColor="?attr/colorSurfaceInverse"
+                android:shadowColor="#26000000"
+                android:shadowRadius="16"
+                android:text="°" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/container_main_header_temperature_range"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:maxLines="1"
+            android:textSize="15sp"
+            android:textFontWeight="500"
+            android:textColor="?attr/colorSurfaceInverse"
+            android:shadowColor="#26000000"
+            android:shadowRadius="8"
+            tools:text="H:59°  L:46°" />
+    </LinearLayout>
 
 </LinearLayout>

@@ -19,15 +19,14 @@ package org.breezyweather.ui.main.fragments
 import android.animation.Animator
 import android.annotation.SuppressLint
 import android.content.res.Configuration
-import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
+import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -42,16 +41,17 @@ import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.activities.livedata.EqualtableLiveData
 import org.breezyweather.common.extensions.density
 import org.breezyweather.common.extensions.doOnApplyWindowInsets
+import org.breezyweather.common.extensions.dpToPx
 import org.breezyweather.common.extensions.getBlocksPerRow
 import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.common.extensions.isDarkMode
 import org.breezyweather.common.extensions.isMotionReduced
-import org.breezyweather.common.extensions.isTabletDevice
 import org.breezyweather.common.extensions.setSystemBarStyle
 import org.breezyweather.common.options.appearance.BackgroundAnimationMode
 import org.breezyweather.databinding.FragmentHomeBinding
 import org.breezyweather.domain.location.model.getPlace
 import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.common.widgets.SwipeSwitchLayout
 import org.breezyweather.ui.main.MainActivity
 import org.breezyweather.ui.main.MainActivityViewModel
@@ -64,6 +64,7 @@ import org.breezyweather.ui.theme.resource.ResourcesProviderFactory
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.ui.theme.weatherView.WeatherView
 import org.breezyweather.ui.theme.weatherView.WeatherViewController
+import kotlin.math.roundToInt
 
 class HomeFragment : MainModuleFragment() {
 
@@ -79,6 +80,7 @@ class HomeFragment : MainModuleFragment() {
     private val previewOffset = EqualtableLiveData(0)
     private var callback: Callback? = null
     private var lastCurrentLocation: Location? = null
+    private var toolbarTitleFraction = 0f
 
     interface Callback {
         fun onEditIconClicked()
@@ -100,8 +102,16 @@ class HomeFragment : MainModuleFragment() {
             .getInstance(requireContext())
             .weatherThemeDelegate
             .getWeatherView(requireContext())
+        // The weather view lives in its own container: it is the backdrop the liquid glass cards blur
+        val glassBackdrop = FrameLayout(requireContext()).apply {
+            id = R.id.glass_backdrop
+            addView(
+                weatherView as View,
+                FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            )
+        }
         (binding.switchLayout.parent.parent.parent as CoordinatorLayout).addView(
-            weatherView as View,
+            glassBackdrop,
             0,
             CoordinatorLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -190,33 +200,27 @@ class HomeFragment : MainModuleFragment() {
             )
         }
 
-        binding.toolbar.setNavigationOnClickListener {
+        // iOS weather style: no buttons up top. The toolbar only carries the compact title that fades in
+        // on scroll; the actions live in the floating glass bottom bar ("Open in another app" moved to
+        // the edit location dialog).
+        binding.editButton.setOnClickListener {
+            callback?.onEditIconClicked()
+        }
+        binding.manageButton.setOnClickListener {
             callback?.onManageIconClicked()
         }
-        binding.toolbar.inflateMenu(R.menu.activity_main)
-        binding.toolbar.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.action_edit -> callback?.onEditIconClicked()
-                R.id.action_open_in_other_app -> callback?.onOpenInOtherAppIconClicked()
-            }
-            true
-        }
-        binding.toolbar.menu.findItem(R.id.action_edit).isVisible = false
-        binding.toolbar.menu.findItem(R.id.action_open_in_other_app).isVisible = false
-        // Needed to get the icon to show the correct color depending on dark mode
-        binding.toolbar.overflowIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_more_vert)
 
         binding.switchLayout.setOnSwitchListener(switchListener)
         binding.switchLayout.reset()
         binding.indicator.setSwitchView(binding.switchLayout)
-        binding.indicator.setCurrentIndicatorColor(Color.WHITE)
-        binding.indicator.setIndicatorColor(
-            ColorUtils.setAlphaComponent(Color.WHITE, (0.5 * 255).toInt())
-        )
-        binding.indicator.doOnApplyWindowInsets { view, insets ->
-            view.updatePadding(
-                bottom = insets.bottom
-            )
+        // Liquid glass: the page dots always live in a floating glass capsule (no auto-hide)
+        binding.indicator.alpha = 1f
+        updateDayNightColors()
+        binding.bottomBar.doOnApplyWindowInsets { view, insets ->
+            view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = insets.bottom +
+                    resources.getDimensionPixelSize(R.dimen.glass_capsule_margin_bottom)
+            }
         }
 
         binding.refreshLayout.setOnRefreshListener {
@@ -263,10 +267,12 @@ class HomeFragment : MainModuleFragment() {
             }
         }
         binding.recyclerView.doOnApplyWindowInsets { view, insets ->
-            view.updatePadding(bottom = insets.bottom)
+            // Leave room for the floating glass capsule
+            view.updatePadding(
+                bottom = insets.bottom + resources.getDimensionPixelSize(R.dimen.glass_capsule_content_clearance)
+            )
         }
         binding.recyclerView.addOnScrollListener(OnScrollListener().also { scrollListener = it })
-        binding.recyclerView.setOnTouchListener(indicatorStateListener)
 
         if (isAdded && context != null) {
             updatePreviewSubviews()
@@ -276,12 +282,11 @@ class HomeFragment : MainModuleFragment() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.currentLocation.collect {
                     if (it?.location != null) {
-                        binding.toolbar.menu.findItem(R.id.action_edit).isVisible = true
-                        binding.toolbar.menu.findItem(R.id.action_open_in_other_app).isVisible = true
+                        binding.editButton.visibility = View.VISIBLE
                         binding.emptyText.visibility = if (it.location.weather != null) View.GONE else View.VISIBLE
                     } else {
-                        binding.toolbar.menu.findItem(R.id.action_edit).isVisible = false
-                        binding.toolbar.menu.findItem(R.id.action_open_in_other_app).isVisible = false
+                        // Keeps its slot so the dots stay centered
+                        binding.editButton.visibility = View.INVISIBLE
                         binding.emptyText.visibility = View.GONE
                     }
                     if (it?.location != lastCurrentLocation) {
@@ -312,7 +317,7 @@ class HomeFragment : MainModuleFragment() {
                         binding.indicator.setSwitchView(binding.switchLayout)
                     }
 
-                    binding.indicator.visibility = if (it.total > 1) View.VISIBLE else View.GONE
+                    binding.indicatorCapsule.visibility = if (it.total > 1) View.VISIBLE else View.GONE
                 }
             }
         }
@@ -321,6 +326,46 @@ class HomeFragment : MainModuleFragment() {
     private fun updateDayNightColors() {
         binding.refreshLayout.setProgressBackgroundColorSchemeColor(
             requireContext().getThemeColor(com.google.android.material.R.attr.colorSurface)
+        )
+        val surface = requireContext().getThemeColor(com.google.android.material.R.attr.colorSurface)
+        // Frosted, the bottom bar stays readable over the cards with a light tint; without blur it
+        // needs a denser body
+        val bottomBarTint = ColorUtils.setAlphaComponent(
+            surface,
+            ((if (LiquidGlass.isBlurEnabled(requireContext())) 0.35f else 0.72f) * 255).toInt()
+        )
+        // Capsule and circles: all fully rounded, all blurring everything under them, cards included
+        listOf(binding.editButton, binding.indicatorCapsule, binding.manageButton).forEach { host ->
+            LiquidGlass.applyFloating(
+                host = host,
+                cornerRadius = resources.getDimension(R.dimen.glass_capsule_height) / 2f,
+                tint = bottomBarTint,
+                blurRoot = binding.root
+            )
+        }
+        updateIndicatorColors()
+        updateToolbarTitleAlpha()
+    }
+
+    private fun updateIndicatorColors() {
+        val contentColor = requireContext().getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse)
+        binding.indicator.setCurrentIndicatorColor(contentColor)
+        binding.indicator.setIndicatorColor(
+            ColorUtils.setAlphaComponent(contentColor, (0.35 * 255).toInt())
+        )
+    }
+
+    /**
+     * The location name is shown big in the hero header, so the toolbar title stays invisible
+     * until the header scrolls away, then fades in as a compact "name / 22° Sunny" title.
+     */
+    private fun updateToolbarTitleAlpha() {
+        val contentColor = requireContext().getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse)
+        binding.toolbar.setTitleTextColor(
+            ColorUtils.setAlphaComponent(contentColor, (toolbarTitleFraction * 255).roundToInt())
+        )
+        binding.toolbar.setSubtitleTextColor(
+            ColorUtils.setAlphaComponent(contentColor, (toolbarTitleFraction * 0.8f * 255).roundToInt())
         )
     }
 
@@ -347,6 +392,9 @@ class HomeFragment : MainModuleFragment() {
             recyclerViewAnimator = null
         }
 
+        // The content is rebuilt from the top (hero visible): hide the compact title, which would
+        // otherwise keep the visibility of the previous scroll position
+        toolbarTitleFraction = 0f
         updateDayNightColors()
 
         binding.switchLayout.reset()
@@ -356,8 +404,6 @@ class HomeFragment : MainModuleFragment() {
             adapter!!.notifyDataSetChanged()
             return
         }
-
-        binding.recyclerView.setOnTouchListener(null)
 
         val listAnimationEnabled = SettingsManager
             .getInstance(requireContext())
@@ -408,13 +454,23 @@ class HomeFragment : MainModuleFragment() {
             WeatherView.WEATHER_KIND_NULL
         }
 
-        // Show "current position" icon:
-        // - On the left on mobile because it might not be visible on small displays otherwise
-        // - On the right on tablet because on the left it would be confused with the action icon
-        binding.toolbar.title =
-            (if (location?.isCurrentPosition == true && !requireContext().isTabletDevice) "⊙ " else "") +
-            (location?.getPlace(requireContext()) ?: "") +
-            (if (location?.isCurrentPosition == true && requireContext().isTabletDevice) " ⊙" else "")
+        // Compact title, name only: the current location is marked by the arrow in the hero and in the
+        // page dots (no more "⊙" prefix)
+        binding.toolbar.title = location?.getPlace(requireContext()) ?: ""
+        // iOS style: the current location's page shows an arrow instead of a dot
+        binding.indicator.arrowIndex = viewModel.validLocationList.value
+            .indexOfFirst { it.isCurrentPosition }
+            .takeIf { it >= 0 }
+
+        binding.toolbar.subtitle = location?.weather?.current?.let { current ->
+            val temperatureUnit = SettingsManager.getInstance(requireContext()).getTemperatureUnit(requireContext())
+            listOfNotNull(
+                current.temperature?.temperature?.let { "${it.toDouble(temperatureUnit).roundToInt()}°" },
+                current.weatherText?.takeIf { it.isNotEmpty() }
+                    ?: current.weatherCode?.let { WeatherViewController.getWeatherText(it) }
+            ).joinToString("  ").takeIf { it.isNotEmpty() }
+        }
+        updateToolbarTitleAlpha()
 
         weatherView.setWeather(backgroundWeatherKind, daylight, requireContext().isDarkMode)
         binding.refreshLayout.setColorSchemeColors(
@@ -456,27 +512,11 @@ class HomeFragment : MainModuleFragment() {
         this.callback = callback
     }
 
-    // on touch listener.
-
-    @SuppressLint("ClickableViewAccessibility")
-    private val indicatorStateListener = View.OnTouchListener { _, event ->
-        when (event.action) {
-            MotionEvent.ACTION_MOVE ->
-                binding.indicator.setDisplayState(true)
-
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
-                binding.indicator.setDisplayState(false)
-        }
-        false
-    }
-
     // on swipe listener (swipe switch layout).
 
     private val switchListener = object : SwipeSwitchLayout.OnSwitchListener {
 
         override fun onSwiped(swipeDirection: Int, progress: Float) {
-            binding.indicator.setDisplayState(progress != 0f)
-
             if (progress >= 1) {
                 previewOffset.setValue(
                     if (swipeDirection == SwipeSwitchLayout.SWIPE_DIRECTION_LEFT) 1 else -1
@@ -487,8 +527,6 @@ class HomeFragment : MainModuleFragment() {
         }
 
         override fun onSwitched(swipeDirection: Int) {
-            binding.indicator.setDisplayState(false)
-
             viewModel.offsetLocation(
                 if (swipeDirection == SwipeSwitchLayout.SWIPE_DIRECTION_LEFT) 1 else -1
             )
@@ -515,6 +553,15 @@ class HomeFragment : MainModuleFragment() {
         override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
             mScrollY = recyclerView.computeVerticalScrollOffset()
             weatherView.onScroll(mScrollY)
+
+            // Fade the compact toolbar title in once the hero header has mostly scrolled away
+            val fadeStart = recyclerView.context.dpToPx(TOOLBAR_TITLE_FADE_START_DP)
+            val fadeLength = recyclerView.context.dpToPx(TOOLBAR_TITLE_FADE_LENGTH_DP)
+            val fraction = ((mScrollY - fadeStart) / fadeLength).coerceIn(0f, 1f)
+            if (fraction != toolbarTitleFraction) {
+                toolbarTitleFraction = fraction
+                updateToolbarTitleAlpha()
+            }
             adapter?.onScroll()
         }
     }
@@ -522,5 +569,8 @@ class HomeFragment : MainModuleFragment() {
     companion object {
         // 60 is 5 * 4 * 3, which allows us to divide from 1, 2, 3, 4 or 5 and have a whole number
         const val GRID_SPAN_COUNT = 60
+
+        private const val TOOLBAR_TITLE_FADE_START_DP = 70f
+        private const val TOOLBAR_TITLE_FADE_LENGTH_DP = 60f
     }
 }

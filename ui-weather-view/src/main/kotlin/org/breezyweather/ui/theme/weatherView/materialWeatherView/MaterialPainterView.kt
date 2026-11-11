@@ -27,7 +27,6 @@ import android.view.OrientationEventListener
 import android.view.View
 import androidx.annotation.FloatRange
 import androidx.annotation.Size
-import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.withTranslation
 import org.breezyweather.ui.theme.weatherView.WeatherView.WeatherKindRule
 import org.breezyweather.ui.theme.weatherView.isLandscape
@@ -315,14 +314,11 @@ class MaterialPainterView(
         postInvalidate()
     }
 
+    /** iOS-weather-like sky gradient, with day and night colors for every weather kind. */
     private fun getWeatherBackgroundDrawable(
         weatherKind: Int,
         daylight: Boolean,
-    ) = ResourcesCompat.getDrawable(
-        resources,
-        WeatherImplementorFactory.getBackgroundId(weatherKind, daylight),
-        null
-    )
+    ) = SkyPalette.gradient(weatherKind, daylight)
 
     private fun setWeatherImplementor() {
         hasDrawn = false

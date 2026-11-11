@@ -16,9 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.core.graphics.ColorUtils
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
@@ -29,18 +27,11 @@ import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.common.options.appearance.DetailScreen
 import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.domain.settings.SettingsManager
-import org.breezyweather.ui.common.widgets.ArcProgress
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.UnitWidth
 
-class PressureViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
-    LayoutInflater.from(parent.context).inflate(R.layout.container_main_pressure, parent, false)
-) {
-    private val pressureValueView: TextView = itemView.findViewById(R.id.pressure_value)
-    private val pressureUnitView: TextView = itemView.findViewById(R.id.pressure_unit)
-    private val pressureProgress: ArcProgress = itemView.findViewById(R.id.pressure_progress)
-    private var mPressure = 963f
-    private var mEnable = false
+/** Pressure tile: value, unit, and where it sits between low and high pressure. */
+class PressureViewHolder(parent: ViewGroup) : GlassTileViewHolder(parent, R.drawable.ic_gauge, R.string.pressure) {
 
     override fun onBindView(
         activity: BreezyActivity,
@@ -51,27 +42,39 @@ class PressureViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
 
+        val pressure = location.weather!!.current?.pressure
+        val pressureUnit = SettingsManager.getInstance(context).getPressureUnit(context)
+        setValue(pressure?.formatValue(context))
+        setLabel(pressure?.let { pressureUnit.getNominativeUnit(context) })
+        // Neutral scale: pressure is neither good nor bad, just low or high
+        val content = context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse)
+        showScale(
+            intArrayOf(ColorUtils.setAlphaComponent(content, 60), ColorUtils.setAlphaComponent(content, 160)),
+            pressure?.let { ((it.inHectopascals - LOW_HPA) / (HIGH_HPA - LOW_HPA)).toFloat() }
+        )
+        setAccent(TileColors.PRESSURE)
+        // Trend over the next 3 hours
+        val later = location.weather!!.nextHourlyForecast.getOrNull(3)?.pressure
+        setDescription(
+            if (pressure != null && later != null) {
+                val change = later.inHectopascals - pressure.inHectopascals
+                context.getString(
+                    when {
+                        change > TREND_THRESHOLD_HPA -> R.string.pressure_rising
+                        change < -TREND_THRESHOLD_HPA -> R.string.pressure_falling
+                        else -> R.string.pressure_steady
+                    }
+                )
+            } else {
+                null
+            }
+        )
+
         val talkBackBuilder = StringBuilder(context.getString(R.string.pressure))
-        location.weather!!.current?.pressure?.let {
-            val pressureUnit = SettingsManager.getInstance(context).getPressureUnit(context)
-            mPressure = it.inHectopascals.toFloat()
-            mEnable = true
-            pressureProgress.apply {
-                progress = mPressure.minus(963f)
-                pressureValueView.text = it.formatValue(context)
-            }
-            val pressureColor = context.getThemeColor(androidx.appcompat.R.attr.colorPrimary)
-            pressureProgress.apply {
-                setProgressColor(pressureColor)
-                setArcBackgroundColor(ColorUtils.setAlphaComponent(pressureColor, (255 * 0.1).toInt()))
-                max = 100f
-            }
-
-            pressureUnitView.text = pressureUnit.getNominativeUnit(context)
+        pressure?.let {
             talkBackBuilder.append(context.getString(R.string.colon_separator))
-            talkBackBuilder.append(it.formatMeasure(context, unitWidth = UnitWidth.LONG))
+                .append(it.formatMeasure(context, unitWidth = UnitWidth.LONG))
         }
-
         itemView.contentDescription = talkBackBuilder.toString()
         itemView.setOnClickListener {
             IntentHelper.startDailyWeatherActivity(
@@ -81,5 +84,14 @@ class PressureViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
                 DetailScreen.TAG_PRESSURE
             )
         }
+    }
+
+    companion object {
+        // Same range the former gauge used
+        private const val LOW_HPA = 963.0
+        private const val HIGH_HPA = 1063.0
+
+        // Change over 3 hours below which pressure counts as steady
+        private const val TREND_THRESHOLD_HPA = 1.0
     }
 }

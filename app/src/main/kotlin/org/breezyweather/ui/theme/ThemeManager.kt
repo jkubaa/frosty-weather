@@ -50,13 +50,18 @@ class ThemeManager private constructor(
             return instance!!
         }
 
+        /**
+         * Theme of the screens showing a location (main screen, details, alerts).
+         *
+         * Frosty Weather: those screens sit on iOS-weather-like skies, which are mid-to-dark tones
+         * day and night and need white text, so they use the dark theme around the clock. Only an
+         * explicit "Always light" keeps the light theme during the day.
+         * (Widgets and dialogs keep the daylight-based [isLightTheme] below.)
+         */
         fun isLightTheme(
             context: Context,
             location: Location?,
-        ) = isLightTheme(
-            context = context,
-            daylight = location?.isDaylight
-        )
+        ) = SettingsManager.getInstance(context).darkMode == DarkMode.LIGHT && location?.isDaylight == true
 
         /**
          * When dark mode is “Always light”, locations are light theme during the day, and dark theme during the night

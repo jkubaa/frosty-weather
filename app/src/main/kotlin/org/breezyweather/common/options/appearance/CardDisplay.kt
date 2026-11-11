@@ -30,6 +30,7 @@ enum class CardDisplay(
 ) : BaseEnum {
 
     CARD_NOWCAST("nowcast", R.string.precipitation_nowcasting),
+    CARD_HIGHLIGHTS("highlights", R.string.highlights),
     CARD_DAILY_FORECAST(
         "daily_forecast",
         R.string.daily_forecast,

@@ -26,7 +26,6 @@ import androidx.core.graphics.ColorUtils
 import androidx.core.view.isNotEmpty
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ItemDecoration
-import org.breezyweather.R
 import org.breezyweather.common.extensions.getThemeColor
 
 class TrendRecyclerViewScrollBar : ItemDecoration() {
@@ -44,17 +43,11 @@ class TrendRecyclerViewScrollBar : ItemDecoration() {
     private var mCenterColor = 0
     fun resetColor(context: Context) {
         mThemeChanged = true
-        mEndPointsColor = context.getThemeColor(R.attr.colorMainCardBackground)
-        mCenterColor = org.breezyweather.common.utils.ColorUtils.blendColor(
-            // lightTheme
-            //        ? Color.argb((int) (0.02 * 255), 0, 0, 0)
-            //        : Color.argb((int) (0.08 * 255), 0, 0, 0),
-            ColorUtils.setAlphaComponent(
-                context.getThemeColor(androidx.appcompat.R.attr.colorPrimary),
-                (0.05 * 255).toInt()
-            ),
-            context.getThemeColor(R.attr.colorMainCardBackground)
-        )
+        // Liquid glass: the cards are translucent, so the highlight must be too (an opaque card color
+        // would show up as a solid column). A faint content-colored wash fading out at both ends.
+        val contentColor = context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse)
+        mEndPointsColor = ColorUtils.setAlphaComponent(contentColor, 0)
+        mCenterColor = ColorUtils.setAlphaComponent(contentColor, (0.10 * 255).toInt())
     }
 
     override fun onDraw(

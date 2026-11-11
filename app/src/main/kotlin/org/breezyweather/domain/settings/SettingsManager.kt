@@ -58,7 +58,11 @@ class SettingsManager private constructor(
             return instance!!
         }
 
+        /** Softer than the first frosted version (which used the equivalent of 72), per user feedback. */
+        const val DEFAULT_GLASS_BLUR_INTENSITY = 40
+
         const val DEFAULT_CARD_DISPLAY = "nowcast" +
+            "&highlights" +
             "&daily_forecast" +
             "&hourly_forecast" +
             "&precipitation" +
@@ -322,6 +326,14 @@ class SettingsManager private constructor(
             notifySettingsChanged()
         }
         get() = config.getBoolean("main_screen_background", true)
+
+    /** Liquid glass blur strength, from 0 (no blur, tinted glass only) to 100. */
+    var glassBlurIntensity: Int
+        set(value) {
+            config.edit().putInt("glass_blur_intensity", value.coerceIn(0, 100)).apply()
+            notifySettingsChanged()
+        }
+        get() = config.getInt("glass_blur_intensity", DEFAULT_GLASS_BLUR_INTENSITY)
 
     var isTrendHorizontalLinesEnabled: Boolean
         set(value) {
