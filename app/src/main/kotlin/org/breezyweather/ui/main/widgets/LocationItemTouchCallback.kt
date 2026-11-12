@@ -28,6 +28,7 @@ import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.utils.helpers.SnackbarHelper
 import org.breezyweather.ui.common.widgets.slidingItem.SlidingItemTouchCallback
 import org.breezyweather.ui.main.MainActivityViewModel
+import org.breezyweather.ui.main.adapters.location.LocationHolder
 
 class LocationItemTouchCallback(
     private val mActivity: BreezyActivity,
@@ -69,12 +70,19 @@ class LocationItemTouchCallback(
         }
     }
 
+    override fun getMovementFlags(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
+        // The list header neither moves nor swipes
+        return if (viewHolder is LocationHolder) super.getMovementFlags(recyclerView, viewHolder) else 0
+    }
+
     override fun onMove(
         recyclerView: RecyclerView,
         viewHolder: RecyclerView.ViewHolder,
         target: RecyclerView.ViewHolder,
     ): Boolean {
-        if (mViewModel.loading.value) {
+        if (target !is LocationHolder) {
+            return false
+        } else if (mViewModel.loading.value) {
             SnackbarHelper.showSnackbar(mActivity.getString(R.string.message_please_wait_refresh))
             return false
         } else {

@@ -43,6 +43,14 @@
     <!-- UV tile: %1$s: highest UV index in the next 24 hours, %2$s: time -->
     <string name="tile_uv_peak">Peaks at %1$s around %2$s</string>
     <!-- Highlights card (liquid glass redesign) -->
+    <!-- Locations list (liquid glass redesign) -->
+    <string name="location_list_search_hint">Search for a city or place</string>
+    <string name="location_list_hint">Touch and hold a location to move it. Swipe it to edit or delete.</string>
+    <string name="location_list_debug" translatable="false">Debug location</string>
+    <!-- Location search (iOS style) -->
+    <string name="location_search_clear">Clear</string>
+    <string name="location_search_no_results_title">No Results</string>
+    <string name="location_search_press_search">Press search on the keyboard to look up places with this source.</string>
     <string name="highlights">Highlights</string>
     <string name="highlight_rain">Rain</string>
     <string name="highlight_snow">Snow</string>

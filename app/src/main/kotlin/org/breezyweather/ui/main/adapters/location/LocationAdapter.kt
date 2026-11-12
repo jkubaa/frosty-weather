@@ -24,8 +24,6 @@ import breezyweather.domain.location.model.Location
 import org.breezyweather.databinding.ItemLocationCardBinding
 import org.breezyweather.sources.SourceManager
 import org.breezyweather.ui.common.adapters.SyncListAdapter
-import org.breezyweather.ui.theme.resource.ResourcesProviderFactory
-import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 
 /**
  * Location adapter.
@@ -36,7 +34,6 @@ class LocationAdapter(
     selectedId: String?,
     private val sourceManager: SourceManager,
     private val mClickListener: (String) -> Unit,
-    private val mDragListener: (LocationHolder) -> Unit,
 ) : SyncListAdapter<LocationModel, LocationHolder>(
     ArrayList(),
     object : DiffUtil.ItemCallback<LocationModel>() {
@@ -49,26 +46,23 @@ class LocationAdapter(
         }
     }
 ) {
-    private val mResourceProvider: ResourceProvider = ResourcesProviderFactory.newInstance
-
     init {
         update(locationList, selectedId)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LocationHolder {
         return LocationHolder(
-            ItemLocationCardBinding.inflate(LayoutInflater.from(parent.context)),
-            mClickListener,
-            mDragListener
+            ItemLocationCardBinding.inflate(LayoutInflater.from(parent.context), parent, false),
+            mClickListener
         )
     }
 
     override fun onBindViewHolder(holder: LocationHolder, position: Int) {
-        holder.onBindView(mContext, getItem(position), mResourceProvider)
+        holder.onBindView(mContext, getItem(position))
     }
 
     override fun onBindViewHolder(holder: LocationHolder, position: Int, payloads: List<Any>) {
-        holder.onBindView(mContext, getItem(position), mResourceProvider)
+        holder.onBindView(mContext, getItem(position))
     }
 
     fun update(selectedId: String?) {

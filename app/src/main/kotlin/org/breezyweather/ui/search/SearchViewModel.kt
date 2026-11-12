@@ -17,6 +17,7 @@
 package org.breezyweather.ui.search
 
 import android.app.Application
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.location.model.LocationAddressInfo
@@ -54,6 +55,10 @@ class SearchViewModel @Inject constructor(
     private val _isLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
     private val mRepository: SearchActivityRepository = repository
+
+    /** Text typed in the search field, and the last query searched for. */
+    val query = mutableStateOf("")
+    val latestSearch = mutableStateOf("")
 
     fun requestLocationList(str: String) {
         mRepository.cancel()
@@ -98,7 +103,14 @@ class SearchViewModel @Inject constructor(
                 }
             }
         }
-        _listResource.value = Pair(emptyList(), LoadableLocationStatus.LOADING)
+        // Keep the current results while the next ones load, so they don't flash away at every keystroke
+        _listResource.value = Pair(_listResource.value.first, LoadableLocationStatus.LOADING)
+    }
+
+    /** Query too short: no results, and no request in flight. */
+    fun clearLocationList() {
+        mRepository.cancel()
+        _listResource.value = Pair(emptyList(), LoadableLocationStatus.SUCCESS)
     }
 
     fun setEnabledSource(locSearchSource: String) {

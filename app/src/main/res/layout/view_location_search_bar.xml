@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Liquid glass search capsule of the location list (see LiquidGlass.applyFloating): the cards
+  scrolling under it are blurred and refracted, like under the home screen's bottom bar.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/location_search_bar_height"
+    android:clickable="true"
+    android:focusable="true"
+    android:contentDescription="@string/location_list_search_hint"
+    android:foreground="?attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:importantForAccessibility="noHideDescendants">
+
+        <ImageView
+            android:id="@+id/search_icon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_search"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:id="@+id/search_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="@string/location_list_search_hint"
+            android:textSize="17sp" />
+
+    </LinearLayout>
+
+</FrameLayout>

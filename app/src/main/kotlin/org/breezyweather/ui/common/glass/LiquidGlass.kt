@@ -18,6 +18,7 @@ package org.breezyweather.ui.common.glass
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.content.res.Resources
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorFilter
@@ -49,7 +50,8 @@ import org.breezyweather.domain.settings.SettingsManager
  * It is made of two layers:
  * 1. a translucent tinted body (drawn by the host, e.g. the card background color, or the frosted
  *    blur layer),
- * 2. a soft specular sheen falling from the top edge.
+ * 2. soft, identical rims of light along the top and bottom edges (light caught at both rims, which
+ *    makes the panel read as a thick, rounded piece of glass).
  *
  * There is deliberately no outline: the edge comes from the contrast between the frosted body and
  * the background.
@@ -72,6 +74,9 @@ class LiquidGlassDrawable(
     private val sheenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
     }
+    private val bottomGlowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+    }
 
     fun setCornerRadius(radius: Float) {
         if (radius != cornerRadius) {
@@ -86,21 +91,20 @@ class LiquidGlassDrawable(
 
         val top = bounds.top.toFloat()
         val height = bounds.height().toFloat().coerceAtLeast(1f)
-        // Sheen: a faint brightening at the top edge, gone within ~30% of the panel height
-        // (toned down from the first version, which read as a visible gradient band)
-        sheenPaint.shader = LinearGradient(
-            0f,
-            top,
-            0f,
-            top + height * 0.3f,
-            intArrayOf(
-                Color.argb(if (isLight) 28 else 14, 255, 255, 255),
-                Color.argb(if (isLight) 6 else 3, 255, 255, 255),
-                Color.TRANSPARENT
-            ),
-            floatArrayOf(0f, 0.4f, 1f),
-            Shader.TileMode.CLAMP
+        val density = Resources.getSystem().displayMetrics.density
+        // Rims of light, identical at the top and the bottom so the glass looks evenly lit: same
+        // brightness, same depth (fixed, so big cards don't get a wide band, and capped by the height
+        // so small buttons keep a clear middle), brightest right at the edge.
+        val depth = minOf(height * RIM_DEPTH_FRACTION, RIM_MAX_DEPTH_DP * density)
+        val colors = intArrayOf(
+            Color.argb(if (isLight) 40 else 26, 255, 255, 255),
+            Color.argb(if (isLight) 10 else 6, 255, 255, 255),
+            Color.TRANSPARENT
         )
+        val stops = floatArrayOf(0f, 0.4f, 1f)
+        sheenPaint.shader = LinearGradient(0f, top, 0f, top + depth, colors, stops, Shader.TileMode.CLAMP)
+        val bottom = bounds.bottom.toFloat()
+        bottomGlowPaint.shader = LinearGradient(0f, bottom, 0f, bottom - depth, colors, stops, Shader.TileMode.CLAMP)
     }
 
     override fun draw(canvas: Canvas) {
@@ -109,17 +113,20 @@ class LiquidGlassDrawable(
             canvas.drawRoundRect(panelBounds, cornerRadius, cornerRadius, fillPaint)
         }
         canvas.drawRoundRect(panelBounds, cornerRadius, cornerRadius, sheenPaint)
+        canvas.drawRoundRect(panelBounds, cornerRadius, cornerRadius, bottomGlowPaint)
     }
 
     override fun setAlpha(alpha: Int) {
         fillPaint.alpha = alpha * Color.alpha(fillColor) / 255
         sheenPaint.alpha = alpha
+        bottomGlowPaint.alpha = alpha
         invalidateSelf()
     }
 
     override fun setColorFilter(colorFilter: ColorFilter?) {
         fillPaint.colorFilter = colorFilter
         sheenPaint.colorFilter = colorFilter
+        bottomGlowPaint.colorFilter = colorFilter
         invalidateSelf()
     }
 
@@ -129,6 +136,11 @@ class LiquidGlassDrawable(
 
     @Deprecated("Deprecated in Java")
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+
+    private companion object {
+        const val RIM_DEPTH_FRACTION = 0.26f
+        const val RIM_MAX_DEPTH_DP = 20f
+    }
 }
 
 object LiquidGlass {
