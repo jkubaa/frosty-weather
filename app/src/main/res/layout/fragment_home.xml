@@ -20,16 +20,11 @@
             app:elevation="0dp"
             app:liftOnScrollColor="@android:color/transparent">
 
-            <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/toolbar"
+            <!-- Compact title fading in on scroll (see HomeTopBarView) -->
+            <org.breezyweather.ui.main.fragments.HomeTopBarView
+                android:id="@+id/topBar"
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:background="@android:color/transparent"
-                android:elevation="0dp"
-                android:paddingEnd="@dimen/small_margin"
-                app:titleTextColor="?attr/colorSurfaceInverse"
-                app:titleTextAppearance="?attr/textAppearanceHeadline6"
-                tools:ignore="RtlSymmetry" />
+                android:layout_height="?attr/actionBarSize" />
 
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -75,74 +70,14 @@
                 android:layout_marginBottom="@dimen/glass_capsule_margin_bottom"
                 app:layout_behavior="org.breezyweather.ui.common.behaviors.FloatingAboveSnackbarBehavior">
 
-                <FrameLayout
-                    android:id="@+id/editButton"
-                    android:layout_width="@dimen/glass_capsule_height"
-                    android:layout_height="@dimen/glass_capsule_height"
-                    android:layout_gravity="start|center_vertical"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:contentDescription="@string/action_edit_location"
-                    android:foreground="?attr/selectableItemBackgroundBorderless"
-                    android:visibility="invisible"
-                    tools:visibility="visible">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/ic_edit"
-                        app:tint="?attr/colorSurfaceInverse" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:id="@+id/indicatorCapsule"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="center"
-                    android:minWidth="96dp"
-                    android:layout_marginHorizontal="@dimen/glass_bottom_bar_capsule_inset"
-                    android:visibility="gone">
-
-                    <!-- Page dots (the current location shows as an arrow), centered in the capsule -->
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_marginStart="20dp"
-                        android:layout_marginEnd="20dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                    <org.breezyweather.ui.common.widgets.PageDotsView
-                        android:id="@+id/indicator"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-                    </LinearLayout>
-
-                </FrameLayout>
-
-                <FrameLayout
-                    android:id="@+id/manageButton"
-                    android:layout_width="@dimen/glass_capsule_height"
-                    android:layout_height="@dimen/glass_capsule_height"
-                    android:layout_gravity="end|center_vertical"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:contentDescription="@string/action_location_list"
-                    android:foreground="?attr/selectableItemBackgroundBorderless">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/ic_list"
-                        app:tint="?attr/colorSurfaceInverse" />
-                </FrameLayout>
+                <!-- Glass buttons and page dots, in Compose (see HomeBottomBarView) -->
+                <org.breezyweather.ui.main.fragments.HomeBottomBarView
+                    android:id="@+id/bottomBarContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
 
             </FrameLayout>
+
 
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

@@ -52,7 +52,6 @@ import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.common.glass.LiquidGlassBlur
 import org.breezyweather.ui.common.glass.LiquidGlassDrawable
-import org.breezyweather.ui.theme.weatherView.sky.SkyBackdrop
 
 /** Corner radius of the glass cards (glass_corner_radius). */
 val GlassCornerRadius = 26.dp
@@ -70,7 +69,7 @@ val GlassCornerRadius = 26.dp
  * @param tint body color over the blur; null for the theme's default glass body
  */
 fun Modifier.liquidGlass(
-    backdrop: SkyBackdrop?,
+    backdrop: GlassBackdrop?,
     tint: Color? = null,
     cornerRadius: Dp = GlassCornerRadius,
 ): Modifier = composed {
@@ -102,8 +101,11 @@ fun Modifier.liquidGlass(
         .drawWithContent {
             if (frosted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && backdrop.isReady) {
                 layer.renderEffect = effects.get(size, blurPx, radiusPx, edgePx)
-                // Fresh at draw time too: a card being dragged moves without a new layout
-                val at = coordinates[0]?.takeIf { it.isAttached }?.positionInWindow() ?: origin
+                // Always read the tracked position: that read is what redraws the glass whenever the
+                // element moves (scrolling), since the sky no longer redraws it every frame.
+                // Then take the exact position now, which also covers moves without a layout (dragging)
+                val tracked = origin
+                val at = coordinates[0]?.takeIf { it.isAttached }?.positionInWindow() ?: tracked
                 layer.record { drawIntoCanvas { backdrop.drawBackdrop(it.nativeCanvas, at) } }
                 drawLayer(layer)
             }

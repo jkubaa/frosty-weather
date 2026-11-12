@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import org.breezyweather.ui.main.cards.GlassBackdrop
 
 /**
  * The sky, drawable from elsewhere: liquid glass cards draw the part of the sky that is behind
@@ -35,7 +36,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
  * [size] up to date; cards draw that recording, shifted to their place on screen.
  */
 @Stable
-class SkyBackdrop {
+class SkyBackdrop : GlassBackdrop {
 
     /** Draws the whole sky in a scope of the sky's [size]. */
     internal var painter: (DrawScope.() -> Unit)? by mutableStateOf(null)
@@ -45,7 +46,7 @@ class SkyBackdrop {
 
     internal var size by mutableStateOf(Size.Zero)
 
-    val isReady: Boolean
+    override val isReady: Boolean
         get() = painter != null && size.width > 0f
 
     /**
@@ -62,7 +63,7 @@ class SkyBackdrop {
      * Draws the sky behind something placed at [at] (window coordinates) into [canvas], a hardware
      * canvas: the sky appears exactly as it is on screen under that spot.
      */
-    fun drawBackdrop(canvas: android.graphics.Canvas, at: Offset) {
+    override fun drawBackdrop(canvas: android.graphics.Canvas, at: Offset) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !canvas.isHardwareAccelerated) return
         val skyNode = node?.takeIf { it.hasDisplayList() } ?: return
         val shift = origin - at

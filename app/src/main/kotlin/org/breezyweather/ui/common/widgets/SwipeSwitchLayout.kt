@@ -79,6 +79,9 @@ class SwipeSwitchLayout @JvmOverloads constructor(
     private var mIsHorizontalDragged = false
     private var mPassedTrigger = false
 
+    /** Called whenever the content moves sideways (glass drawn over it follows). */
+    var onContentMoved: (() -> Unit)? = null
+
     /** Direction of the switch whose new page is still to slide in, 0 for none. */
     private var mPendingEnterDirection = 0
 
@@ -239,6 +242,7 @@ class SwipeSwitchLayout @JvmOverloads constructor(
         val target = mTarget ?: return
         val progress = (abs(mSwipeDistance) / switchDistance).coerceIn(0f, 1f)
         target.translationX = mSwipeDistance
+        onContentMoved?.invoke()
         // Fades a little, so the switch reads as leaving this place
         target.alpha = 1f - 0.35f * min(1f, abs(mSwipeDistance) / width.coerceAtLeast(1))
         val swipeDirection = if (mSwipeDistance < 0) SWIPE_DIRECTION_LEFT else SWIPE_DIRECTION_RIGHT
@@ -338,11 +342,13 @@ class SwipeSwitchLayout @JvmOverloads constructor(
                 mSwipeDistance = 0f
                 mTarget?.translationX = start * (1f - f)
                 mTarget?.alpha = 0.3f + 0.7f * f
+                onContentMoved?.invoke()
             }
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
                     mTarget?.translationX = 0f
                     mTarget?.alpha = 1f
+                    onContentMoved?.invoke()
                     mSwitchListener?.onSwiped(SWIPE_DIRECTION_LEFT, 0f)
                 }
             })

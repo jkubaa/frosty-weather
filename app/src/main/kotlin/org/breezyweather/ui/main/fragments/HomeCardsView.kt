@@ -77,6 +77,7 @@ import org.breezyweather.R
 import kotlinx.coroutines.delay
 import org.breezyweather.common.extensions.density
 import org.breezyweather.common.extensions.getThemeColor
+import org.breezyweather.ui.main.cards.ViewBackdrop
 import org.breezyweather.ui.main.cards.liquidGlass
 import org.breezyweather.common.extensions.getBlocksPerRow
 import org.breezyweather.ui.main.adapters.main.MainCards
@@ -125,6 +126,13 @@ class HomeCardsView @JvmOverloads constructor(
     var onScroll: ((Int) -> Unit)? = null
 
     private var data by mutableStateOf<Data?>(null)
+
+    /** The cards as drawn, for the floating glass bar to blur what scrolls under it. */
+    val cardsBackdrop = ViewBackdrop(this)
+
+    override fun dispatchDraw(canvas: android.graphics.Canvas) {
+        if (!cardsBackdrop.record(canvas) { super.dispatchDraw(it) }) super.dispatchDraw(canvas)
+    }
     private var version = 0
 
     /** Shows the cards of [location]; null shows nothing. Starts again from the top. */

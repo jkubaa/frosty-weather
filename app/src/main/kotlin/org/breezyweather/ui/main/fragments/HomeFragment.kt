@@ -24,7 +24,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.graphics.ColorUtils
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
@@ -38,7 +37,6 @@ import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.activities.livedata.EqualtableLiveData
 import org.breezyweather.common.extensions.doOnApplyWindowInsets
 import org.breezyweather.common.extensions.dpToPx
-import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.common.extensions.isDarkMode
 import org.breezyweather.common.extensions.isMotionReduced
 import org.breezyweather.common.extensions.setSystemBarStyle
@@ -47,11 +45,11 @@ import org.breezyweather.common.snackbar.SnackbarContainer
 import org.breezyweather.databinding.FragmentHomeBinding
 import org.breezyweather.domain.location.model.getPlace
 import org.breezyweather.domain.settings.SettingsManager
-import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.common.widgets.SwipeSwitchLayout
 import org.breezyweather.ui.main.MainActivity
 import org.breezyweather.ui.main.MainActivityViewModel
 import org.breezyweather.ui.main.adapters.main.MainCards
+import org.breezyweather.ui.main.cards.LayeredBackdrop
 import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.resource.ResourcesProviderFactory
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
@@ -209,18 +207,18 @@ class HomeFragment : MainModuleFragment() {
         // iOS weather style: no buttons up top. The toolbar only carries the compact title that fades in
         // on scroll; the actions live in the floating glass bottom bar ("Open in another app" moved to
         // the edit location dialog).
-        binding.editButton.setOnClickListener {
-            callback?.onEditIconClicked()
-        }
-        binding.manageButton.setOnClickListener {
-            callback?.onManageIconClicked()
-        }
+        binding.bottomBarContent.onEdit = { callback?.onEditIconClicked() }
+        binding.bottomBarContent.onManage = { callback?.onManageIconClicked() }
+        // The bar's glass blurs both the sky and the cards scrolling under it
+        binding.bottomBarContent.backdrop = LayeredBackdrop(
+            *listOfNotNull((weatherView as? SkyWeatherView)?.backdrop, binding.cardsView.cardsBackdrop).toTypedArray()
+        )
 
         binding.switchLayout.setOnSwitchListener(switchListener)
+        // Glass over the cards follows them while a swipe moves them sideways
+        binding.switchLayout.onContentMoved = { binding.cardsView.cardsBackdrop.moved() }
         binding.switchLayout.reset()
-        binding.indicator.setSwitchView(binding.switchLayout)
-        // Liquid glass: the page dots always live in a floating glass capsule (no auto-hide)
-        binding.indicator.alpha = 1f
+        binding.bottomBarContent.setSwitchView(binding.switchLayout)
         updateDayNightColors()
         binding.bottomBar.doOnApplyWindowInsets { view, insets ->
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
@@ -256,11 +254,10 @@ class HomeFragment : MainModuleFragment() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.currentLocation.collect {
                     if (it?.location != null) {
-                        binding.editButton.visibility = View.VISIBLE
+                        binding.bottomBarContent.editVisible = true
                         binding.emptyText.visibility = if (it.location.weather != null) View.GONE else View.VISIBLE
                     } else {
-                        // Keeps its slot so the dots stay centered
-                        binding.editButton.visibility = View.INVISIBLE
+                        binding.bottomBarContent.editVisible = false
                         binding.emptyText.visibility = View.GONE
                     }
                     if (it?.location != lastCurrentLocation) {
@@ -288,56 +285,26 @@ class HomeFragment : MainModuleFragment() {
                         binding.switchLayout.position != it.index
                     ) {
                         binding.switchLayout.setData(it.index, it.total)
-                        binding.indicator.setSwitchView(binding.switchLayout)
                     }
-
-                    binding.indicatorCapsule.visibility = if (it.total > 1) View.VISIBLE else View.GONE
+                    // Also tells the dots how many locations there are (none shown for a single one)
+                    binding.bottomBarContent.setSwitchView(binding.switchLayout)
                 }
             }
         }
     }
 
     private fun updateDayNightColors() {
-        val surface = requireContext().getThemeColor(com.google.android.material.R.attr.colorSurface)
-        // Frosted, the bottom bar stays readable over the cards with a light tint; without blur it
-        // needs a denser body
-        val bottomBarTint = ColorUtils.setAlphaComponent(
-            surface,
-            ((if (LiquidGlass.isBlurEnabled(requireContext())) 0.35f else 0.72f) * 255).toInt()
-        )
-        // Capsule and circles: all fully rounded, all blurring everything under them, cards included
-        listOf(binding.editButton, binding.indicatorCapsule, binding.manageButton).forEach { host ->
-            LiquidGlass.applyFloating(
-                host = host,
-                cornerRadius = resources.getDimension(R.dimen.glass_capsule_height) / 2f,
-                tint = bottomBarTint,
-                blurRoot = binding.root
-            )
-        }
-        updateIndicatorColors()
+        // Theme or glass setting may have changed
+        binding.bottomBarContent.refreshGlass()
         updateToolbarTitleAlpha()
     }
 
-    private fun updateIndicatorColors() {
-        val contentColor = requireContext().getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse)
-        binding.indicator.setCurrentIndicatorColor(contentColor)
-        binding.indicator.setIndicatorColor(
-            ColorUtils.setAlphaComponent(contentColor, (0.35 * 255).toInt())
-        )
-    }
-
     /**
-     * The location name is shown big in the hero header, so the toolbar title stays invisible
+     * The location name is shown big in the hero header, so the top bar title stays invisible
      * until the header scrolls away, then fades in as a compact "name / 22° Sunny" title.
      */
     private fun updateToolbarTitleAlpha() {
-        val contentColor = requireContext().getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse)
-        binding.toolbar.setTitleTextColor(
-            ColorUtils.setAlphaComponent(contentColor, (toolbarTitleFraction * 255).roundToInt())
-        )
-        binding.toolbar.setSubtitleTextColor(
-            ColorUtils.setAlphaComponent(contentColor, (toolbarTitleFraction * 0.8f * 255).roundToInt())
-        )
+        binding.topBar.fraction = toolbarTitleFraction
     }
 
     // control.
@@ -394,13 +361,13 @@ class HomeFragment : MainModuleFragment() {
 
         // Compact title, name only: the current location is marked by the arrow in the hero and in the
         // page dots (no more "⊙" prefix)
-        binding.toolbar.title = location?.getPlace(requireContext()) ?: ""
+        binding.topBar.title = location?.getPlace(requireContext()) ?: ""
         // iOS style: the current location's page shows an arrow instead of a dot
-        binding.indicator.arrowIndex = viewModel.validLocationList.value
+        binding.bottomBarContent.arrowIndex = viewModel.validLocationList.value
             .indexOfFirst { it.isCurrentPosition }
             .takeIf { it >= 0 }
 
-        binding.toolbar.subtitle = location?.weather?.current?.let { current ->
+        binding.topBar.subtitle = location?.weather?.current?.let { current ->
             val temperatureUnit = SettingsManager.getInstance(requireContext()).getTemperatureUnit(requireContext())
             listOfNotNull(
                 current.temperature?.temperature?.let { "${it.toDouble(temperatureUnit).roundToInt()}°" },
