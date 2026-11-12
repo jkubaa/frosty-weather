@@ -23,26 +23,36 @@ import org.breezyweather.ui.theme.weatherView.WeatherView
 import org.breezyweather.ui.theme.weatherView.WeatherView.WeatherKindRule
 
 /**
- * Sky backgrounds in the spirit of iOS weather: one smooth vertical gradient per weather kind,
- * with its own day and night colors. Mid-to-dark tones throughout, so white text always reads.
+ * Sky colors per weather kind, day and night: a three-stop vertical gradient (top, middle, bottom).
+ * Night skies lean towards deep indigo with a violet/magenta horizon on fair weather, grey-blue
+ * when the weather turns. Mid-to-dark tones throughout, so white text always reads.
+ *
+ * Single source for the animated home sky, the location cards and every place where one color
+ * stands for the background.
  */
 object SkyPalette {
 
-    /** [top, bottom] colors of the sky. */
-    private class Sky(val dayTop: String, val dayBottom: String, val nightTop: String, val nightBottom: String)
+    private class Sky(
+        val dayTop: String,
+        val dayMiddle: String,
+        val dayBottom: String,
+        val nightTop: String,
+        val nightMiddle: String,
+        val nightBottom: String,
+    )
 
-    private val CLEAR = Sky("#2C78D2", "#86BFF0", "#0A1330", "#2A3966")
-    private val PARTLY_CLOUDY = Sky("#4683C2", "#A4C4E0", "#111A2E", "#35425D")
-    private val CLOUDY = Sky("#6A7D91", "#A5B2BF", "#1B212B", "#3B4451")
-    private val FOG = Sky("#8C97A2", "#C6CCD2", "#252A31", "#4A515A")
-    private val HAZE = Sky("#A69479", "#D7C9B1", "#2A2620", "#4D453A")
-    private val RAIN = Sky("#4C5B6E", "#7D8C9D", "#151B24", "#323B48")
-    private val SLEET = Sky("#5C6C7E", "#98A6B4", "#19202A", "#394351")
-    private val SNOW = Sky("#7B91AB", "#C1CEDC", "#1E2737", "#455269")
-    private val HAIL = Sky("#546578", "#91A0B0", "#161D27", "#353F4C")
-    private val THUNDER = Sky("#393F50", "#61687A", "#11131A", "#2B2F3F")
-    private val WIND = Sky("#4A86C0", "#A0C1DB", "#10192B", "#323F59")
-    private val DEFAULT = Sky("#3B6DA6", "#8DB1D4", "#13182A", "#2E374F")
+    private val CLEAR = Sky("#1C64C8", "#3F8BDD", "#8EC3F0", "#0E0B2E", "#2E1F5E", "#6A3A80")
+    private val PARTLY_CLOUDY = Sky("#3573BE", "#5F97D4", "#A9CBEA", "#120F33", "#36246A", "#7E4588")
+    private val CLOUDY = Sky("#5B6880", "#7A879E", "#A7B1C3", "#181A25", "#2A2D3D", "#454A5C")
+    private val FOG = Sky("#858E9A", "#A3AAB4", "#C6CBD1", "#1E2229", "#333841", "#4E545E")
+    private val HAZE = Sky("#9B876A", "#B9A584", "#D8C8AB", "#28221B", "#3B3329", "#594D3D")
+    private val RAIN = Sky("#3B4759", "#536077", "#788497", "#0F131B", "#1D232F", "#313947")
+    private val SLEET = Sky("#536378", "#74859B", "#A4B2C2", "#141A25", "#252E3D", "#3D4859")
+    private val SNOW = Sky("#6A82A4", "#8FA6C2", "#C8D5E4", "#182035", "#2C3853", "#535F7D")
+    private val HAIL = Sky("#475669", "#627389", "#909EAF", "#121822", "#212A37", "#364051")
+    private val THUNDER = Sky("#282B3B", "#3C3F53", "#585A70", "#0A0B13", "#161825", "#282A3B")
+    private val WIND = Sky("#3877BC", "#6799CE", "#AAC7E4", "#0F182E", "#213158", "#43557E")
+    private val DEFAULT = Sky("#3B6DA6", "#5F8DC0", "#8DB1D4", "#13182A", "#222A40", "#2E374F")
 
     private fun sky(@WeatherKindRule weatherKind: Int): Sky = when (weatherKind) {
         WeatherView.WEATHER_KIND_CLEAR -> CLEAR
@@ -65,11 +75,19 @@ object SkyPalette {
         sky(weatherKind).let { if (daylight) it.dayTop else it.nightTop }.toColorInt()
 
     @ColorInt
+    fun middleColor(@WeatherKindRule weatherKind: Int, daylight: Boolean): Int =
+        sky(weatherKind).let { if (daylight) it.dayMiddle else it.nightMiddle }.toColorInt()
+
+    @ColorInt
     fun bottomColor(@WeatherKindRule weatherKind: Int, daylight: Boolean): Int =
         sky(weatherKind).let { if (daylight) it.dayBottom else it.nightBottom }.toColorInt()
 
     fun gradient(@WeatherKindRule weatherKind: Int, daylight: Boolean) = GradientDrawable(
         GradientDrawable.Orientation.TOP_BOTTOM,
-        intArrayOf(topColor(weatherKind, daylight), bottomColor(weatherKind, daylight))
+        intArrayOf(
+            topColor(weatherKind, daylight),
+            middleColor(weatherKind, daylight),
+            bottomColor(weatherKind, daylight)
+        )
     )
 }

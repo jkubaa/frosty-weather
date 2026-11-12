@@ -65,6 +65,7 @@ import org.breezyweather.ui.theme.resource.ResourcesProviderFactory
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.ui.theme.weatherView.WeatherView
 import org.breezyweather.ui.theme.weatherView.WeatherViewController
+import org.breezyweather.ui.theme.weatherView.sky.SkyWeatherView
 import kotlin.math.roundToInt
 
 class HomeFragment : MainModuleFragment() {
@@ -99,10 +100,8 @@ class HomeFragment : MainModuleFragment() {
         initModel()
 
         // attach weather view.
-        weatherView = ThemeManager
-            .getInstance(requireContext())
-            .weatherThemeDelegate
-            .getWeatherView(requireContext())
+        // Compose sky (painterly clouds and weather effects), in place of the theme's View-based one
+        weatherView = SkyWeatherView(requireContext())
         // The weather view lives in its own container: it is the backdrop the liquid glass cards blur
         val glassBackdrop = FrameLayout(requireContext()).apply {
             id = R.id.glass_backdrop
@@ -491,6 +490,8 @@ class HomeFragment : MainModuleFragment() {
         }
         updateToolbarTitleAlpha()
 
+        // Real sun and moon positions: twilight, sunrise/sunset colors, moon phase
+        (weatherView as? SkyWeatherView)?.setLocation(location?.latitude, location?.longitude)
         weatherView.setWeather(backgroundWeatherKind, daylight, requireContext().isDarkMode)
         binding.refreshLayout.setColorSchemeColors(
             ThemeManager
