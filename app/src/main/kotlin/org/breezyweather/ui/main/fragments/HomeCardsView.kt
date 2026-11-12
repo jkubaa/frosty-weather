@@ -23,8 +23,22 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -37,7 +51,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -54,13 +67,17 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toOffset
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 import breezyweather.domain.location.model.Location
+import org.breezyweather.R
 import kotlinx.coroutines.delay
 import org.breezyweather.common.extensions.density
+import org.breezyweather.common.extensions.getThemeColor
+import org.breezyweather.ui.main.cards.liquidGlass
 import org.breezyweather.common.extensions.getBlocksPerRow
 import org.breezyweather.ui.main.adapters.main.MainCards
 import org.breezyweather.ui.main.adapters.main.ViewType
@@ -98,8 +115,11 @@ class HomeCardsView @JvmOverloads constructor(
     var cards: MainCards? by mutableStateOf(null)
     var backdrop: SkyBackdrop? by mutableStateOf(null)
 
-    /** Room left at the bottom for the floating glass bar, in px. */
-    var bottomPadding by mutableIntStateOf(0)
+    /** Shows the refresh indicator. */
+    var refreshing by mutableStateOf(false)
+
+    /** Called when the user pulls down from the top to refresh. */
+    var onRefresh: (() -> Unit)? = null
 
     /** Scroll distance from the top, in px (only precise over the first cards, which is what matters). */
     var onScroll: ((Int) -> Unit)? = null
@@ -117,12 +137,84 @@ class HomeCardsView @JvmOverloads constructor(
     @Composable
     override fun Content() {
         val cards = cards ?: return
-        val data = data ?: return
+        val data = data
+        val pullState = rememberPullToRefreshState()
         CompositionLocalProvider(
             LocalSkyBackdrop provides backdrop,
             LocalHorizontalRegions provides regions
         ) {
-            CardGrid(cards, data)
+            // Pulling only refreshes from the very top of the cards: the list tells pull-to-refresh
+            // itself whether it can still scroll up
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = { onRefresh?.invoke() },
+                state = pullState,
+                modifier = Modifier.fillMaxSize(),
+                indicator = { GlassRefreshIndicator(pullState, refreshing, Modifier.align(Alignment.TopCenter)) }
+            ) {
+                if (data != null) {
+                    // The cards come down with the pull, opening room above them for the indicator
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                translationY = pullState.distanceFraction.coerceIn(0f, 1.5f) * PULL_ROOM.toPx()
+                            }
+                    ) {
+                        CardGrid(cards, data)
+                    }
+                } else {
+                    // Nothing to show yet ("pull down to refresh"): still something to pull
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Refresh indicator in the app's style: a small liquid glass bubble with a light spinner, coming
+     * down with the pull (filling up as it goes), spinning while refreshing.
+     */
+    @Composable
+    private fun GlassRefreshIndicator(state: PullToRefreshState, refreshing: Boolean, modifier: Modifier) {
+        val content = Color(context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
+        Box(
+            modifier = modifier
+                .graphicsLayer {
+                    val f = state.distanceFraction
+                    // From hidden above the top, down to its resting place, a little further when pulled hard
+                    translationY = f.coerceAtMost(1.5f) * PULL_ROOM.toPx() - 52.dp.toPx()
+                    alpha = (f * 2f).coerceIn(0f, 1f)
+                    val scale = 0.7f + 0.3f * f.coerceIn(0f, 1f)
+                    scaleX = scale
+                    scaleY = scale
+                }
+                .size(44.dp)
+                .liquidGlass(LocalSkyBackdrop.current, cornerRadius = 22.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            if (refreshing) {
+                CircularProgressIndicator(
+                    color = content,
+                    trackColor = content.copy(alpha = 0.18f),
+                    strokeWidth = 2.5.dp,
+                    strokeCap = StrokeCap.Round,
+                    modifier = Modifier.size(22.dp)
+                )
+            } else {
+                CircularProgressIndicator(
+                    progress = { state.distanceFraction.coerceIn(0f, 1f) },
+                    color = content,
+                    trackColor = content.copy(alpha = 0.18f),
+                    strokeWidth = 2.5.dp,
+                    strokeCap = StrokeCap.Round,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
         }
     }
 
@@ -168,7 +260,10 @@ class HomeCardsView @JvmOverloads constructor(
         BoxWithConstraints(Modifier.fillMaxSize()) {
             // Same measure as the rest of the app: width in px over the app's density extension
             val blocksPerRow = view.context.getBlocksPerRow(constraints.maxWidth.toFloat() / view.context.density)
-            val bottom = with(androidx.compose.ui.platform.LocalDensity.current) { bottomPadding.toDp() }
+            // Room for the floating glass bar, above the navigation bar, so the last card (the
+            // sources and "last updated" line) can scroll clear of it
+            val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+                dimensionResource(R.dimen.glass_capsule_content_clearance)
             LazyVerticalGrid(
                 columns = GridCells.Fixed(SPANS),
                 state = gridState,
@@ -253,6 +348,9 @@ class HomeCardsView @JvmOverloads constructor(
     }
 
     private companion object {
+        /** How far the cards come down when pulled to refresh: room for the indicator. */
+        val PULL_ROOM = 64.dp
+
         /** 60 divides by 1, 2, 3, 4 and 5: any number of tiles per row gets a whole span. */
         const val SPANS = 60
     }

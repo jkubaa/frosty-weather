@@ -16,51 +16,71 @@
 
 package org.breezyweather.ui.common.widgets
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
+import android.view.VelocityTracker
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
-import androidx.core.view.NestedScrollingParent2
-import androidx.core.view.NestedScrollingParent3
-import androidx.core.view.ViewCompat
 import androidx.core.view.isNotEmpty
 import androidx.dynamicanimation.animation.DynamicAnimation
 import androidx.dynamicanimation.animation.FloatValueHolder
 import androidx.dynamicanimation.animation.SpringAnimation
 import androidx.dynamicanimation.animation.SpringForce
 import kotlin.math.abs
-import kotlin.math.log10
-import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.math.sign
 
+/**
+ * Swipes between locations, like pages: the content follows the finger one to one, and switches
+ * when dragged past [SWITCH_DISTANCE_RATIO] of the width or flicked that way. The current page then
+ * slides off and the new location slides in from the other side; a drag that falls short settles
+ * back, without bouncing.
+ *
+ * Horizontal scrolling inside the content (the hour strip...) never switches locations: those
+ * areas claim their drags (see HorizontalRegionsComposeView), and nested scrolling is not used.
+ */
 class SwipeSwitchLayout @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0,
-) : FrameLayout(context, attrs, defStyleAttr), NestedScrollingParent2, NestedScrollingParent3 {
+) : FrameLayout(context, attrs, defStyleAttr) {
     private var mTarget: View? = null
-    private var mResetAnimation: SpringAnimation? = null
+    private var mSettleAnimation: SpringAnimation? = null
+    private var mPageAnimation: Animator? = null
     private var mSwitchListener: OnSwitchListener? = null
     private var mPageSwipeListener: OnPagerSwipeListener? = null
     var totalCount = 1
         private set
     private var mPosition = 0
-    private var mSwipeDistance = 0
-    private var mSwipeTrigger = 500
-    private var mNestedScrollingDistance = 0f
-    private var mNestedScrollingTrigger = 300f
+
+    /** Drag distance, px: negative towards the next location (finger going left). */
+    private var mSwipeDistance = 0f
     private var mLastX = 0f
     private var mLastY = 0f
+    private var mDownX = 0f
+    private var mDownY = 0f
     private val mTouchSlop: Int
-    private var mIsBeingTouched = false
+    private val mMinFlingVelocity: Float
+    private var mVelocityTracker: VelocityTracker? = null
+
+    /** Speed at the last movement (px/s) and when it was, for a finger lifted right after moving. */
+    private var mLastMoveVelocity = 0f
+    private var mLastMoveTime = 0L
     private var mIsBeingDragged = false
     private var mIsHorizontalDragged = false
-    private var mIsBeingNestedScrolling = false
+    private var mPassedTrigger = false
+
+    /** Direction of the switch whose new page is still to slide in, 0 for none. */
+    private var mPendingEnterDirection = 0
 
     interface OnSwitchListener {
         fun onSwiped(swipeDirection: Int, progress: Float)
@@ -73,173 +93,266 @@ class SwipeSwitchLayout @JvmOverloads constructor(
     }
 
     init {
-        mTouchSlop = ViewConfiguration.get(getContext()).scaledTouchSlop
+        val configuration = ViewConfiguration.get(getContext())
+        mTouchSlop = configuration.scaledTouchSlop
+        mMinFlingVelocity = FLING_VELOCITY_DP * resources.displayMetrics.density
     }
 
-    // layout.
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        mSwipeTrigger = (measuredWidth * SWIPE_DISTANCE_RATIO).roundToInt()
-        mNestedScrollingTrigger = mSwipeTrigger.toFloat()
+    private val switchDistance: Float
+        get() = (width * SWITCH_DISTANCE_RATIO).coerceAtLeast(1f)
+
+    private fun ensureTarget(): View? {
+        if (mTarget == null && isNotEmpty()) mTarget = getChildAt(0)
+        return mTarget
     }
 
     // touch.
-    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
-        if (!isEnabled || (ev.action != MotionEvent.ACTION_DOWN && mIsBeingNestedScrolling)) {
-            return false
-        }
-        if (mTarget == null && isNotEmpty()) {
-            mTarget = getChildAt(0)
-        }
-        if (mTarget == null) return false
-        when (ev.action) {
-            MotionEvent.ACTION_DOWN -> {
-                cancelResetAnimation()
-                mIsBeingTouched = true
-                mIsBeingDragged = false
-                mIsHorizontalDragged = false
-                mLastX = ev.x
-                mLastY = ev.y
-            }
 
-            MotionEvent.ACTION_MOVE -> {
-                if (!mIsBeingTouched) {
-                    mIsBeingTouched = true
-                    mLastX = ev.x
-                    mLastY = ev.y
-                }
-                val x = ev.x
-                val y = ev.y
-                if (!mIsBeingDragged && !mIsHorizontalDragged) {
-                    if (abs(x - mLastX) > mTouchSlop || abs(y - mLastY) > mTouchSlop) {
-                        mIsBeingDragged = true
-                        if (abs(x - mLastX) > abs(y - mLastY)) {
-                            mLastX += (if (x > mLastX) mTouchSlop else -mTouchSlop).toFloat()
-                            mIsHorizontalDragged = true
-                        }
+    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
+        if (!isEnabled || ensureTarget() == null) return false
+        trackVelocity(ev)
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                startTouch(ev)
+            }
+            MotionEvent.ACTION_MOVE -> if (!mIsBeingDragged) {
+                val dx = ev.x - mDownX
+                val dy = ev.y - mDownY
+                if (abs(dx) > mTouchSlop || abs(dy) > mTouchSlop) {
+                    mIsBeingDragged = true
+                    // Clearly horizontal only: diagonal drags keep scrolling the page
+                    mIsHorizontalDragged = abs(dx) > abs(dy) * 1.2f
+                    if (mIsHorizontalDragged) {
+                        // Count the whole movement since the finger came down: a quick flick may
+                        // only bring a couple of touch events, and none of it should be lost
+                        mSwipeDistance += dx
+                        mLastX = ev.x
+                        applyDistance()
+                        parent?.requestDisallowInterceptTouchEvent(true)
                     }
                 }
             }
-
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                mIsBeingTouched = false
-                mIsBeingDragged = false
-                mIsHorizontalDragged = false
-            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> endTouch()
         }
         return mIsBeingDragged && mIsHorizontalDragged
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(ev: MotionEvent): Boolean {
-        if (!isEnabled || mIsBeingNestedScrolling) return false
-        if (mTarget == null && isNotEmpty()) {
-            mTarget = getChildAt(0)
-        }
-        if (mTarget == null) return false
-        when (ev.action) {
-            MotionEvent.ACTION_DOWN -> {
-                cancelResetAnimation()
-                mIsBeingTouched = true
-                mIsBeingDragged = false
-                mIsHorizontalDragged = false
-                mLastX = ev.x
-                mLastY = ev.y
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                if (mIsBeingDragged && mIsHorizontalDragged) {
-                    mSwipeDistance += (ev.x - mLastX).toInt()
-                    setTranslation(mSwipeTrigger, SWIPE_RATIO)
+        if (!isEnabled || ensureTarget() == null) return false
+        trackVelocity(ev)
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> startTouch(ev)
+            MotionEvent.ACTION_MOVE -> if (mIsBeingDragged && mIsHorizontalDragged) {
+                mVelocityTracker?.let {
+                    it.computeCurrentVelocity(1000)
+                    mLastMoveVelocity = it.xVelocity
+                    mLastMoveTime = ev.eventTime
                 }
+                mSwipeDistance += ev.x - mLastX
                 mLastX = ev.x
-                mLastY = ev.y
+                applyDistance()
+                // A tick when the drag gets far enough to switch on release
+                val passed = abs(mSwipeDistance) >= switchDistance
+                if (passed != mPassedTrigger) {
+                    mPassedTrigger = passed
+                    if (passed) performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                }
             }
-
+            // A cancel (something above took the gesture over) ends the swipe like a release, with
+            // the speed measured so far, so a quick flick isn't lost
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                mIsBeingTouched = false
-                release(mSwipeTrigger)
+                val lifted = mVelocityTracker?.let {
+                    it.computeCurrentVelocity(1000)
+                    it.xVelocity
+                } ?: 0f
+                // The tracker can read a quick flick as "stopped" (a short pause before lifting, or too
+                // few touch events): also take the speed at the last movement, if the finger lifted
+                // right after it, and for a quick gesture its average speed since touching down
+                val lastMove = if (ev.eventTime - mLastMoveTime <= LIFT_GRACE_MS) mLastMoveVelocity else 0f
+                val duration = ev.eventTime - ev.downTime
+                val average = if (duration in 1..QUICK_GESTURE_MS) (ev.x - mDownX) / duration * 1000f else 0f
+                val velocity = listOf(lifted, lastMove, average).maxBy { abs(it) }
+                release(velocity)
+                endTouch()
             }
         }
         return true
     }
 
-    // control.
-    fun reset() {
-        cancelResetAnimation()
+    private fun startTouch(ev: MotionEvent) {
+        // Grabbing the page mid-animation takes it from where it is
+        cancelSettle()
+        mDownX = ev.x
+        mDownY = ev.y
+        mLastX = ev.x
+        mLastY = ev.y
         mIsBeingDragged = false
         mIsHorizontalDragged = false
-        mSwipeDistance = 0
-        mNestedScrollingDistance = 0f
-        setTranslation(mSwipeTrigger, SWIPE_RATIO)
+        mLastMoveVelocity = 0f
+        mLastMoveTime = 0L
+        mPassedTrigger = abs(mSwipeDistance) >= switchDistance
     }
 
-    private fun cancelResetAnimation() {
-        mResetAnimation?.let {
-            it.cancel()
-            mResetAnimation = null
+    private fun endTouch() {
+        mIsBeingDragged = false
+        mIsHorizontalDragged = false
+        mVelocityTracker?.recycle()
+        mVelocityTracker = null
+    }
+
+    private fun trackVelocity(ev: MotionEvent) {
+        if (ev.actionMasked == MotionEvent.ACTION_DOWN) {
+            mVelocityTracker?.clear()
+        }
+        (mVelocityTracker ?: VelocityTracker.obtain().also { mVelocityTracker = it }).addMovement(ev)
+    }
+
+    // control.
+
+    /**
+     * Called when the content was rebuilt (e.g. for the new location after a switch): puts the page
+     * back in place, sliding the new one in if a switch just happened.
+     */
+    fun reset() {
+        cancelSettle()
+        mIsBeingDragged = false
+        mIsHorizontalDragged = false
+        val enterDirection = mPendingEnterDirection
+        mPendingEnterDirection = 0
+        if (enterDirection != 0 && mTarget != null && width > 0) {
+            slideIn(enterDirection)
+        } else {
+            mPageAnimation?.cancel()
+            mSwipeDistance = 0f
+            applyDistance()
         }
     }
 
-    private fun setTranslation(triggerDistance: Int, translateRatio: Float) {
-        val realDistance = mSwipeDistance
-            .coerceAtMost(triggerDistance)
-            .coerceAtLeast(-triggerDistance)
-            .toFloat()
+    private fun cancelSettle() {
+        mSettleAnimation?.cancel()
+        mSettleAnimation = null
+    }
+
+    /** Moves the content with the drag, and reports the progress. */
+    private fun applyDistance() {
+        val target = mTarget ?: return
+        val progress = (abs(mSwipeDistance) / switchDistance).coerceIn(0f, 1f)
+        target.translationX = mSwipeDistance
+        // Fades a little, so the switch reads as leaving this place
+        target.alpha = 1f - 0.35f * min(1f, abs(mSwipeDistance) / width.coerceAtLeast(1))
         val swipeDirection = if (mSwipeDistance < 0) SWIPE_DIRECTION_LEFT else SWIPE_DIRECTION_RIGHT
-        val progress = abs(realDistance) / triggerDistance
-        mTarget?.alpha = 1 - progress
-        mTarget?.translationX = (
-            swipeDirection *
-                translateRatio *
-                triggerDistance *
-                log10(1 + 9.0 * abs(mSwipeDistance) / triggerDistance)
-            ).toFloat()
         mSwitchListener?.onSwiped(swipeDirection, progress)
         mPageSwipeListener?.let {
+            val page = width.coerceAtLeast(1).toFloat()
+            val offset = min(1f, abs(mSwipeDistance) / page)
             if (mSwipeDistance > 0) {
-                it.onPageScrolled(
-                    mPosition - 1,
-                    1 - min(1f, 1f * mSwipeDistance / triggerDistance),
-                    max(0, triggerDistance - mSwipeDistance)
-                )
+                it.onPageScrolled(mPosition - 1, 1 - offset, (page * (1 - offset)).roundToInt())
             } else {
-                it.onPageScrolled(
-                    mPosition,
-                    min(1f, -1f * mSwipeDistance / triggerDistance),
-                    min(-mSwipeDistance, triggerDistance)
-                )
+                it.onPageScrolled(mPosition, offset, (page * offset).roundToInt())
             }
         }
     }
 
-    private fun release(triggerDistance: Int) {
-        val swipeDirection = if (mSwipeDistance < 0) SWIPE_DIRECTION_LEFT else SWIPE_DIRECTION_RIGHT
-        if (abs(mSwipeDistance) > abs(triggerDistance)) {
-            position = swipeDirection
-            mSwitchListener?.onSwitched(swipeDirection)
-            mPageSwipeListener?.onPageSelected(mPosition)
+    /**
+     * Switches when dragged far enough, or flicked in the direction of the drag; otherwise settles back.
+     * @param velocity px/s, positive to the right
+     */
+    private fun release(velocity: Float) {
+        if (mSwipeDistance == 0f) return
+        val flicked = abs(velocity) >= mMinFlingVelocity &&
+            sign(velocity) == sign(mSwipeDistance) &&
+            abs(mSwipeDistance) > mTouchSlop
+        val farEnough = abs(mSwipeDistance) >= switchDistance &&
+            // A firm flick back towards the start cancels
+            !(abs(velocity) >= mMinFlingVelocity && sign(velocity) != sign(mSwipeDistance))
+        if (totalCount > 1 && (flicked || farEnough)) {
+            slideOut(if (mSwipeDistance < 0) SWIPE_DIRECTION_LEFT else SWIPE_DIRECTION_RIGHT, velocity)
         } else {
-            if (mTarget == null) {
-                reset()
-                return
-            }
-            mResetAnimation = SpringAnimation(FloatValueHolder(mSwipeDistance.toFloat())).apply {
-                spring = SpringForce(0f)
-                    .setDampingRatio(SpringForce.DAMPING_RATIO_MEDIUM_BOUNCY)
-                addUpdateListener { _: DynamicAnimation<*>?, value: Float, _: Float ->
-                    mSwipeDistance = value.toInt()
-                    setTranslation(mSwipeTrigger, SWIPE_RATIO)
-                }
-            }.also { it.start() }
+            settleBack(velocity)
         }
+    }
+
+    private fun settleBack(velocity: Float) {
+        cancelSettle()
+        mSettleAnimation = SpringAnimation(FloatValueHolder(mSwipeDistance)).apply {
+            spring = SpringForce(0f)
+                .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY)
+                .setStiffness(SpringForce.STIFFNESS_MEDIUM)
+            setStartVelocity(velocity)
+            addUpdateListener { _: DynamicAnimation<*>?, value: Float, _: Float ->
+                mSwipeDistance = value
+                applyDistance()
+            }
+        }.also { it.start() }
+    }
+
+    /** The current page leaves to the side it was pushed, then the location switches. */
+    private fun slideOut(swipeDirection: Int, velocity: Float) {
+        cancelSettle()
+        mPageAnimation?.cancel()
+        val end = swipeDirection * width.toFloat()
+        val remaining = abs(end - mSwipeDistance)
+        // As fast as the finger was going, within limits
+        val duration = if (abs(velocity) > 1f) {
+            (remaining / abs(velocity) * 1000f).coerceIn(90f, 220f)
+        } else {
+            200f
+        }.toLong()
+        mPageAnimation = ValueAnimator.ofFloat(mSwipeDistance, end).apply {
+            this.duration = duration
+            interpolator = DecelerateInterpolator()
+            addUpdateListener {
+                mSwipeDistance = it.animatedValue as Float
+                applyDistance()
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                private var cancelled = false
+
+                override fun onAnimationCancel(animation: Animator) {
+                    cancelled = true
+                }
+
+                override fun onAnimationEnd(animation: Animator) {
+                    if (cancelled) return
+                    position = swipeDirection
+                    mPendingEnterDirection = swipeDirection
+                    mSwitchListener?.onSwitched(swipeDirection)
+                    mPageSwipeListener?.onPageSelected(mPosition)
+                    // In case the content isn't rebuilt (and doesn't call reset), still bring it in
+                    postDelayed({ if (mPendingEnterDirection != 0) reset() }, 250)
+                }
+            })
+        }.also { it.start() }
+    }
+
+    /** The new location's page comes in from the side opposite to where the old one left. */
+    private fun slideIn(swipeDirection: Int) {
+        mPageAnimation?.cancel()
+        val start = -swipeDirection * width * ENTER_OFFSET_RATIO
+        mPageAnimation = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 280
+            interpolator = DecelerateInterpolator(1.6f)
+            addUpdateListener {
+                val f = it.animatedValue as Float
+                mSwipeDistance = 0f
+                mTarget?.translationX = start * (1f - f)
+                mTarget?.alpha = 0.3f + 0.7f * f
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    mTarget?.translationX = 0f
+                    mTarget?.alpha = 1f
+                    mSwitchListener?.onSwiped(SWIPE_DIRECTION_LEFT, 0f)
+                }
+            })
+        }.also { it.start() }
     }
 
     // interface.
     fun setData(currentIndex: Int, pageCount: Int) {
         if (currentIndex !in 0..<pageCount) {
             // Ignore, happens when location list is empty (initial install)
-            // throw RuntimeException("Invalid current index.")
         } else {
             mPosition = currentIndex
             totalCount = pageCount
@@ -260,7 +373,6 @@ class SwipeSwitchLayout @JvmOverloads constructor(
             }
         }
 
-    // interface.
     fun setOnSwitchListener(l: OnSwitchListener?) {
         mSwitchListener = l
     }
@@ -269,102 +381,22 @@ class SwipeSwitchLayout @JvmOverloads constructor(
         mPageSwipeListener = l
     }
 
-    // nested scrolling parent.
-    override fun onStartNestedScroll(child: View, target: View, axes: Int, type: Int): Boolean {
-        if (mTarget == null && isNotEmpty()) {
-            mTarget = getChildAt(0)
-        }
-        return axes and ViewCompat.SCROLL_AXIS_HORIZONTAL != 0 &&
-            mSwitchListener != null &&
-            type == ViewCompat.TYPE_TOUCH &&
-            isEnabled &&
-            mTarget != null
-    }
-
-    override fun onNestedScrollAccepted(child: View, target: View, axes: Int, type: Int) {
-        if (!mIsBeingNestedScrolling) {
-            mIsBeingNestedScrolling = true
-            mNestedScrollingDistance =
-                if ((!target.canScrollHorizontally(-1) && !target.canScrollHorizontally(1)) ||
-                    mSwipeDistance != 0
-                ) {
-                    mNestedScrollingTrigger
-                } else {
-                    0f
-                }
-        }
-    }
-
-    override fun onStopNestedScroll(target: View, type: Int) {
-        mIsBeingNestedScrolling = false
-        release(mSwipeTrigger)
-    }
-
-    override fun onNestedPreScroll(target: View, dx: Int, dy: Int, consumed: IntArray, type: Int) {
-        if (mSwipeDistance != 0) {
-            if ((mSwipeDistance > 0 && mSwipeDistance - dx < 0) || (mSwipeDistance < 0 && mSwipeDistance - dx > 0)) {
-                consumed[0] = mSwipeDistance
-            } else {
-                consumed[0] = dx
-            }
-            innerNestedScroll(consumed[0])
-        }
-    }
-
-    override fun onNestedScroll(
-        target: View,
-        dxConsumed: Int,
-        dyConsumed: Int,
-        dxUnconsumed: Int,
-        dyUnconsumed: Int,
-        type: Int,
-        consumed: IntArray,
-    ) {
-        innerNestedScroll(dxUnconsumed)
-        consumed[0] += dxUnconsumed
-    }
-
-    override fun onNestedScroll(
-        target: View,
-        dxConsumed: Int,
-        dyConsumed: Int,
-        dxUnconsumed: Int,
-        dyUnconsumed: Int,
-        type: Int,
-    ) {
-        innerNestedScroll(dxUnconsumed)
-    }
-
-    override fun onNestedPreFling(target: View, velocityX: Float, velocityY: Float): Boolean {
-        return false
-    }
-
-    override fun onNestedFling(
-        target: View,
-        velocityX: Float,
-        velocityY: Float,
-        consumed: Boolean,
-    ): Boolean {
-        return false
-    }
-
-    private fun innerNestedScroll(dxUnconsumed: Int) {
-        if (abs(mNestedScrollingDistance) >= mNestedScrollingTrigger) {
-            mSwipeDistance -= dxUnconsumed
-        } else {
-            mNestedScrollingDistance -= dxUnconsumed.toFloat()
-            mSwipeDistance = (mSwipeDistance - dxUnconsumed / 10f).toInt()
-            if (abs(mNestedScrollingDistance) >= mNestedScrollingTrigger) {
-                performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-            }
-        }
-        setTranslation(mSwipeTrigger, NESTED_SCROLLING_RATIO)
-    }
-
     companion object {
-        private const val SWIPE_DISTANCE_RATIO = 0.5
-        private const val SWIPE_RATIO = 0.4f
-        private const val NESTED_SCROLLING_RATIO = SWIPE_RATIO // 0.075f
+        /** How far to drag (of the width) to switch on release without a flick. */
+        private const val SWITCH_DISTANCE_RATIO = 0.3f
+
+        /** Flick speed that switches, in dp/s. */
+        private const val FLING_VELOCITY_DP = 600f
+
+        /** How long after the last movement a lifted finger still counts as flicking, in ms. */
+        private const val LIFT_GRACE_MS = 80L
+
+        /** Gestures up to this long (ms) also count their average speed as a flick speed. */
+        private const val QUICK_GESTURE_MS = 250L
+
+        /** Where the new page starts sliding in from, of the width. */
+        private const val ENTER_OFFSET_RATIO = 0.3f
+
         const val SWIPE_DIRECTION_LEFT = -1
         const val SWIPE_DIRECTION_RIGHT = 1
     }

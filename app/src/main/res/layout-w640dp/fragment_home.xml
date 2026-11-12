@@ -42,18 +42,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
-                <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-                    android:id="@+id/refresh_layout"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-
-                    <!-- The cards, in Compose (see HomeCardsView) -->
+                    <!-- The cards, in Compose, with their own pull-to-refresh (see HomeCardsView) -->
                     <org.breezyweather.ui.main.fragments.HomeCardsView
                         android:id="@+id/cards_view"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent" />
-
-                </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
                 <TextView
                     android:id="@+id/emptyText"

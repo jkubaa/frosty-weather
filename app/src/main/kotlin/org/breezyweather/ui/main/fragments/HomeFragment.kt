@@ -229,7 +229,7 @@ class HomeFragment : MainModuleFragment() {
             }
         }
 
-        binding.refreshLayout.setOnRefreshListener {
+        binding.cardsView.onRefresh = {
             viewModel.updateWithUpdatingChecking(
                 triggeredByUser = true,
                 checkPermissions = true
@@ -247,11 +247,6 @@ class HomeFragment : MainModuleFragment() {
         // The glass cards blur this sky behind them
         binding.cardsView.backdrop = (weatherView as? SkyWeatherView)?.backdrop
         binding.cardsView.onScroll = ::onCardsScrolled
-        binding.cardsView.doOnApplyWindowInsets { _, insets ->
-            // Leave room for the floating glass capsule
-            binding.cardsView.bottomPadding =
-                insets.bottom + resources.getDimensionPixelSize(R.dimen.glass_capsule_content_clearance)
-        }
 
         if (isAdded && context != null) {
             updatePreviewSubviews()
@@ -303,9 +298,6 @@ class HomeFragment : MainModuleFragment() {
     }
 
     private fun updateDayNightColors() {
-        binding.refreshLayout.setProgressBackgroundColorSchemeColor(
-            requireContext().getThemeColor(com.google.android.material.R.attr.colorSurface)
-        )
         val surface = requireContext().getThemeColor(com.google.android.material.R.attr.colorSurface)
         // Frosted, the bottom bar stays readable over the cards with a light tint; without blur it
         // needs a denser body
@@ -421,22 +413,12 @@ class HomeFragment : MainModuleFragment() {
         // Real sun and moon positions: twilight, sunrise/sunset colors, moon phase
         (weatherView as? SkyWeatherView)?.setLocation(location?.latitude, location?.longitude)
         weatherView.setWeather(backgroundWeatherKind, daylight, requireContext().isDarkMode)
-        binding.refreshLayout.setColorSchemeColors(
-            ThemeManager
-                .getInstance(requireContext())
-                .weatherThemeDelegate
-                .getThemeColors(
-                    requireContext(),
-                    WeatherViewController.getWeatherKind(location),
-                    daylight
-                )[0]
-        )
     }
 
     private fun setRefreshing(isRefreshing: Boolean) {
-        binding.refreshLayout.post {
+        binding.cardsView.post {
             if (isFragmentViewCreated) {
-                binding.refreshLayout.isRefreshing = isRefreshing
+                binding.cardsView.refreshing = isRefreshing
                 binding.emptyText.visibility = if (isRefreshing) {
                     View.GONE
                 } else {
@@ -475,10 +457,11 @@ class HomeFragment : MainModuleFragment() {
         }
 
         override fun onSwitched(swipeDirection: Int) {
+            // Back to "no preview" first: switching redraws the sky right away, from this offset
+            previewOffset.setValue(0)
             viewModel.offsetLocation(
                 if (swipeDirection == SwipeSwitchLayout.SWIPE_DIRECTION_LEFT) 1 else -1
             )
-            previewOffset.setValue(0)
         }
     }
 
