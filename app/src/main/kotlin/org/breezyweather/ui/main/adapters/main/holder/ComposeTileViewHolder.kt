@@ -16,7 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.view.ViewGroup
+import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -37,7 +37,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -46,9 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import androidx.recyclerview.widget.RecyclerView
 import breezyweather.domain.location.model.Location
-import com.google.android.material.card.MaterialCardView
 import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
@@ -58,43 +55,27 @@ import org.breezyweather.ui.theme.resource.providers.ResourceProvider
  * uppercase header, then the subclass' content. Square, or wider when alone in its row
  * ([widthFactor]), so it keeps the height of the other tiles.
  *
- * Like every glass card, the card is the item's root, so the glass blur layer stays clipped to it.
  */
-abstract class ComposeTileViewHolder private constructor(
-    card: MaterialCardView,
-) : AbstractMainCardViewHolder(card) {
-
-    constructor(parent: ViewGroup) : this(
-        MaterialCardView(parent.context).apply {
-            layoutParams = RecyclerView.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            strokeWidth = 0
-        }
-    )
+abstract class ComposeTileViewHolder(
+    context: Context,
+) : AbstractMainCardViewHolder(context) {
 
     private val tileWidth = mutableFloatStateOf(1f)
 
     /** Text and drawing color on glass. */
-    protected val contentColor: Color = Color(card.context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
+    protected val contentColor: Color = Color(context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
 
-    init {
-        card.addView(
-            ComposeView(card.context).apply {
-                setContent {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(tileWidth.floatValue)
-                            .drawBehind { tileBackground() }
-                            .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp)
-                    ) {
-                        Content(tileWidth.floatValue > 1.2f)
-                    }
-                }
-            }
-        )
+    @Composable
+    override fun CardContent() {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(tileWidth.floatValue)
+                .drawBehind { tileBackground() }
+                .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp)
+        ) {
+            Content(tileWidth.floatValue > 1.2f)
+        }
     }
 
     override fun onBindView(

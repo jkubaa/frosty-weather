@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import androidx.core.graphics.ColorUtils
 import breezyweather.domain.location.model.Location
@@ -31,7 +32,8 @@ import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.UnitWidth
 
 /** Pressure tile: value, unit, and where it sits between low and high pressure. */
-class PressureViewHolder(parent: ViewGroup) : GlassTileViewHolder(parent, R.drawable.ic_gauge, R.string.pressure) {
+class PressureViewHolder(context: Context) : GlassTileViewHolder(
+    context, R.drawable.ic_gauge, R.string.pressure) {
 
     override fun onBindView(
         activity: BreezyActivity,

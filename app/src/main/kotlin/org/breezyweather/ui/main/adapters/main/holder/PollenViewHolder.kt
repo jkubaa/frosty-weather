@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -56,7 +57,7 @@ import org.breezyweather.ui.theme.resource.providers.ResourceProvider
  * Pollen tile: the two most concentrated pollens (mold aside) with their level and its color,
  * or that pollen is negligible today.
  */
-class PollenViewHolder(parent: ViewGroup) : ComposeTileViewHolder(parent) {
+class PollenViewHolder(context: Context) : ComposeTileViewHolder(context) {
 
     /** [name] null for the "negligible" line. */
     @Immutable

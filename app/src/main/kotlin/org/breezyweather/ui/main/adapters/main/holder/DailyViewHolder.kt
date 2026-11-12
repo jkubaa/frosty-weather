@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -78,7 +79,7 @@ import org.breezyweather.unit.temperature.TemperatureUnit
  * (and chance of precipitation), low, a temperature range bar on a shared scale, and high; or,
  * with another metric selected, the day's value with a fill bar. Tapping a day opens its details.
  */
-class DailyViewHolder(parent: ViewGroup) : ComposeCardViewHolder(parent) {
+class DailyViewHolder(context: Context) : ComposeCardViewHolder(context) {
 
     private class Bound(
         val activity: BreezyActivity,

@@ -18,9 +18,9 @@ package org.breezyweather.ui.main.adapters.main.holder
 
 import android.content.Context
 import android.graphics.drawable.Drawable
+import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ViewConfiguration
-import android.view.ViewGroup
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
@@ -40,6 +40,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.composed
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,41 +71,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.card.MaterialCardView
 import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.ui.main.utils.ForecastMetric
 import kotlin.math.abs
 
 /**
- * Full-width liquid glass card drawn in Compose. Like every glass card, the card is the item's
- * root, so the glass blur layer stays clipped to it. Subclasses provide [Content] and feed it
+ * Full-width liquid glass card drawn in Compose. Subclasses provide [Content] and feed it
  * state on bind.
  */
-abstract class ComposeCardViewHolder private constructor(
-    card: MaterialCardView,
-) : AbstractMainCardViewHolder(card) {
-
-    constructor(parent: ViewGroup) : this(
-        MaterialCardView(parent.context).apply {
-            layoutParams = RecyclerView.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            strokeWidth = 0
-        }
-    )
+abstract class ComposeCardViewHolder(
+    context: Context,
+) : AbstractMainCardViewHolder(context) {
 
     /** Text and drawing color on glass. */
     protected val contentColor: Color =
-        Color(card.context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
+        Color(context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
 
-    private val composeView = HorizontalRegionsComposeView(card.context)
-
-    init {
-        // Qualified: inside the view, a bare Content() would be the view's own and recurse forever
-        composeView.setContent { this@ComposeCardViewHolder.Content() }
-        card.addView(composeView)
+    @Composable
+    override fun CardContent() {
+        Content()
     }
 
     @Composable
@@ -112,18 +99,28 @@ abstract class ComposeCardViewHolder private constructor(
      * Marks an area that scrolls sideways (hour strip, metric switcher): drags starting there scroll
      * it instead of switching location, see [HorizontalRegionsComposeView].
      */
-    protected fun Modifier.horizontalScrollRegion(key: String): Modifier = onGloballyPositioned {
-        composeView.regions[key] = it.boundsInRoot()
+    protected fun Modifier.horizontalScrollRegion(key: String): Modifier = composed {
+        val regions = LocalHorizontalRegions.current ?: return@composed Modifier
+        val id = remember { "$key@${System.identityHashCode(this@ComposeCardViewHolder)}" }
+        DisposableEffect(id) { onDispose { regions.remove(id) } }
+        Modifier.onGloballyPositioned { regions[id] = it.boundsInRoot() }
     }
 }
 
+/** Areas of the card list that scroll sideways, in the list view's coordinates. */
+val LocalHorizontalRegions = compositionLocalOf<MutableMap<String, Rect>?> { null }
+
 /**
- * ComposeView for cards in the location pager. [SwipeSwitchLayout] switches locations on
+ * ComposeView for content in the location pager. [SwipeSwitchLayout] switches locations on
  * horizontal drags and doesn't see Compose scrolling, so drags starting in one of the [regions]
  * claim the gesture right away, and give it back if they turn out vertical (the page still scrolls
- * up and down from there). Elsewhere in the card, horizontal swipes still switch locations.
+ * up and down from there). Elsewhere, horizontal swipes still switch locations.
  */
-internal class HorizontalRegionsComposeView(context: Context) : AbstractComposeView(context) {
+abstract class HorizontalRegionsComposeView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0,
+) : AbstractComposeView(context, attrs, defStyleAttr) {
 
     val regions = mutableMapOf<String, Rect>()
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
@@ -131,16 +128,6 @@ internal class HorizontalRegionsComposeView(context: Context) : AbstractComposeV
     private var downY = 0f
     private var claimed = false
     private var decided = false
-    private var body: (@Composable () -> Unit)? by mutableStateOf(null)
-
-    fun setContent(content: @Composable () -> Unit) {
-        body = content
-    }
-
-    @Composable
-    override fun Content() {
-        body?.invoke()
-    }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         when (ev.actionMasked) {

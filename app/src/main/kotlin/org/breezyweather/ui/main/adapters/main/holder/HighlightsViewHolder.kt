@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,7 +51,7 @@ import org.breezyweather.ui.theme.resource.providers.ResourceProvider
  * the coming hours and days (rain, temperature change, UV, gusts, next sunrise or sunset), each with
  * a short label. See [Highlights] for the rules.
  */
-class HighlightsViewHolder(parent: ViewGroup) : ComposeCardViewHolder(parent) {
+class HighlightsViewHolder(context: Context) : ComposeCardViewHolder(context) {
 
     private val highlights = mutableStateOf<List<Highlight>>(emptyList())
     private var separator = ", "

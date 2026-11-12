@@ -18,6 +18,7 @@ package org.breezyweather.ui.theme.weatherView.sky
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -25,6 +26,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +38,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
@@ -70,6 +78,9 @@ class SkyWeatherView(context: Context) : AbstractComposeView(context), WeatherVi
     private var drawing by mutableStateOf(false)
     private var animating by mutableStateOf(true)
     private var scroll by mutableFloatStateOf(0f)
+
+    /** This sky, for the glass cards to draw behind them. */
+    val backdrop = SkyBackdrop()
 
     init {
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
@@ -128,6 +139,7 @@ class SkyWeatherView(context: Context) : AbstractComposeView(context), WeatherVi
             scroll = { scroll },
             debugSunAltitude = debug.sunAltitude,
             debugMoonPhase = debug.moonPhase,
+            backdrop = backdrop,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -200,6 +212,7 @@ private fun SkyScene(
     scroll: () -> Float,
     debugSunAltitude: Double?,
     debugMoonPhase: Double?,
+    backdrop: SkyBackdrop,
     modifier: Modifier = Modifier,
 ) {
     val time = remember { mutableFloatStateOf(0f) }
@@ -269,7 +282,8 @@ private fun SkyScene(
         SkyStyles.of(weatherKind, daytime = true) to SkyStyles.of(weatherKind, daytime = false)
     }
 
-    Canvas(modifier) {
+    // Shared with the glass cards (see SkyBackdrop): they draw the same sky, blurred, behind them
+    val painter: DrawScope.() -> Unit = {
         val light = SkyLight(dayAmount, golden, sunAlpha, moonAlpha, moonPhase, southern)
         val t = time.floatValue
         val s = scroll()
@@ -286,6 +300,28 @@ private fun SkyScene(
                 drawPair(current, light, t, s, backgroundAlpha = p, effectsAlpha = p)
             }
             else -> drawPair(current, light, t, s, backgroundAlpha = 1f, effectsAlpha = p)
+        }
+    }
+    SideEffect { backdrop.painter = painter }
+    val density = LocalDensity.current
+    Canvas(
+        modifier.onGloballyPositioned {
+            backdrop.origin = it.positionInWindow()
+            backdrop.size = it.size.toSize()
+        }
+    ) {
+        val canvas = drawContext.canvas.nativeCanvas
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && canvas.isHardwareAccelerated) {
+            // Recorded once per frame, drawn here and referenced by the glass cards
+            val node = backdrop.obtainNode()
+            node.setPosition(0, 0, size.width.toInt(), size.height.toInt())
+            val recording = node.beginRecording()
+            CanvasDrawScope().draw(density, layoutDirection, androidx.compose.ui.graphics.Canvas(recording), size) { painter() }
+            node.endRecording()
+            canvas.drawRenderNode(node)
+        } else {
+            // Software canvas (e.g. the bottom bar capturing the screen to blur it)
+            painter()
         }
     }
 }

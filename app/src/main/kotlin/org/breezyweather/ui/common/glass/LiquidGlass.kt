@@ -146,14 +146,18 @@ class LiquidGlassDrawable(
 object LiquidGlass {
 
     /** Opacity of the tinted glass body, on top of the animated weather background. */
-    private const val BODY_ALPHA_LIGHT = 0.42f
-    private const val BODY_ALPHA_DARK = 0.30f
+    internal const val BODY_ALPHA_LIGHT = 0.42f
+    internal const val BODY_ALPHA_DARK = 0.30f
 
     /** Blur radius at 100% intensity, at BlurView's downscaled resolution. */
-    private const val MAX_BLUR_RADIUS = 25f
+    internal const val MAX_BLUR_RADIUS = 25f
 
     /** Width of the refracting band along the glass edges. */
-    private const val REFRACTION_EDGE_DP = 16f
+    internal const val REFRACTION_EDGE_DP = 16f
+
+    /** Whether the theme surface (and so the glass body) is light. */
+    fun isLightSurface(context: Context): Boolean =
+        ColorUtils.calculateLuminance(context.getThemeColor(com.google.android.material.R.attr.colorSurface)) > 0.5
 
     private fun isLightSurface(view: View): Boolean {
         val surface = view.context.getThemeColor(com.google.android.material.R.attr.colorSurface)

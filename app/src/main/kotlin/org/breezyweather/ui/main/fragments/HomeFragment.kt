@@ -16,7 +16,6 @@
 
 package org.breezyweather.ui.main.fragments
 
-import android.animation.Animator
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.os.Bundle
@@ -32,17 +31,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import breezyweather.domain.location.model.Location
 import kotlinx.coroutines.launch
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.activities.livedata.EqualtableLiveData
-import org.breezyweather.common.extensions.density
 import org.breezyweather.common.extensions.doOnApplyWindowInsets
 import org.breezyweather.common.extensions.dpToPx
-import org.breezyweather.common.extensions.getBlocksPerRow
 import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.common.extensions.isDarkMode
 import org.breezyweather.common.extensions.isMotionReduced
@@ -56,10 +51,7 @@ import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.common.widgets.SwipeSwitchLayout
 import org.breezyweather.ui.main.MainActivity
 import org.breezyweather.ui.main.MainActivityViewModel
-import org.breezyweather.ui.main.adapters.main.MainAdapter
-import org.breezyweather.ui.main.adapters.main.ViewType
-import org.breezyweather.ui.main.layouts.MainLayoutManager
-import org.breezyweather.ui.main.utils.MainModuleUtils
+import org.breezyweather.ui.main.adapters.main.MainCards
 import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.resource.ResourcesProviderFactory
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
@@ -74,9 +66,7 @@ class HomeFragment : MainModuleFragment() {
     private lateinit var viewModel: MainActivityViewModel
     private lateinit var weatherView: WeatherView
 
-    private var adapter: MainAdapter? = null
-    private var scrollListener: OnScrollListener? = null
-    private var recyclerViewAnimator: Animator? = null
+    private var cards: MainCards? = null
     private var resourceProvider: ResourceProvider? = null
 
     private val previewOffset = EqualtableLiveData(0)
@@ -162,9 +152,7 @@ class HomeFragment : MainModuleFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        adapter = null
-        binding.recyclerView.clearOnScrollListeners()
-        scrollListener = null
+        cards = null
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
@@ -254,43 +242,16 @@ class HomeFragment : MainModuleFragment() {
         val itemAnimationEnabled = SettingsManager
             .getInstance(requireContext())
             .isElementsAnimationEnabled
-        adapter = MainAdapter(
-            (requireActivity() as MainActivity),
-            binding.recyclerView,
-            weatherView,
-            null,
-            resourceProvider!!,
-            listAnimationEnabled,
-            itemAnimationEnabled
-        ).apply {
-            itemTouchHelper.attachToRecyclerView(binding.recyclerView)
-        }
-
-        binding.recyclerView.adapter = adapter
-        binding.recyclerView.layoutManager = MainLayoutManager(requireContext(), GRID_SPAN_COUNT).apply {
-            spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                override fun getSpanSize(position: Int): Int {
-                    return if (
-                        ViewType.isHalfSizeableBlock(binding.recyclerView.adapter!!.getItemViewType(position)) != true
-                    ) {
-                        // Spreads on the full width
-                        GRID_SPAN_COUNT
-                    } else {
-                        // This takes into account the actual available width (if drawer is open or not).
-                        // The last tiles of a run share the whole row rather than leaving a gap.
-                        val blocksPerRow = requireContext().getBlocksPerRow(width.toFloat().div(requireContext().density))
-                        GRID_SPAN_COUNT.div((adapter?.tilesInRow(position, blocksPerRow) ?: blocksPerRow).coerceAtLeast(1))
-                    }
-                }
-            }
-        }
-        binding.recyclerView.doOnApplyWindowInsets { view, insets ->
+        cards = MainCards(requireActivity() as MainActivity)
+        binding.cardsView.cards = cards
+        // The glass cards blur this sky behind them
+        binding.cardsView.backdrop = (weatherView as? SkyWeatherView)?.backdrop
+        binding.cardsView.onScroll = ::onCardsScrolled
+        binding.cardsView.doOnApplyWindowInsets { _, insets ->
             // Leave room for the floating glass capsule
-            view.updatePadding(
-                bottom = insets.bottom + resources.getDimensionPixelSize(R.dimen.glass_capsule_content_clearance)
-            )
+            binding.cardsView.bottomPadding =
+                insets.bottom + resources.getDimensionPixelSize(R.dimen.glass_capsule_content_clearance)
         }
-        binding.recyclerView.addOnScrollListener(OnScrollListener().also { scrollListener = it })
 
         if (isAdded && context != null) {
             updatePreviewSubviews()
@@ -403,55 +364,22 @@ class HomeFragment : MainModuleFragment() {
         (activity as BreezyActivity).updateLocalNightMode(expectedLightTheme)
     }
 
-    @SuppressLint("ClickableViewAccessibility", "NotifyDataSetChanged")
     private fun updateContentViews(location: Location?) {
-        recyclerViewAnimator?.let {
-            it.cancel()
-            recyclerViewAnimator = null
-        }
-
         // The content is rebuilt from the top (hero visible): hide the compact title, which would
         // otherwise keep the visibility of the previous scroll position
         toolbarTitleFraction = 0f
         updateDayNightColors()
+        weatherView.onScroll(0)
 
         binding.switchLayout.reset()
 
-        if (location?.weather == null) {
-            adapter!!.setNullWeather()
-            adapter!!.notifyDataSetChanged()
-            return
-        }
-
-        val listAnimationEnabled = SettingsManager
-            .getInstance(requireContext())
-            .isCardsFadeInEnabled
-        val itemAnimationEnabled = SettingsManager
-            .getInstance(requireContext())
-            .isElementsAnimationEnabled
-        adapter!!.update(
-            (requireActivity() as MainActivity),
-            binding.recyclerView,
-            weatherView,
+        val settings = SettingsManager.getInstance(requireContext())
+        binding.cardsView.show(
             location,
             resourceProvider!!,
-            listAnimationEnabled,
-            itemAnimationEnabled
+            listAnimationEnabled = settings.isCardsFadeInEnabled,
+            itemAnimationEnabled = settings.isElementsAnimationEnabled
         )
-        adapter!!.notifyDataSetChanged()
-
-        scrollListener!!.postReset(binding.recyclerView)
-
-        // TODO: What's the purpose of this?
-        if (!listAnimationEnabled) {
-            binding.recyclerView.alpha = 0f
-            recyclerViewAnimator = MainModuleUtils.getEnterAnimator(
-                binding.recyclerView,
-                0
-            ).apply {
-                startDelay = 150
-            }.also { it.start() }
-        }
     }
 
     private fun ensureResourceProvider() {
@@ -556,40 +484,21 @@ class HomeFragment : MainModuleFragment() {
 
     // on scroll changed listener.
 
-    private inner class OnScrollListener : RecyclerView.OnScrollListener() {
+    private fun onCardsScrolled(scrollY: Int) {
+        if (!isFragmentViewCreated) return
+        weatherView.onScroll(scrollY)
 
-        private var mScrollY = 0
-
-        fun postReset(recyclerView: RecyclerView) {
-            recyclerView.post {
-                if (!isFragmentViewCreated) {
-                    return@post
-                }
-                mScrollY = 0
-                onScrolled(recyclerView, 0, 0)
-            }
-        }
-
-        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-            mScrollY = recyclerView.computeVerticalScrollOffset()
-            weatherView.onScroll(mScrollY)
-
-            // Fade the compact toolbar title in once the hero header has mostly scrolled away
-            val fadeStart = recyclerView.context.dpToPx(TOOLBAR_TITLE_FADE_START_DP)
-            val fadeLength = recyclerView.context.dpToPx(TOOLBAR_TITLE_FADE_LENGTH_DP)
-            val fraction = ((mScrollY - fadeStart) / fadeLength).coerceIn(0f, 1f)
-            if (fraction != toolbarTitleFraction) {
-                toolbarTitleFraction = fraction
-                updateToolbarTitleAlpha()
-            }
-            adapter?.onScroll()
+        // Fade the compact toolbar title in once the hero header has mostly scrolled away
+        val fadeStart = requireContext().dpToPx(TOOLBAR_TITLE_FADE_START_DP)
+        val fadeLength = requireContext().dpToPx(TOOLBAR_TITLE_FADE_LENGTH_DP)
+        val fraction = ((scrollY - fadeStart) / fadeLength).coerceIn(0f, 1f)
+        if (fraction != toolbarTitleFraction) {
+            toolbarTitleFraction = fraction
+            updateToolbarTitleAlpha()
         }
     }
 
     companion object {
-        // 60 is 5 * 4 * 3, which allows us to divide from 1, 2, 3, 4 or 5 and have a whole number
-        const val GRID_SPAN_COUNT = 60
-
         private const val TOOLBAR_TITLE_FADE_START_DP = 70f
         private const val TOOLBAR_TITLE_FADE_LENGTH_DP = 60f
     }

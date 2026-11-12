@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -83,7 +84,7 @@ import kotlin.time.Duration.Companion.days
  * strip of hour / graphic / value starting with "Now". On conditions, sunrise and sunset show up
  * in the strip at their time. Tapping an hour opens the details of its day.
  */
-class HourlyViewHolder(parent: ViewGroup) : ComposeCardViewHolder(parent) {
+class HourlyViewHolder(context: Context) : ComposeCardViewHolder(context) {
 
     private class Bound(
         val activity: BreezyActivity,

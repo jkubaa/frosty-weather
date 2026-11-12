@@ -119,17 +119,17 @@ class LiquidGlassBlur(
         private const val SCALE_FACTOR = 6f
 
         /** Vibrancy: 1 = unchanged, iOS-like glass sits around 1.5 to 1.8. */
-        private const val SATURATION = 1.6f
+        internal const val SATURATION = 1.6f
 
         /** How far content is pulled at the very edge, relative to the band width. */
-        private const val REFRACTION_STRENGTH = 0.9f
+        internal const val REFRACTION_STRENGTH = 0.9f
 
         /**
          * Lens refraction near the edges of a rounded rectangle. For each pixel, the signed distance
          * to the rounded edge says how deep inside the panel it is; in the outer band, the backdrop
          * is sampled further inside (towards the center), increasingly so at the very edge.
          */
-        private const val REFRACTION_SHADER = """
+        internal const val REFRACTION_SHADER = """
             uniform shader content;
             uniform float2 size;
             uniform float cornerRadius;

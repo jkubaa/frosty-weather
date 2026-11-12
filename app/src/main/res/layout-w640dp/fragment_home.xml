@@ -47,13 +47,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
 
-                    <org.breezyweather.ui.main.widgets.FitTabletRecyclerView
-                        android:id="@+id/recycler_view"
+                    <!-- The cards, in Compose (see HomeCardsView) -->
+                    <org.breezyweather.ui.main.fragments.HomeCardsView
+                        android:id="@+id/cards_view"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scrollbars="none"
-                        android:clipToPadding="false"
-                        android:descendantFocusability="blocksDescendants" />
+                        android:layout_height="match_parent" />
 
                 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

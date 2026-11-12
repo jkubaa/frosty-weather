@@ -16,10 +16,8 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.annotation.SuppressLint
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,12 +34,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -51,11 +49,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import breezyweather.domain.location.model.Location
-import com.google.android.material.card.MaterialCardView
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.utils.helpers.IntentHelper
-import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.domain.weather.model.getFormattedDates
 import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
@@ -63,9 +59,16 @@ import org.breezyweather.ui.theme.compose.themeRipple
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import java.util.Date
 
-class AlertViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
-    LayoutInflater.from(parent.context).inflate(R.layout.container_main_alert, parent, false)
-) {
+class AlertViewHolder(
+    context: Context,
+) : AbstractMainCardViewHolder(context) {
+
+    private val bound = mutableStateOf<Pair<BreezyActivity, Location>?>(null)
+
+    // Warm-tinted liquid glass for alerts
+    override val glassTint = androidx.compose.ui.graphics.Color(
+        ColorUtils.setAlphaComponent(ContextCompat.getColor(context, R.color.alert_background), (0.62f * 255).toInt())
+    )
 
     @SuppressLint("DefaultLocale")
     override fun onBindView(
@@ -76,32 +79,19 @@ class AlertViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
         itemAnimationEnabled: Boolean,
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
-        // Warm-tinted liquid glass for alerts
-        LiquidGlass.setTint(
-            itemView as MaterialCardView,
-            ColorUtils.setAlphaComponent(
-                ContextCompat.getColor(activity, R.color.alert_background),
-                (0.62f * 255).toInt()
-            )
-        )
+        // The list only shows this card when an alert is still running or to come
+        bound.value = activity to location
+    }
 
-        // Don’t show if alertList only contains alerts in the past
-        if (location.weather?.alertList?.any { it.endDate == null || it.endDate!!.time > Date().time } == true) {
-            itemView.visibility = View.VISIBLE
-            itemView.setOnClickListener {
-                IntentHelper.startAlertActivity(activity, location.formattedId)
+    @Composable
+    override fun CardContent() {
+        val (activity, location) = bound.value ?: return
+        BreezyWeatherTheme(!ThemeManager.isLightTheme(activity, location)) {
+            if (location.weather!!.currentAlertList.isEmpty()) {
+                UpcomingAlerts(location.formattedId)
+            } else {
+                AlertList(location)
             }
-            itemView.findViewById<ComposeView>(R.id.container_main_first_card_alert_list).setContent {
-                BreezyWeatherTheme(!ThemeManager.isLightTheme(activity, location)) {
-                    if (location.weather!!.currentAlertList.isEmpty()) {
-                        UpcomingAlerts(location.formattedId)
-                    } else {
-                        AlertList(location)
-                    }
-                }
-            }
-        } else {
-            itemView.visibility = View.GONE
         }
     }
 

@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.graphics.Color
 import android.view.ViewGroup
 import breezyweather.domain.location.model.Location
@@ -37,7 +38,8 @@ import org.breezyweather.unit.formatting.format
 import kotlin.math.roundToInt
 
 /** UV index tile: index, level, and where it sits on the low (green) to extreme (purple) scale. */
-class UvViewHolder(parent: ViewGroup) : GlassTileViewHolder(parent, R.drawable.ic_uv, R.string.uv_index_short) {
+class UvViewHolder(context: Context) : GlassTileViewHolder(
+    context, R.drawable.ic_uv, R.string.uv_index_short) {
 
     override fun onBindView(
         activity: BreezyActivity,

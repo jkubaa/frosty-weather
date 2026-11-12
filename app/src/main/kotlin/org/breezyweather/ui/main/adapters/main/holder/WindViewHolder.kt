@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
@@ -30,7 +31,8 @@ import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.UnitWidth
 
 /** Wind tile: speed, gusts, where it comes from, and a compass. */
-class WindViewHolder(parent: ViewGroup) : GlassTileViewHolder(parent, R.drawable.ic_wind, R.string.wind) {
+class WindViewHolder(context: Context) : GlassTileViewHolder(
+    context, R.drawable.ic_wind, R.string.wind) {
 
     override fun onBindView(
         activity: BreezyActivity,

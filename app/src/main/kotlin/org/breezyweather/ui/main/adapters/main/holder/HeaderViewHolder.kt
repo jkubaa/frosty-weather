@@ -16,14 +16,12 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.animation.Animator
-import android.animation.ObjectAnimator
 import android.content.Context
-import android.view.ViewGroup
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,7 +42,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -58,7 +55,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
 import org.breezyweather.common.extensions.currentLocale
@@ -80,25 +76,13 @@ import kotlin.math.roundToInt
  * temperature counting up to its value with today's high / low on the right, in frosted "glassy" text.
  * The summary card under it is its own item, see [SummaryViewHolder].
  *
- * The item stays a View for the card list; its content is Compose, created once and fed new state
- * on each bind, so the temperature animates from the previous location's value to the new one.
  */
-class HeaderViewHolder private constructor(
-    composeView: ComposeView,
-) : AbstractMainViewHolder(composeView) {
+class HeaderViewHolder(
+    context: Context,
+) : AbstractMainViewHolder(context) {
 
     private val state = mutableStateOf<HeroState?>(null)
-
-    constructor(parent: ViewGroup) : this(
-        ComposeView(parent.context).apply {
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        }
-    )
-
-    init {
-        val content = Color(itemView.context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
-        composeView.setContent { state.value?.let { Hero(it, content) } }
-    }
+    private val content = Color(context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
 
     override fun onBindView(
         context: Context,
@@ -111,12 +95,11 @@ class HeaderViewHolder private constructor(
         state.value = HeroState.from(context, location, itemAnimationEnabled)
     }
 
-    override fun getEnterAnimator(pendingAnimatorList: List<Animator>): Animator {
-        val a: Animator = ObjectAnimator.ofFloat(itemView, "alpha", 0f, 1f)
-        a.duration = 300
-        a.startDelay = 100
-        a.interpolator = FastOutSlowInInterpolator()
-        return a
+    @Composable
+    override fun Render(modifier: Modifier) {
+        state.value?.let {
+            Box(modifier) { Hero(it, content) }
+        }
     }
 }
 

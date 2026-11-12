@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
@@ -32,8 +33,8 @@ import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.format
 
 /** Air quality tile: index, its name, and where it sits on the good-to-hazardous color scale. */
-class AirQualityViewHolder(parent: ViewGroup) : GlassTileViewHolder(
-    parent,
+class AirQualityViewHolder(context: Context) : GlassTileViewHolder(
+    context,
     R.drawable.ic_factory,
     R.string.air_quality
 ) {

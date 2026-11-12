@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import android.widget.TextView
 import breezyweather.domain.location.model.Location
@@ -33,8 +34,8 @@ import java.util.Calendar
 import java.util.Date
 
 /** Precipitation tile: total for the current half of the day, and which half (and kind) it is. */
-class PrecipitationViewHolder(parent: ViewGroup) : GlassTileViewHolder(
-    parent,
+class PrecipitationViewHolder(context: Context) : GlassTileViewHolder(
+    context,
     R.drawable.ic_precipitation,
     R.string.precipitation
 ) {

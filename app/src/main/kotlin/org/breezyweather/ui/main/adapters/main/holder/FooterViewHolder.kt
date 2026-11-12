@@ -16,8 +16,6 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.animation.Animator
-import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.annotation.CallSuper
@@ -43,7 +41,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -55,7 +52,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.source.SourceFeature
 import org.breezyweather.R
@@ -77,8 +73,10 @@ import java.util.Date
 import kotlin.time.Duration.Companion.minutes
 
 class FooterViewHolder(
-    private val composeView: ComposeView,
-) : AbstractMainViewHolder(composeView) {
+    context: Context,
+) : AbstractMainViewHolder(context) {
+
+    private val bound = mutableStateOf<Location?>(null)
 
     /** "Last updated 10 min. ago" */
     private fun lastUpdatedText(refreshTime: Date): String = context.getString(
@@ -97,10 +95,14 @@ class FooterViewHolder(
     ) {
         super.onBindView(context, location, provider, listAnimationEnabled, itemAnimationEnabled)
 
-        composeView.setContent {
-            BreezyWeatherTheme(!ThemeManager.isLightTheme(context, location)) {
-                ComposeView(location)
-            }
+        bound.value = location
+    }
+
+    @Composable
+    override fun Render(modifier: Modifier) {
+        val location = bound.value ?: return
+        BreezyWeatherTheme(!ThemeManager.isLightTheme(context, location)) {
+            ComposeView(location, modifier)
         }
     }
 
@@ -342,14 +344,6 @@ class FooterViewHolder(
                 onClose = { dialogLinkOpenState.value = false },
                 linkToOpen = linkToOpen.value
             )
-        }
-    }
-
-    override fun getEnterAnimator(pendingAnimatorList: List<Animator>): Animator {
-        return ObjectAnimator.ofFloat(itemView, "alpha", 0f, 1f).apply {
-            duration = 450
-            interpolator = FastOutSlowInInterpolator()
-            startDelay = pendingAnimatorList.size * 150L
         }
     }
 }

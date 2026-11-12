@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.ColumnScope
@@ -59,7 +60,7 @@ import kotlin.math.roundToLong
  *
  * The phase comes from the weather source when it has one, otherwise it is computed on the device.
  */
-class MoonViewHolder(parent: ViewGroup) : ComposeTileViewHolder(parent) {
+class MoonViewHolder(context: Context) : ComposeTileViewHolder(context) {
 
     private val model = mutableStateOf<MoonModel?>(null)
 

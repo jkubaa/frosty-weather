@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.ColumnScope
@@ -58,7 +59,7 @@ import kotlin.math.sin
  * Clock tile: the time at the location, an analog clock with a running second hand, and the name
  * of the location's time zone. Handy for places in another time zone.
  */
-class ClockViewHolder(parent: ViewGroup) : ComposeTileViewHolder(parent) {
+class ClockViewHolder(context: Context) : ComposeTileViewHolder(context) {
 
     private val location = mutableStateOf<Location?>(null)
     private val now = mutableLongStateOf(System.currentTimeMillis())

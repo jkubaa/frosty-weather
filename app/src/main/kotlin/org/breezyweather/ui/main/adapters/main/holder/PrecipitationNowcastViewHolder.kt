@@ -1,89 +1,96 @@
 /*
- * This file is part of Breezy Weather.
+ * This file is part of Frosty Weather, a modified version of Breezy Weather.
  *
- * Breezy Weather is free software: you can redistribute it and/or modify it
+ * Frosty Weather is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the
  * Free Software Foundation, version 3 of the License.
  *
- * Breezy Weather is distributed in the hope that it will be useful, but
+ * Frosty Weather is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
  * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
  * License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Breezy Weather. If not, see <https://www.gnu.org/licenses/>.
+ * along with Frosty Weather. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package org.breezyweather.ui.main.adapters.main.holder
 
 import android.content.Context
-import android.text.Layout
-import android.text.SpannableStringBuilder
-import android.view.LayoutInflater
-import android.view.ViewGroup
-import android.widget.TextView
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.weather.model.Precipitation
-import com.patrykandpatrick.vico.views.cartesian.CartesianChart
-import com.patrykandpatrick.vico.views.cartesian.CartesianChartView
-import com.patrykandpatrick.vico.views.cartesian.CartesianDrawingContext
-import com.patrykandpatrick.vico.views.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.views.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.views.cartesian.data.CartesianLayerRangeProvider
-import com.patrykandpatrick.vico.views.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.views.cartesian.data.columnModel
-import com.patrykandpatrick.vico.views.cartesian.decoration.HorizontalLine
-import com.patrykandpatrick.vico.views.cartesian.layer.ColumnCartesianLayer
-import com.patrykandpatrick.vico.views.cartesian.marker.CartesianMarker
-import com.patrykandpatrick.vico.views.cartesian.marker.CartesianMarkerController
-import com.patrykandpatrick.vico.views.cartesian.marker.DefaultCartesianMarker
-import com.patrykandpatrick.vico.views.common.Fill
-import com.patrykandpatrick.vico.views.common.Insets
-import com.patrykandpatrick.vico.views.common.Position
-import com.patrykandpatrick.vico.views.common.component.LineComponent
-import com.patrykandpatrick.vico.views.common.component.Shadow
-import com.patrykandpatrick.vico.views.common.component.ShapeComponent
-import com.patrykandpatrick.vico.views.common.component.TextComponent
-import com.patrykandpatrick.vico.views.common.shape.CorneredShape
-import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableMap
-import kotlinx.coroutines.launch
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.extensions.formatMeasureIntensity
 import org.breezyweather.common.extensions.getFormattedTime
-import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.common.extensions.is12Hour
-import org.breezyweather.common.extensions.isDarkMode
-import org.breezyweather.common.extensions.pxToDp
-import org.breezyweather.common.extensions.toDate
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.domain.weather.model.getContentDescription
 import org.breezyweather.domain.weather.model.getMinutelyDescription
 import org.breezyweather.domain.weather.model.getMinutelyTitle
-import org.breezyweather.ui.common.charts.views.SpecificHorizontalAxisItemPlacer
-import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
-import org.breezyweather.ui.theme.weatherView.WeatherView
-import org.breezyweather.ui.theme.weatherView.WeatherViewController
-import org.breezyweather.unit.precipitation.Precipitation.Companion.micrometers
 import org.breezyweather.unit.precipitation.Precipitation.Companion.millimeters
 import java.util.Date
 import kotlin.math.max
 import kotlin.time.Duration.Companion.minutes
 
-class PrecipitationNowcastViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
-    LayoutInflater.from(parent.context).inflate(R.layout.container_main_precipitation_nowcast_card, parent, false)
-) {
-    private val titleView: TextView = itemView.findViewById(R.id.nowcasting_block_title)
-    private val subtitle: TextView = itemView.findViewById(R.id.nowcasting_block_subtitle)
-    private val chartView: CartesianChartView = itemView.findViewById(R.id.container_main_minutely_chart)
-    private val modelProducer = CartesianChartModelProducer()
+/**
+ * Precipitation in the next hour, iOS weather style, in Compose: the source's title and sentence,
+ * then a bar every 5 minutes against light / medium / heavy guide lines, with the start, middle and
+ * end times. Touch and drag along the chart to read a bar.
+ */
+class PrecipitationNowcastViewHolder(context: Context) : ComposeCardViewHolder(context) {
+
+    @Immutable
+    private class Bar(val start: Long, val micrometers: Double, val label: String)
+
+    @Immutable
+    private class Model(
+        val title: String,
+        val subtitle: String?,
+        val bars: List<Bar>,
+        val maxMicrometers: Double,
+        val guides: List<Pair<Double, String>>,
+        val times: List<String>,
+        val description: String,
+    )
+
+    private val model = mutableStateOf<Model?>(null)
 
     override fun onBindView(
         activity: BreezyActivity,
@@ -93,207 +100,188 @@ class PrecipitationNowcastViewHolder(parent: ViewGroup) : AbstractMainCardViewHo
         itemAnimationEnabled: Boolean,
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
-
         val weather = location.weather ?: return
-        titleView.text = weather.getMinutelyTitle(context)
-        subtitle.text = weather.getMinutelyDescription(context, location)
+        val minutely = weather.minutelyForecast
+        if (minutely.isEmpty()) return
+        fun time(millis: Long) = Date(millis).getFormattedTime(location, activity, activity.is12Hour)
 
-        val minutelyList = weather.minutelyForecast
-        val minX = minutelyList.first().date.time
-        val maxX = minutelyList.last().endingDate.time
-
-        val minutely = location.weather!!.minutelyForecastBy5Minutes
-            .associate { it.date.time to (it.precipitationIntensity ?: 0.micrometers) }
-            .toImmutableMap()
-        val timeWithTicks = persistentListOf(minX.toDouble(), (minX + (maxX - minX) / 2).toDouble(), maxX.toDouble())
-
-        val maxY = max(
-            Precipitation.PRECIPITATION_HOURLY_HEAVY.millimeters.inMicrometers,
-            minutely.values.max().inMicrometers
-        )
-        val trendHorizontalLines: ImmutableMap<Double, String> = buildMap {
-            /*
-             * Don’t show some thresholds when max precipitation is very high
-             * - Below heavy level: keep all 3 lines
-             * - Between heavy level and 2 * heavy level: keep light and heavy lines
-             * - Above 2 * heavy level: keep heavy line only
-             */
-            if (maxY.micrometers.inMillimeters < Precipitation.PRECIPITATION_HOURLY_HEAVY * 2.0f) {
-                put(
-                    Precipitation.PRECIPITATION_HOURLY_LIGHT,
-                    context.getString(R.string.precipitation_intensity_light)
-                )
-            }
-            if (maxY.micrometers.inMillimeters <= Precipitation.PRECIPITATION_HOURLY_HEAVY) {
-                put(
-                    Precipitation.PRECIPITATION_HOURLY_MEDIUM,
-                    context.getString(R.string.precipitation_intensity_medium)
-                )
-            }
-            put(
-                Precipitation.PRECIPITATION_HOURLY_HEAVY,
-                context.getString(R.string.precipitation_intensity_heavy)
-            )
-        }.toImmutableMap()
-        val hasOnlyThresholdsValues = !minutely.values.any {
-            it.inMillimeters !in arrayOf(
-                null,
+        val by5 = weather.minutelyForecastBy5Minutes
+        val values = by5.map { (it.precipitationIntensity?.inMicrometers ?: 0.0) }
+        // Bars whose values are only the thresholds read better by name than by amount
+        val onlyThresholds = values.all {
+            (it / 1000.0) in setOf(
                 0.0,
                 Precipitation.PRECIPITATION_HOURLY_LIGHT,
                 Precipitation.PRECIPITATION_HOURLY_MEDIUM,
                 Precipitation.PRECIPITATION_HOURLY_HEAVY
             )
         }
+        val heavyMicrometers = Precipitation.PRECIPITATION_HOURLY_HEAVY.millimeters.inMicrometers
+        val maxMicrometers = max(heavyMicrometers, values.maxOrNull() ?: 0.0)
 
-        val isTrendHorizontalLinesEnabled = SettingsManager.getInstance(context).isTrendHorizontalLinesEnabled
-        val lineColor = Color(context.getThemeColor(com.google.android.material.R.attr.colorOutline))
-        val labelColor = ContextCompat.getColor(
-            context,
-            if (ThemeManager.isLightTheme(context, location)) {
-                R.color.colorTextGrey
-            } else {
-                R.color.colorTextGrey2nd
+        val bars = by5.mapIndexed { i, it ->
+            val amount = when {
+                onlyThresholds -> when (values[i] / 1000.0) {
+                    0.0 -> activity.getString(R.string.precipitation_none)
+                    Precipitation.PRECIPITATION_HOURLY_LIGHT -> activity.getString(R.string.precipitation_intensity_light)
+                    Precipitation.PRECIPITATION_HOURLY_MEDIUM -> activity.getString(R.string.precipitation_intensity_medium)
+                    else -> activity.getString(R.string.precipitation_intensity_heavy)
+                }
+                else -> it.precipitationIntensity?.formatMeasureIntensity(activity) ?: activity.getString(R.string.precipitation_none)
             }
-        )
-
-        val cartesianLayerRangeProvider = CartesianLayerRangeProvider.fixed(
-            minX = minX.toDouble(),
-            maxX = maxX.toDouble(),
-            maxY = maxY
-        )
-        val marker = DefaultCartesianMarker(
-            label = TextComponent(
-                color = context.getThemeColor(com.google.android.material.R.attr.colorOnPrimary),
-                background = ShapeComponent(
-                    fill = Fill(context.getThemeColor(androidx.appcompat.R.attr.colorPrimary)),
-                    CorneredShape.Pill,
-                    shadow = Shadow(
-                        radiusDp = LABEL_BACKGROUND_SHADOW_RADIUS_DP,
-                        yDp = LABEL_BACKGROUND_SHADOW_DY_DP
-                    )
-                ),
-                padding = Insets(
-                    activity.pxToDp(activity.resources.getDimensionPixelSize(R.dimen.normal_margin)),
-                    activity.pxToDp(activity.resources.getDimensionPixelSize(R.dimen.small_margin))
-                ),
-                textAlignment = Layout.Alignment.ALIGN_CENTER,
-                minWidth = TextComponent.MinWidth.fixed(40f)
-            ),
-            guideline = LineComponent(fill = Fill(labelColor)),
-            valueFormatter = MarkerLabelFormatterMinutelyDecorator(minutely, location, context, hasOnlyThresholdsValues)
-        )
-
-        val timeValueFormatter = CartesianValueFormatter { _, value, _ ->
-            Date(value.toLong()).getFormattedTime(location, context, context.is12Hour)
+            Bar(
+                start = it.date.time,
+                micrometers = values[i],
+                label = time(it.date.time) + "–" + time(it.date.time + 5.minutes.inWholeMilliseconds) +
+                    activity.getString(R.string.colon_separator) + amount
+            )
         }
 
-        chartView.chart = CartesianChart(
-            ColumnCartesianLayer(
-                ColumnCartesianLayer.ColumnProvider.series(
-                    LineComponent(
-                        fill = Fill(
-                            ThemeManager
-                                .getInstance(context)
-                                .weatherThemeDelegate
-                                .getThemeColors(
-                                    context,
-                                    WeatherView.WEATHER_KIND_RAINY,
-                                    WeatherViewController.isDaylight(location) && !context.isDarkMode
-                                )[0]
-                        ),
-                        thicknessDp = 500f,
-                        shape = CorneredShape.rounded(allPercent = 15)
-                    )
-                ),
-                rangeProvider = cartesianLayerRangeProvider
-            ),
-            bottomAxis = HorizontalAxis.bottom(
-                line = LineComponent(fill = Fill(lineColor.toArgb())),
-                label = TextComponent(
-                    color = labelColor,
-                    padding = Insets(4f, 2f)
-                ),
-                valueFormatter = timeValueFormatter,
-                tick = LineComponent(fill = Fill(lineColor.toArgb())),
-                guideline = null,
-                itemPlacer = SpecificHorizontalAxisItemPlacer(
-                    timeWithTicks,
-                    shiftExtremeLines = true,
-                    addExtremeLabelPadding = true
-                )
-            ),
-            decorations = if (isTrendHorizontalLinesEnabled) {
-                trendHorizontalLines.entries.map { line ->
-                    HorizontalLine(
-                        y = { line.key.millimeters.inMicrometers },
-                        verticalLabelPosition = Position.Vertical.Bottom,
-                        line = LineComponent(fill = Fill(lineColor.toArgb())),
-                        labelComponent = TextComponent(color = labelColor),
-                        label = { line.value }
-                    )
+        // Fewer guide lines when it rains very hard, so they don't crowd the bottom of the chart
+        val guides = if (SettingsManager.getInstance(activity).isTrendHorizontalLinesEnabled) {
+            buildList {
+                if (maxMicrometers / 1000.0 < Precipitation.PRECIPITATION_HOURLY_HEAVY * 2.0) {
+                    add(Precipitation.PRECIPITATION_HOURLY_LIGHT to activity.getString(R.string.precipitation_intensity_light))
                 }
-            } else {
-                emptyList()
-            },
-            marker = marker,
-            markerController = CartesianMarkerController.showOnPress(consumeMoveEvents = true)
-        )
-        chartView.animateIn = SettingsManager.getInstance(context).isElementsAnimationEnabled
-        chartView.modelProducer = modelProducer
-        chartView.contentDescription = minutelyList.getContentDescription(context, location)
-
-        activity.lifecycleScope.launch {
-            modelProducer.runTransaction {
-                columnModel {
-                    series(
-                        x = minutely.keys,
-                        y = minutely.values.map { it.value }
-                    )
+                if (maxMicrometers / 1000.0 <= Precipitation.PRECIPITATION_HOURLY_HEAVY) {
+                    add(Precipitation.PRECIPITATION_HOURLY_MEDIUM to activity.getString(R.string.precipitation_intensity_medium))
                 }
-            }
-        }
-    }
-}
-
-private class MarkerLabelFormatterMinutelyDecorator(
-    private val mappedValues: Map<Long, org.breezyweather.unit.precipitation.Precipitation>,
-    private val location: Location,
-    private val aContext: Context,
-    private val hasOnlyThresholdValues: Boolean,
-) : DefaultCartesianMarker.ValueFormatter {
-
-    override fun format(
-        context: CartesianDrawingContext,
-        targets: List<CartesianMarker.Target>,
-    ): CharSequence {
-        val model = targets.first()
-        val startTime = model.x.toLong().toDate()
-            .getFormattedTime(location, aContext, aContext.is12Hour)
-        val endTime = (model.x.toLong() + 5.minutes.inWholeMilliseconds).toDate()
-            .getFormattedTime(location, aContext, aContext.is12Hour)
-        val quantityFormatted = if (hasOnlyThresholdValues) {
-            when (mappedValues.getOrElse(model.x.toLong()) { null }?.inMillimeters ?: 0.0) {
-                0.0 -> aContext.getString(R.string.precipitation_none)
-                Precipitation.PRECIPITATION_HOURLY_LIGHT -> aContext.getString(R.string.precipitation_intensity_light)
-                Precipitation.PRECIPITATION_HOURLY_MEDIUM -> aContext.getString(R.string.precipitation_intensity_medium)
-                Precipitation.PRECIPITATION_HOURLY_HEAVY -> aContext.getString(R.string.precipitation_intensity_heavy)
-                else -> mappedValues.getOrElse(model.x.toLong()) { null }
-                    ?.formatMeasureIntensity(aContext)
-            }
+                add(Precipitation.PRECIPITATION_HOURLY_HEAVY to activity.getString(R.string.precipitation_intensity_heavy))
+            }.map { (mm, label) -> mm * 1000.0 to label }
         } else {
-            mappedValues.getOrElse(model.x.toLong()) { null }
-                ?.formatMeasureIntensity(aContext)
+            emptyList()
         }
 
-        return SpannableStringBuilder().append(
-            startTime,
-            "-",
-            endTime,
-            aContext.getString(R.string.colon_separator),
-            quantityFormatted
+        val start = minutely.first().date.time
+        val end = minutely.last().endingDate.time
+        model.value = Model(
+            title = weather.getMinutelyTitle(activity),
+            subtitle = weather.getMinutelyDescription(activity, location),
+            bars = bars,
+            maxMicrometers = maxMicrometers,
+            guides = guides,
+            times = listOf(time(start), time(start + (end - start) / 2), time(end)),
+            description = minutely.getContentDescription(activity, location)
         )
     }
-}
 
-private const val LABEL_BACKGROUND_SHADOW_RADIUS_DP = 4f
-private const val LABEL_BACKGROUND_SHADOW_DY_DP = 2f
+    @Composable
+    override fun Content() {
+        val m = model.value ?: return
+        Column(Modifier.padding(top = 14.dp, bottom = 12.dp)) {
+            GlassCardHeader(R.drawable.ic_precipitation, m.title, contentColor)
+            m.subtitle?.takeIf { it.isNotEmpty() }?.let {
+                Text(it, color = contentColor, fontSize = 15.sp, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp))
+            }
+            Chart(
+                m,
+                Modifier
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp)
+                    .fillMaxWidth()
+                    .horizontalScrollRegion("chart")
+                    .clearAndSetSemantics { contentDescription = m.description }
+            )
+        }
+    }
+
+    @Composable
+    private fun Chart(m: Model, modifier: Modifier) {
+        var selected by remember(m) { mutableStateOf<Int?>(null) }
+        val measurer = rememberTextMeasurer()
+        val content = contentColor
+        val labelStyle = TextStyle(color = content.copy(alpha = 0.6f), fontSize = 11.sp)
+        Column(modifier) {
+            // Reading of the touched bar, in place of nothing (keeps the chart from jumping)
+            Box(Modifier.fillMaxWidth().height(26.dp), contentAlignment = Alignment.Center) {
+                selected?.let { m.bars.getOrNull(it) }?.let {
+                    Text(
+                        text = it.label,
+                        color = content,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .background(content.copy(alpha = 0.16f), RoundedCornerShape(50))
+                            .padding(horizontal = 10.dp, vertical = 3.dp)
+                    )
+                }
+            }
+            Canvas(
+                Modifier
+                    .fillMaxWidth()
+                    .height(110.dp)
+                    .pointerInput(m) {
+                        fun pick(x: Float) {
+                            selected = ((x / size.width) * m.bars.size).toInt().coerceIn(0, m.bars.lastIndex)
+                        }
+                        detectHorizontalDragGestures(
+                            onDragStart = { pick(it.x) },
+                            onDragEnd = { selected = null },
+                            onDragCancel = { selected = null }
+                        ) { change, _ -> pick(change.position.x) }
+                    }
+                    .pointerInput(m) {
+                        detectTapGestures(
+                            onPress = {
+                                selected = ((it.x / size.width) * m.bars.size).toInt().coerceIn(0, m.bars.lastIndex)
+                                tryAwaitRelease()
+                                selected = null
+                            }
+                        )
+                    }
+            ) {
+                val slot = size.width / m.bars.size.coerceAtLeast(1)
+                val barWidth = slot * 0.62f
+                fun y(micrometers: Double) = size.height * (1f - (micrometers / m.maxMicrometers).toFloat().coerceIn(0f, 1f))
+
+                // Guide lines, labelled at the end
+                m.guides.forEach { (micrometers, label) ->
+                    val gy = y(micrometers)
+                    drawLine(
+                        content.copy(alpha = 0.22f),
+                        Offset(0f, gy),
+                        Offset(size.width, gy),
+                        strokeWidth = 1.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))
+                    )
+                    val layout = measurer.measure(label, labelStyle)
+                    drawText(layout, topLeft = Offset(size.width - layout.size.width, gy - layout.size.height - 1.dp.toPx()))
+                }
+                // Baseline
+                drawLine(content.copy(alpha = 0.3f), Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx())
+
+                val fill = Brush.verticalGradient(listOf(lerp(GlassPrecipitation, androidx.compose.ui.graphics.Color.White, 0.35f), GlassPrecipitation))
+                m.bars.forEachIndexed { i, bar ->
+                    if (bar.micrometers <= 0.0) return@forEachIndexed
+                    val top = y(bar.micrometers).coerceAtMost(size.height - 3.dp.toPx())
+                    drawRoundRect(
+                        brush = fill,
+                        topLeft = Offset(i * slot + (slot - barWidth) / 2f, top),
+                        size = Size(barWidth, size.height - top),
+                        cornerRadius = CornerRadius(barWidth / 3f),
+                        alpha = if (selected == null || selected == i) 1f else 0.45f
+                    )
+                }
+                selected?.let {
+                    val x = it * slot + slot / 2f
+                    drawLine(content.copy(alpha = 0.7f), Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.dp.toPx())
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                m.times.forEachIndexed { i, time ->
+                    Text(
+                        text = time,
+                        color = content.copy(alpha = 0.7f),
+                        fontSize = 12.sp,
+                        textAlign = when (i) {
+                            0 -> androidx.compose.ui.text.style.TextAlign.Start
+                            m.times.lastIndex -> androidx.compose.ui.text.style.TextAlign.End
+                            else -> androidx.compose.ui.text.style.TextAlign.Center
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}

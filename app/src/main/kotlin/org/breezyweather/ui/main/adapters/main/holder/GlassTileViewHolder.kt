@@ -17,7 +17,7 @@
 package org.breezyweather.ui.main.adapters.main.holder
 
 import android.graphics.Color as AndroidColor
-import android.view.ViewGroup
+import android.content.Context
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -55,10 +55,10 @@ import kotlin.math.max
  * Subclasses fill the slots in their onBindView, through the same calls as when the tiles were Views.
  */
 abstract class GlassTileViewHolder(
-    parent: ViewGroup,
+    context: Context,
     @DrawableRes private val iconId: Int,
     @StringRes private val titleId: Int,
-) : ComposeTileViewHolder(parent) {
+) : ComposeTileViewHolder(context) {
 
     private sealed interface Graphic {
         class Scale(val colors: List<Color>, val fraction: Float?) : Graphic

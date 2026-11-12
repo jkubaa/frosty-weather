@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
@@ -29,8 +30,8 @@ import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.UnitWidth
 
 /** Humidity tile: relative humidity, and the dew point underneath. */
-class HumidityViewHolder(parent: ViewGroup) : GlassTileViewHolder(
-    parent,
+class HumidityViewHolder(context: Context) : GlassTileViewHolder(
+    context,
     R.drawable.ic_humidity_percentage,
     R.string.humidity
 ) {

@@ -16,26 +16,29 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
 import android.content.Context
-import android.view.View
 import androidx.annotation.CallSuper
-import androidx.recyclerview.widget.RecyclerView
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import breezyweather.domain.location.model.Location
-import org.breezyweather.common.utils.helpers.AsyncHelper
-import org.breezyweather.ui.main.utils.MainModuleUtils
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 
+/**
+ * One card of the home screen. Cards are plain objects drawn in Compose by the card list
+ * (see HomeCardsView): [onBindView] gives them a location, [Render] draws them.
+ *
+ * They were RecyclerView view holders; [itemView] keeps the few calls they made on their view
+ * (description for screen readers, click), now applied to the Compose card.
+ */
 abstract class AbstractMainViewHolder(
-    view: View,
-) : RecyclerView.ViewHolder(view) {
-    protected lateinit var context: Context
+    protected val context: Context,
+) {
+    val itemView = CardItemView(context)
     protected var provider: ResourceProvider? = null
     protected var itemAnimationEnabled = false
-    private var mInScreen = false
-    private var mItemAnimator: Animator? = null
-    private var mDelayController: AsyncHelper.Controller? = null
 
     @CallSuper
     open fun onBindView(
@@ -45,74 +48,22 @@ abstract class AbstractMainViewHolder(
         listAnimationEnabled: Boolean,
         itemAnimationEnabled: Boolean,
     ) {
-        this.context = context
         this.provider = provider
         this.itemAnimationEnabled = itemAnimationEnabled
-        mInScreen = false
-        mDelayController = null
-        if (listAnimationEnabled) {
-            itemView.alpha = 0f
-        }
     }
 
-    val top
-        get() = itemView.top
+    @Composable
+    abstract fun Render(modifier: Modifier)
+}
 
-    fun checkEnterScreen(
-        host: RecyclerView,
-        pendingAnimatorList: MutableList<Animator>,
-        listAnimationEnabled: Boolean,
-    ): Boolean {
-        if (!itemView.isLaidOut || top >= host.measuredHeight) {
-            return false
-        }
-        if (!mInScreen) {
-            mInScreen = true
-            if (listAnimationEnabled) {
-                executeEnterAnimator(pendingAnimatorList)
-            } else {
-                onEnterScreen()
-            }
-            return true
-        }
-        return false
-    }
+/** What the cards set on their former view: what screen readers say, and what a tap does. */
+class CardItemView(val context: Context) {
+    var contentDescription: CharSequence? by mutableStateOf(null)
 
-    fun executeEnterAnimator(pendingAnimatorList: MutableList<Animator>) {
-        itemView.alpha = 0f
-        mItemAnimator = getEnterAnimator(pendingAnimatorList).apply {
-            addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationCancel(animation: Animator) {
-                    pendingAnimatorList.remove(mItemAnimator)
-                }
-            })
-        }
-        mDelayController = AsyncHelper.delayRunOnUI({
-            pendingAnimatorList.remove(mItemAnimator)
-            onEnterScreen()
-        }, mItemAnimator!!.startDelay)
-        pendingAnimatorList.add(mItemAnimator!!)
-        mItemAnimator!!.start()
-    }
+    var onClick: (() -> Unit)? by mutableStateOf(null)
+        private set
 
-    protected open fun getEnterAnimator(pendingAnimatorList: List<Animator>): Animator {
-        return MainModuleUtils.getEnterAnimator(itemView, pendingAnimatorList.size)
-    }
-
-    @CallSuper
-    open fun onEnterScreen() {
-        // Ensure visibility
-        itemView.alpha = 1f
-    }
-
-    open fun onRecycleView() {
-        mDelayController?.let {
-            it.cancel()
-            mDelayController = null
-        }
-        mItemAnimator?.let {
-            it.cancel()
-            mItemAnimator = null
-        }
+    fun setOnClickListener(listener: ((Any?) -> Unit)?) {
+        onClick = listener?.let { { it(null) } }
     }
 }

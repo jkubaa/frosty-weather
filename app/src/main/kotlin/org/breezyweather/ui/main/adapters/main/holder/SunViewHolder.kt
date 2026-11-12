@@ -16,6 +16,7 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
+import android.content.Context
 import android.view.ViewGroup
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -61,7 +62,7 @@ import kotlin.time.Duration.Companion.days
  * sun as a curve crossing the horizon at sunrise and sunset, the sun on it at the current time,
  * and the other event of the day underneath.
  */
-class SunViewHolder(parent: ViewGroup) : ComposeTileViewHolder(parent) {
+class SunViewHolder(context: Context) : ComposeTileViewHolder(context) {
 
     private val model = mutableStateOf<SunModel?>(null)
 
