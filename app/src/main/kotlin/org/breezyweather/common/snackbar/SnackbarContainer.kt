@@ -19,8 +19,13 @@ package org.breezyweather.common.snackbar
 import android.view.ViewGroup
 import androidx.lifecycle.LifecycleOwner
 
+/**
+ * @param bottomOffset extra space kept free under the snackbar, above the navigation bar inset
+ * (e.g. so it floats above a screen's own bottom buttons instead of covering them)
+ */
 class SnackbarContainer(
     val owner: LifecycleOwner?,
     val container: ViewGroup,
     val cardStyle: Boolean,
+    val bottomOffset: Int = 0,
 )

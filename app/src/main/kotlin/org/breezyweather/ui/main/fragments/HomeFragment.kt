@@ -48,6 +48,7 @@ import org.breezyweather.common.extensions.isDarkMode
 import org.breezyweather.common.extensions.isMotionReduced
 import org.breezyweather.common.extensions.setSystemBarStyle
 import org.breezyweather.common.options.appearance.BackgroundAnimationMode
+import org.breezyweather.common.snackbar.SnackbarContainer
 import org.breezyweather.databinding.FragmentHomeBinding
 import org.breezyweather.domain.location.model.getPlace
 import org.breezyweather.domain.settings.SettingsManager
@@ -124,6 +125,24 @@ class HomeFragment : MainModuleFragment() {
 
         return binding.root
     }
+
+    /**
+     * Snackbars float above the glass bottom bar instead of covering its buttons.
+     * The snackbar already keeps the navigation bar inset free, so only the bar itself, its own
+     * margin and a small gap are added.
+     */
+    override val snackbarContainer: SnackbarContainer
+        get() {
+            val bar = binding.bottomBar
+            val offset = if (bar.visibility == View.GONE) {
+                0
+            } else {
+                (bar.height.takeIf { it > 0 } ?: resources.getDimensionPixelSize(R.dimen.glass_capsule_height)) +
+                    resources.getDimensionPixelSize(R.dimen.glass_capsule_margin_bottom) +
+                    resources.getDimensionPixelSize(R.dimen.small_margin)
+            }
+            return SnackbarContainer(this, binding.root, true, offset)
+        }
 
     private fun isBackgroundAnimationEnabled() =
         when (SettingsManager.getInstance(requireContext()).backgroundAnimationMode) {

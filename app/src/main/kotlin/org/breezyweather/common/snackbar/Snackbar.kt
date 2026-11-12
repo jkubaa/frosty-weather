@@ -39,6 +39,7 @@ import androidx.annotation.LayoutRes
 import androidx.annotation.StringRes
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.withStyledAttributes
+import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -46,10 +47,13 @@ import androidx.core.view.updatePadding
 import com.google.android.material.behavior.SwipeDismissBehavior
 import org.breezyweather.R
 import org.breezyweather.common.extensions.doOnApplyWindowInsets
+import org.breezyweather.common.extensions.getThemeColor
+import org.breezyweather.ui.common.glass.LiquidGlass
 
 class Snackbar private constructor(
     private val mParent: ViewGroup,
     private val mCardStyle: Boolean,
+    private val mBottomOffset: Int = 0,
 ) {
     @Retention(AnnotationRetention.SOURCE)
     @IntDef(LENGTH_INDEFINITE, LENGTH_SHORT, LENGTH_LONG)
@@ -109,6 +113,24 @@ class Snackbar private constructor(
                 left = insets.left,
                 right = insets.right
             )
+        }
+
+        // Keep the screen's own bottom buttons (e.g. the home glass bottom bar) uncovered
+        (mView.layoutParams as? ViewGroup.MarginLayoutParams)?.bottomMargin = mBottomOffset
+
+        if (mCardStyle) {
+            mView.findViewById<ViewGroup>(R.id.snackbar_card)?.let { card ->
+                // Liquid glass, like the rest of the app: frosted over whatever is behind it, with a
+                // denser body than the bottom bar so the message always stays readable
+                val surface = mContext.getThemeColor(com.google.android.material.R.attr.colorSurface)
+                val bodyAlpha = if (LiquidGlass.isBlurEnabled(mContext)) GLASS_ALPHA_FROSTED else GLASS_ALPHA_PLAIN
+                LiquidGlass.applyFloating(
+                    host = card,
+                    cornerRadius = mContext.resources.getDimension(R.dimen.glass_corner_radius),
+                    tint = ColorUtils.setAlphaComponent(surface, (bodyAlpha * 255).toInt()),
+                    blurRoot = mParent
+                )
+            }
         }
     }
 
@@ -259,12 +281,18 @@ class Snackbar private constructor(
 
     private fun animateViewOut(event: Int) {
         mAnimator?.cancel()
-        mAnimator = ObjectAnimator.ofFloat(
-            mView,
-            "translationY",
-            mView.translationY,
-            mView.height.toFloat()
-        ).apply {
+        mAnimator = (
+            if (mCardStyle) {
+                SnackbarAnimationUtils.getGlassExitAnimator(mView)
+            } else {
+                ObjectAnimator.ofFloat(
+                    mView,
+                    "translationY",
+                    mView.translationY,
+                    mView.height.toFloat()
+                )
+            }
+            ).apply {
             duration = ANIMATION_DURATION.toLong()
             interpolator = SnackbarAnimationUtils.FAST_OUT_SLOW_IN_INTERPOLATOR
             addListener(object : AnimatorListenerAdapter() {
@@ -452,7 +480,7 @@ class Snackbar private constructor(
                 actionView?.let { aView ->
                     if (aView.isVisible) {
                         aView.alpha = 1f
-                        mView.animate()
+                        aView.animate()
                             .alpha(0f)
                             .setDuration(duration.toLong())
                             .setStartDelay(delay.toLong())
@@ -509,6 +537,10 @@ class Snackbar private constructor(
         const val LENGTH_LONG = 0
         const val ANIMATION_DURATION = 450
         const val ANIMATION_FADE_DURATION = 200
+
+        /** Opacity of the glass body, frosted or not (no blur: nearly opaque so text stays readable). */
+        private const val GLASS_ALPHA_FROSTED = 0.55f
+        private const val GLASS_ALPHA_PLAIN = 0.9f
         private val sHandler: Handler = Handler(
             Looper.getMainLooper(),
             Handler.Callback { message: Message ->
@@ -534,8 +566,9 @@ class Snackbar private constructor(
             text: CharSequence,
             @Duration duration: Int,
             cardStyle: Boolean,
+            bottomOffset: Int = 0,
         ): Snackbar {
-            val snackbar = Snackbar(findSuitableParent(view), cardStyle)
+            val snackbar = Snackbar(findSuitableParent(view), cardStyle, bottomOffset)
             snackbar.setText(text)
             snackbar.setDuration(duration)
             return snackbar

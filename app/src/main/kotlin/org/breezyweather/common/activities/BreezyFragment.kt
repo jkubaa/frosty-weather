@@ -38,6 +38,6 @@ open class BreezyFragment : Fragment() {
         get() = lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
     val isFragmentResumed: Boolean
         get() = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
-    val snackbarContainer: SnackbarContainer
+    open val snackbarContainer: SnackbarContainer
         get() = SnackbarContainer(this, (requireView() as ViewGroup), true)
 }

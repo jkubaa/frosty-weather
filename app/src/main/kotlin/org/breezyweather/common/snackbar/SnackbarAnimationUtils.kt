@@ -18,17 +18,21 @@ package org.breezyweather.common.snackbar
 
 import android.animation.Animator
 import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.view.animation.Interpolator
+import android.view.animation.OvershootInterpolator
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import org.breezyweather.common.extensions.FLOATING_DECELERATE_INTERPOLATOR
+import org.breezyweather.common.extensions.dpToPx
 import org.breezyweather.common.extensions.getFloatingOvershotEnterAnimators
 
 object SnackbarAnimationUtils : AnimationUtils() {
     val FAST_OUT_SLOW_IN_INTERPOLATOR: Interpolator = FastOutSlowInInterpolator()
 
     fun getEnterAnimator(view: View, cardStyle: Boolean): Animator {
+        if (cardStyle) return getGlassEnterAnimator(view)
         view.translationY = view.height.toFloat()
         view.scaleX = if (cardStyle) 1.1f else 1f
         view.scaleY = if (cardStyle) 1.1f else 1f
@@ -40,4 +44,45 @@ object SnackbarAnimationUtils : AnimationUtils() {
             playTogether(animators[0], animators[1], animators[2])
         }
     }
+
+    /**
+     * Glass card: rises a little while fading and growing in place, iOS style, rather than sliding
+     * up from the screen edge (which would drag it across a bottom bar sitting under it).
+     */
+    private fun getGlassEnterAnimator(view: View): Animator {
+        view.alpha = 0f
+        view.translationY = view.context.dpToPx(GLASS_TRAVEL_DP)
+        view.scaleX = GLASS_ENTER_SCALE
+        view.scaleY = GLASS_ENTER_SCALE
+        return AnimatorSet().apply {
+            playTogether(
+                ObjectAnimator.ofFloat(view, View.ALPHA, 0f, 1f).apply { interpolator = FAST_OUT_SLOW_IN_INTERPOLATOR },
+                ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, view.translationY, 0f).apply {
+                    interpolator = OvershootInterpolator(1.2f)
+                },
+                ObjectAnimator.ofFloat(view, View.SCALE_X, GLASS_ENTER_SCALE, 1f).apply {
+                    interpolator = OvershootInterpolator(1.2f)
+                },
+                ObjectAnimator.ofFloat(view, View.SCALE_Y, GLASS_ENTER_SCALE, 1f).apply {
+                    interpolator = OvershootInterpolator(1.2f)
+                }
+            )
+        }
+    }
+
+    fun getGlassExitAnimator(view: View): Animator {
+        return AnimatorSet().apply {
+            playTogether(
+                ObjectAnimator.ofFloat(view, View.ALPHA, view.alpha, 0f),
+                ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, view.translationY, view.context.dpToPx(GLASS_TRAVEL_DP)),
+                ObjectAnimator.ofFloat(view, View.SCALE_X, view.scaleX, GLASS_EXIT_SCALE),
+                ObjectAnimator.ofFloat(view, View.SCALE_Y, view.scaleY, GLASS_EXIT_SCALE)
+            )
+            interpolator = FAST_OUT_SLOW_IN_INTERPOLATOR
+        }
+    }
+
+    private const val GLASS_TRAVEL_DP = 16f
+    private const val GLASS_ENTER_SCALE = 0.9f
+    private const val GLASS_EXIT_SCALE = 0.95f
 }

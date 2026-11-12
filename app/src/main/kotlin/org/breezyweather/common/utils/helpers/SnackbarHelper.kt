@@ -33,7 +33,7 @@ object SnackbarHelper {
             throw RuntimeException("Must send a non null listener as parameter.")
         }
         val container = (activity ?: BreezyWeather.instance.topActivity ?: return).provideSnackbarContainer()
-        Snackbar.make(container.container, content, Snackbar.LENGTH_LONG, container.cardStyle)
+        Snackbar.make(container.container, content, Snackbar.LENGTH_LONG, container.cardStyle, container.bottomOffset)
             .setAction(action, listener)
             .setCallback(Snackbar.Callback())
             .show()
