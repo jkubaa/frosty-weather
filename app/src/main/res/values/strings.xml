@@ -42,6 +42,33 @@
     <string name="hero_high_low">H:%1$s  L:%2$s</string>
     <!-- UV tile: %1$s: highest UV index in the next 24 hours, %2$s: time -->
     <string name="tile_uv_peak">Peaks at %1$s around %2$s</string>
+    <!-- Forecast summary under the hero (iOS style). Kinds of weather, as used in the sentences below -->
+    <string name="summary_kind_clear">Clear</string>
+    <string name="summary_kind_partly_cloudy">Partly cloudy</string>
+    <string name="summary_kind_cloudy">Cloudy</string>
+    <string name="summary_kind_fog">Foggy</string>
+    <string name="summary_kind_haze">Hazy</string>
+    <string name="summary_kind_wind">Windy</string>
+    <string name="summary_kind_rain">Rain</string>
+    <string name="summary_kind_snow">Snow</string>
+    <string name="summary_kind_sleet">Sleet</string>
+    <string name="summary_kind_hail">Hail</string>
+    <string name="summary_kind_storm">Thunderstorms</string>
+    <!-- %1$s: kind of sky (Clear, Cloudy…), %2$s: time -->
+    <string name="summary_conditions_expected">%1$s conditions expected around %2$s.</string>
+    <!-- %1$s: kind of precipitation (Rain, Snow…), %2$s: time -->
+    <string name="summary_precipitation_expected">%1$s expected around %2$s.</string>
+    <!-- %1$s: kind of precipitation, %2$s: time -->
+    <string name="summary_precipitation_ends">%1$s will end around %2$s.</string>
+    <!-- %1$s: kind of sky -->
+    <string name="summary_conditions_continue_day">%1$s conditions will continue for the rest of the day.</string>
+    <string name="summary_conditions_continue_night">%1$s conditions will continue through the night.</string>
+    <!-- %1$s: kind of precipitation -->
+    <string name="summary_precipitation_continues_day">%1$s will continue for the rest of the day.</string>
+    <string name="summary_precipitation_continues_night">%1$s will continue through the night.</string>
+    <!-- %1$s: wind speed -->
+    <string name="summary_gusts">Wind gusts are up to %1$s.</string>
+    <string name="summary_wind">Wind speeds are up to %1$s.</string>
     <!-- Highlights card (liquid glass redesign) -->
     <!-- Locations list (liquid glass redesign) -->
     <string name="location_list_search_hint">Search for a city or place</string>

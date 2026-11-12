@@ -18,47 +18,88 @@ package org.breezyweather.ui.main.adapters.main.holder
 
 import android.animation.Animator
 import android.animation.ObjectAnimator
-import android.annotation.SuppressLint
 import android.content.Context
-import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.TextView
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.formatMeasure
+import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.domain.location.model.getPlace
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.domain.weather.model.getTemperatureRangeSummary
-import org.breezyweather.ui.common.glass.GlassText
-import org.breezyweather.unit.temperature.TemperatureUnit
-import org.breezyweather.ui.common.widgets.NumberAnimTextView
-import org.breezyweather.ui.theme.weatherView.WeatherViewController
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
+import org.breezyweather.ui.theme.weatherView.WeatherViewController
 import org.breezyweather.unit.formatting.UnitWidth
 import org.breezyweather.unit.formatting.format
+import org.breezyweather.unit.temperature.TemperatureUnit
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlin.time.Duration.Companion.milliseconds
 
-class HeaderViewHolder(parent: ViewGroup) : AbstractMainViewHolder(
-    LayoutInflater.from(parent.context).inflate(R.layout.container_main_header, parent, false)
-) {
-    private val mLocationCaption: TextView = itemView.findViewById(R.id.container_main_header_location_caption)
-    private val mLocationName: TextView = itemView.findViewById(R.id.container_main_header_location_name)
-    private val mTemperatureContainer: LinearLayout = itemView.findViewById(R.id.container_main_header_temperature)
-    private val mTemperature: NumberAnimTextView = itemView.findViewById(R.id.container_main_header_temperature_value)
-    private val mTemperatureUnitView: TextView = itemView.findViewById(R.id.container_main_header_temperature_unit)
-    private val mWeatherText: TextView = itemView.findViewById(R.id.container_main_header_weather_condition_description)
-    private val mFeelsLike: TextView = itemView.findViewById(R.id.container_main_header_feels_like)
-    private val mTemperatureRange: TextView = itemView.findViewById(R.id.container_main_header_temperature_range)
-    private var mTemperatureFrom = 0
-    private var mTemperatureTo = 0
+/**
+ * Top of the home screen, in Compose: location, condition and "feels like" on the left, a big thin
+ * temperature counting up to its value with today's high / low on the right, in frosted "glassy" text.
+ * The summary card under it is its own item, see [SummaryViewHolder].
+ *
+ * The item stays a View for the card list; its content is Compose, created once and fed new state
+ * on each bind, so the temperature animates from the previous location's value to the new one.
+ */
+class HeaderViewHolder private constructor(
+    composeView: ComposeView,
+) : AbstractMainViewHolder(composeView) {
 
-    @SuppressLint("SetTextI18n")
+    private val state = mutableStateOf<HeroState?>(null)
+
+    constructor(parent: ViewGroup) : this(
+        ComposeView(parent.context).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+    )
+
+    init {
+        val content = Color(itemView.context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
+        composeView.setContent { state.value?.let { Hero(it, content) } }
+    }
+
     override fun onBindView(
         context: Context,
         location: Location,
@@ -67,95 +108,7 @@ class HeaderViewHolder(parent: ViewGroup) : AbstractMainViewHolder(
         itemAnimationEnabled: Boolean,
     ) {
         super.onBindView(context, location, provider, listAnimationEnabled, itemAnimationEnabled)
-
-        // Location
-        mLocationName.text = location.getPlace(context)
-        mLocationCaption.visibility = if (location.isCurrentPosition) View.VISIBLE else View.GONE
-
-        // Frosted-glass look for the two big pieces of text
-        GlassText.apply(mLocationName)
-        GlassText.apply(mTemperature)
-        GlassText.apply(mTemperatureUnitView)
-
-        val temperatureUnit = SettingsManager.getInstance(context).getTemperatureUnit(context)
-        location.weather?.current?.let { current ->
-            // Apple-style: always show a condition, falling back to the generic label of the weather code
-            val conditionText = current.weatherText?.takeIf { it.isNotEmpty() }
-                ?: current.weatherCode?.let { WeatherViewController.getWeatherText(it) }
-            if (!conditionText.isNullOrEmpty()) {
-                mWeatherText.visibility = View.VISIBLE
-                mWeatherText.text = conditionText
-            } else {
-                mWeatherText.visibility = View.GONE
-            }
-            current.temperature?.temperature?.let {
-                mTemperatureContainer.visibility = View.VISIBLE
-                mTemperatureContainer.contentDescription = it.formatMeasure(
-                    context,
-                    temperatureUnit,
-                    unitWidth = UnitWidth.LONG
-                )
-                mTemperatureFrom = mTemperatureTo
-                mTemperatureTo = it.toDouble(temperatureUnit).roundToInt()
-                mTemperature.isAnimEnabled = itemAnimationEnabled
-                mTemperature.duration = (abs(mTemperatureTo - mTemperatureFrom) * 20.0)
-                    .coerceAtLeast(1000.0) // at least 1 second
-                    .coerceAtMost(2000.0) // no longer than 2 seconds
-                    .milliseconds
-                // Apple-style: a lone degree sign, the unit is set in the settings anyway
-                mTemperatureUnitView.text = "°"
-            } ?: run {
-                mTemperatureContainer.visibility = View.GONE
-            }
-            current.temperature?.feelsLikeTemperature?.let { feelsLike ->
-                if (current.temperature!!.temperature?.toDouble(temperatureUnit)?.roundToInt() !=
-                    feelsLike.toDouble(temperatureUnit).roundToInt()
-                ) {
-                    mFeelsLike.visibility = View.VISIBLE
-                    mFeelsLike.text = context.getString(
-                        R.string.temperature_feels_like_with_unit,
-                        feelsLike.formatMeasure(
-                            context,
-                            temperatureUnit,
-                            valueWidth = UnitWidth.NARROW,
-                            unitWidth = UnitWidth.NARROW
-                        )
-                    )
-                    mFeelsLike.contentDescription = context.getString(R.string.temperature_feels_like) +
-                        context.getString(R.string.colon_separator) +
-                        feelsLike.formatMeasure(
-                            context,
-                            temperatureUnit,
-                            unitWidth = UnitWidth.LONG
-                        )
-                } else {
-                    mFeelsLike.visibility = View.GONE
-                }
-            } ?: run {
-                mFeelsLike.visibility = View.GONE
-            }
-        }
-
-        // Today's high and low, iOS style: "H:59°  L:46°"
-        val todayTemperatures = listOfNotNull(
-            location.weather!!.today?.day?.temperature?.temperature,
-            location.weather!!.today?.night?.temperature?.temperature
-        )
-        if (todayTemperatures.isNotEmpty()) {
-            val high = todayTemperatures.maxBy { it.toDouble(TemperatureUnit.CELSIUS) }
-            val low = todayTemperatures.minBy { it.toDouble(TemperatureUnit.CELSIUS) }
-            mTemperatureRange.visibility = View.VISIBLE
-            mTemperatureRange.text = context.getString(
-                R.string.hero_high_low,
-                GlassForecastFormat.degrees(context, high, temperatureUnit),
-                GlassForecastFormat.degrees(context, low, temperatureUnit)
-            )
-            // Spoken: keep the full sentence from the summary when there is one
-            mTemperatureRange.contentDescription =
-                location.weather!!.getTemperatureRangeSummary(context, location, temperatureUnit)?.second
-        } else {
-            mTemperatureRange.visibility = View.GONE
-        }
+        state.value = HeroState.from(context, location, itemAnimationEnabled)
     }
 
     override fun getEnterAnimator(pendingAnimatorList: List<Animator>): Animator {
@@ -165,13 +118,223 @@ class HeaderViewHolder(parent: ViewGroup) : AbstractMainViewHolder(
         a.interpolator = FastOutSlowInInterpolator()
         return a
     }
+}
 
-    @SuppressLint("DefaultLocale")
-    override fun onEnterScreen() {
-        super.onEnterScreen()
-        mTemperature.setNumberString(
-            mTemperatureFrom.format(decimals = 0, locale = context.currentLocale),
-            mTemperatureTo.format(decimals = 0, locale = context.currentLocale)
-        )
+/** Everything the header shows, already formatted. */
+@Immutable
+private data class HeroState(
+    val isCurrentPosition: Boolean,
+    val captionText: String,
+    val name: String,
+    val condition: String?,
+    val feelsLike: String?,
+    val feelsLikeDescription: String?,
+    val temperature: Int?,
+    val temperatureDescription: String?,
+    val highLow: String?,
+    val highLowDescription: String?,
+    val animate: Boolean,
+    val formatNumber: (Int) -> String,
+) {
+    companion object {
+        fun from(context: Context, location: Location, animate: Boolean): HeroState {
+            val unit = SettingsManager.getInstance(context).getTemperatureUnit(context)
+            val current = location.weather?.current
+            val temperature = current?.temperature?.temperature
+            val feelsLike = current?.temperature?.feelsLikeTemperature?.takeIf {
+                // Only worth showing when it differs from the actual temperature
+                temperature?.toDouble(unit)?.roundToInt() != it.toDouble(unit).roundToInt()
+            }
+
+            val todayTemperatures = listOfNotNull(
+                location.weather?.today?.day?.temperature?.temperature,
+                location.weather?.today?.night?.temperature?.temperature
+            )
+            val highLow = if (todayTemperatures.isNotEmpty()) {
+                context.getString(
+                    R.string.hero_high_low,
+                    GlassForecastFormat.degrees(context, todayTemperatures.maxBy { it.toDouble(TemperatureUnit.CELSIUS) }, unit),
+                    GlassForecastFormat.degrees(context, todayTemperatures.minBy { it.toDouble(TemperatureUnit.CELSIUS) }, unit)
+                )
+            } else {
+                null
+            }
+
+            val locale = context.currentLocale
+            return HeroState(
+                isCurrentPosition = location.isCurrentPosition,
+                captionText = context.getString(R.string.location_current),
+                name = location.getPlace(context),
+                // Apple-style: always show a condition, falling back to the generic label of the weather code
+                condition = current?.weatherText?.takeIf { it.isNotEmpty() }
+                    ?: current?.weatherCode?.let { WeatherViewController.getWeatherText(it) },
+                feelsLike = feelsLike?.let {
+                    context.getString(
+                        R.string.temperature_feels_like_with_unit,
+                        it.formatMeasure(context, unit, valueWidth = UnitWidth.NARROW, unitWidth = UnitWidth.NARROW)
+                    )
+                },
+                feelsLikeDescription = feelsLike?.let {
+                    context.getString(R.string.temperature_feels_like) +
+                        context.getString(R.string.colon_separator) +
+                        it.formatMeasure(context, unit, unitWidth = UnitWidth.LONG)
+                },
+                temperature = temperature?.toDouble(unit)?.roundToInt(),
+                temperatureDescription = temperature?.formatMeasure(context, unit, unitWidth = UnitWidth.LONG),
+                highLow = highLow,
+                // Spoken: the full sentence from the summary when there is one
+                highLowDescription = location.weather?.getTemperatureRangeSummary(context, location, unit)?.second,
+                animate = animate,
+                formatNumber = { it.format(decimals = 0, locale = locale) }
+            )
+        }
+    }
+}
+
+/** Frosted text: bright at the top, slightly see-through at the bottom, so the sky shows through a little. */
+private fun glassBrush(color: Color) = Brush.verticalGradient(
+    0f to color,
+    0.45f to color.copy(alpha = 0.92f),
+    1f to color.copy(alpha = 0.62f)
+)
+
+private val TightText = TextStyle(
+    platformStyle = PlatformTextStyle(includeFontPadding = false),
+    lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both)
+)
+
+@Composable
+private fun Hero(state: HeroState, content: Color) {
+    val softShadow = Shadow(Color(0x26000000), blurRadius = 16f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 22.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        // Left: where and what
+        Column(modifier = Modifier.weight(1f)) {
+            if (state.isCurrentPosition) {
+                Row(
+                    modifier = Modifier.alpha(0.8f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_location_arrow),
+                        contentDescription = null,
+                        tint = content,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = state.captionText.uppercase(),
+                        color = content,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.06.em,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+                Spacer(Modifier.height(2.dp))
+            }
+            Text(
+                text = state.name,
+                style = TightText.copy(
+                    brush = glassBrush(content),
+                    fontSize = 32.sp,
+                    lineHeight = 31.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    shadow = Shadow(Color(0x33000000), blurRadius = 28f)
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics { heading() }
+            )
+            state.condition?.let {
+                Text(
+                    text = it,
+                    color = content,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Medium,
+                    style = TextStyle(shadow = Shadow(Color(0x26000000), blurRadius = 16f)),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
+            state.feelsLike?.let {
+                Text(
+                    text = it,
+                    color = content.copy(alpha = 0.75f),
+                    fontSize = 15.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .padding(top = 1.dp)
+                        .semantics { state.feelsLikeDescription?.let { d -> contentDescription = d } }
+                )
+            }
+        }
+
+        // Right: how warm
+        Column(
+            modifier = Modifier.padding(start = 12.dp),
+            horizontalAlignment = Alignment.End
+        ) {
+            state.temperature?.let { target ->
+                val shown = remember { Animatable(if (state.animate) 0f else target.toFloat()) }
+                LaunchedEffect(target, state.animate) {
+                    if (state.animate) {
+                        val millis = (abs(target - shown.value) * 20f).roundToInt().coerceIn(1000, 2000)
+                        shown.animateTo(target.toFloat(), tween(millis, easing = FastOutSlowInEasing))
+                    } else {
+                        shown.snapTo(target.toFloat())
+                    }
+                }
+                Row(
+                    modifier = Modifier.clearAndSetSemantics {
+                        state.temperatureDescription?.let { contentDescription = it }
+                    },
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        text = state.formatNumber(shown.value.roundToInt()),
+                        style = TightText.copy(
+                            brush = glassBrush(content),
+                            fontSize = 80.sp,
+                            lineHeight = 80.sp,
+                            fontWeight = FontWeight.ExtraLight,
+                            letterSpacing = (-0.03).em,
+                            shadow = softShadow
+                        ),
+                        maxLines = 1
+                    )
+                    // Apple-style: a lone degree sign, the unit is set in the settings anyway
+                    Text(
+                        text = "°",
+                        style = TightText.copy(
+                            brush = glassBrush(content),
+                            fontSize = 60.sp,
+                            lineHeight = 60.sp,
+                            fontWeight = FontWeight.ExtraLight,
+                            shadow = softShadow
+                        ),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+            state.highLow?.let {
+                Text(
+                    text = it,
+                    color = content,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    style = TextStyle(shadow = Shadow(Color(0x26000000), blurRadius = 16f)),
+                    maxLines = 1,
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .semantics { state.highLowDescription?.let { d -> contentDescription = d } }
+                )
+            }
+        }
     }
 }

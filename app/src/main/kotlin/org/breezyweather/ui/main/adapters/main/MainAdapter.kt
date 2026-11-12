@@ -39,6 +39,8 @@ import org.breezyweather.ui.main.adapters.main.holder.ClockViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.DailyViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.FooterViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.HeaderViewHolder
+import org.breezyweather.ui.main.adapters.main.holder.SummaryViewHolder
+import org.breezyweather.ui.main.utils.ForecastSummary
 import org.breezyweather.ui.main.adapters.main.holder.HourlyViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.HumidityViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.MoonViewHolder
@@ -108,6 +110,10 @@ class MainAdapter(
             mViewTypeList.add(ViewType.HEADER)
             if (location.weather?.alertList?.any { it.endDate == null || it.endDate!!.time > Date().time } == true) {
                 mViewTypeList.add(ViewType.ALERT)
+            }
+            // iOS style: a sentence about the hours ahead, right under the hero (and any alert)
+            if (ForecastSummary.build(activity, location) != null) {
+                mViewTypeList.add(ViewType.SUMMARY)
             }
             for (c in cardDisplayList) {
                 if (c === CardDisplay.CARD_NOWCAST &&
@@ -189,6 +195,7 @@ class MainAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AbstractMainViewHolder = when (viewType) {
         ViewType.HEADER -> HeaderViewHolder(parent)
+        ViewType.SUMMARY -> SummaryViewHolder(parent)
         ViewType.ALERT -> AlertViewHolder(parent)
         ViewType.PRECIPITATION_NOWCAST -> PrecipitationNowcastViewHolder(parent)
         ViewType.DAILY -> DailyViewHolder(parent)
@@ -280,6 +287,7 @@ class MainAdapter(
     fun isDraggable(position: Int): Boolean {
         return mViewTypeList[position] !in arrayOf(
             ViewType.HEADER,
+            ViewType.SUMMARY,
             ViewType.ALERT,
             ViewType.FOOTER,
 
