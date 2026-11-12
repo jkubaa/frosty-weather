@@ -432,7 +432,16 @@ private fun DrawScope.drawMoon(center: Offset, style: SkyStyle, opacity: Float, 
         center = center,
         alpha = opacity * (0.2f + 0.8f * fraction)
     )
-    // Earthshine
+    drawMoonDisc(center, radius, phase, southern, opacity)
+}
+
+/**
+ * The moon disc alone, in its phase: dark part faintly visible (earthshine), lit part closed by the
+ * terminator. Shared by the sky and the Moon tile.
+ *
+ * @param phase -180 (new, waxing) .. 0 (full) .. 180 (new, waning)
+ */
+internal fun DrawScope.drawMoonDisc(center: Offset, radius: Float, phase: Float, southern: Boolean, opacity: Float = 1f) {
     drawCircle(Color(0xFF2A2547), radius, center, opacity * 0.55f)
     drawCircle(Color(0xFFB9B2D6), radius, center, opacity * 0.08f)
 

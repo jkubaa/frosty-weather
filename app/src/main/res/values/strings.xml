@@ -42,6 +42,13 @@
     <string name="hero_high_low">H:%1$s  L:%2$s</string>
     <!-- UV tile: %1$s: highest UV index in the next 24 hours, %2$s: time -->
     <string name="tile_uv_peak">Peaks at %1$s around %2$s</string>
+    <!-- Sun and Moon tiles. %1$s: time -->
+    <string name="tile_sunrise_at">Sunrise: %1$s</string>
+    <string name="tile_sunset_at">Sunset: %1$s</string>
+    <string name="tile_moon_illumination">Illumination</string>
+    <string name="tile_moonrise">Moonrise</string>
+    <string name="tile_moonset">Moonset</string>
+    <string name="tile_next_full_moon">Next full moon</string>
     <!-- Forecast summary under the hero (iOS style). Kinds of weather, as used in the sentences below -->
     <string name="summary_kind_clear">Clear</string>
     <string name="summary_kind_partly_cloudy">Partly cloudy</string>

@@ -22,6 +22,8 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import breezyweather.domain.location.model.Location
+import org.breezyweather.common.extensions.density
+import org.breezyweather.common.extensions.getBlocksPerRow
 import org.breezyweather.common.extensions.toCalendarWithTimeZone
 import org.breezyweather.common.options.appearance.CardDisplay
 import org.breezyweather.domain.settings.SettingsManager
@@ -216,9 +218,38 @@ class MainAdapter(
         else -> FooterViewHolder(ComposeView(parent.context))
     }
 
+    private fun isTile(position: Int) = ViewType.isHalfSizeableBlock(mViewTypeList[position]) == true
+
+    /** How many tiles fit side by side, from the list's actual width once it is known. */
+    fun blocksPerRow(): Int = mHost?.width?.takeIf { it > 0 }
+        ?.let { mActivity.getBlocksPerRow(it.toFloat() / mActivity.density) }
+        ?: mActivity.getBlocksPerRow()
+
+    /**
+     * How many tiles share the row of the tile at [position]: [blocksPerRow] in full rows, fewer in
+     * the last row of a run of tiles, where they then share the whole width (no lonely tile with an
+     * empty space next to it). 1 for full-width cards.
+     */
+    fun tilesInRow(position: Int, blocksPerRow: Int = blocksPerRow()): Int {
+        if (position !in mViewTypeList.indices || !isTile(position)) return 1
+        var start = position
+        while (start > 0 && isTile(start - 1)) start--
+        var end = position
+        while (end < mViewTypeList.lastIndex && isTile(end + 1)) end++
+        val count = end - start + 1
+        val fullRowsTiles = count / blocksPerRow * blocksPerRow
+        return if (position - start >= fullRowsTiles) count - fullRowsTiles else blocksPerRow
+    }
+
     override fun onBindViewHolder(holder: AbstractMainViewHolder, position: Int) {
         mLocation?.let {
             if (holder is AbstractMainCardViewHolder) {
+                val blocksPerRow = blocksPerRow()
+                holder.widthFactor = if (isTile(position)) {
+                    blocksPerRow.toFloat() / tilesInRow(position, blocksPerRow)
+                } else {
+                    1f
+                }
                 if (holder is DailyViewHolder || holder is HourlyViewHolder) {
                     holder.onBindView(
                         mActivity,

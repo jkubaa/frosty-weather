@@ -16,28 +16,44 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
-import org.breezyweather.common.extensions.getThemeColor
+import org.breezyweather.ui.main.utils.Highlight
 import org.breezyweather.ui.main.utils.Highlights
-import org.breezyweather.ui.main.widgets.RingGaugeView
+import org.breezyweather.ui.main.widgets.RingGauge
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 
 /**
- * Highlights: a few plain-language lines about what matters in the coming hours and days
- * (rain, temperature change, UV, gusts, next sunrise or sunset). See [Highlights] for the rules.
+ * Highlights, in Compose: up to four round gauges (watch-complication style) about what matters in
+ * the coming hours and days (rain, temperature change, UV, gusts, next sunrise or sunset), each with
+ * a short label. See [Highlights] for the rules.
  */
-class HighlightsViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
-    LayoutInflater.from(parent.context).inflate(R.layout.container_main_highlights_card, parent, false)
-) {
-    private val rows: LinearLayout = itemView.findViewById(R.id.highlights_rows)
+class HighlightsViewHolder(parent: ViewGroup) : ComposeCardViewHolder(parent) {
+
+    private val highlights = mutableStateOf<List<Highlight>>(emptyList())
+    private var separator = ", "
 
     override fun onBindView(
         activity: BreezyActivity,
@@ -47,36 +63,57 @@ class HighlightsViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
         itemAnimationEnabled: Boolean,
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
+        separator = activity.getString(org.breezyweather.unit.R.string.locale_separator)
+        highlights.value = Highlights.build(activity, location)
+    }
 
-        val inflater = LayoutInflater.from(activity)
-        val contentColor = activity.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse)
-        rows.removeAllViews()
-        // Hairline under the header, like the other glass cards, then one row of round gauges
-        inflater.inflate(R.layout.item_glass_divider, rows, true)
-        val row = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL }
-        Highlights.build(activity, location).forEach { highlight ->
-            val cell = inflater.inflate(R.layout.item_glass_highlight, row, false)
-            cell.findViewById<RingGaugeView>(R.id.highlight_gauge)
-                .setGauge(highlight.fraction, highlight.color, contentColor)
-            // A value inside the ring when there is one ("97%", "+6°"), otherwise the icon (sunset...)
-            cell.findViewById<TextView>(R.id.highlight_value).apply {
-                visibility = if (highlight.value != null) View.VISIBLE else View.GONE
-                text = highlight.value
+    @Composable
+    override fun Content() {
+        Column(Modifier.padding(top = 14.dp, bottom = 6.dp)) {
+            GlassCardHeader(R.drawable.ic_sunshine_duration, itemView.context.getString(R.string.highlights), contentColor)
+            GlassDivider(contentColor, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
+            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+                highlights.value.forEach { Gauge(it, Modifier.weight(1f)) }
             }
-            cell.findViewById<ImageView>(R.id.highlight_icon).apply {
-                visibility = if (highlight.value == null) View.VISIBLE else View.GONE
-                setImageResource(highlight.icon)
-            }
-            cell.findViewById<TextView>(R.id.highlight_label).text = highlight.label
-            cell.findViewById<TextView>(R.id.highlight_sublabel).apply {
-                visibility = if (highlight.sublabel != null) View.VISIBLE else View.INVISIBLE
-                text = highlight.sublabel
-            }
-            // Screen readers get the full sentence rather than the short labels
-            cell.contentDescription = listOfNotNull(highlight.title, highlight.detail)
-                .joinToString(activity.getString(org.breezyweather.unit.R.string.locale_separator))
-            row.addView(cell)
         }
-        rows.addView(row)
+    }
+
+    @Composable
+    private fun Gauge(highlight: Highlight, modifier: Modifier) {
+        Column(
+            modifier = modifier
+                .padding(vertical = 10.dp)
+                // Screen readers get the full sentence rather than the short labels
+                .clearAndSetSemantics {
+                    contentDescription = listOfNotNull(highlight.title, highlight.detail).joinToString(separator)
+                },
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(Modifier.size(62.dp), contentAlignment = Alignment.Center) {
+                RingGauge(highlight.fraction, Color(highlight.color), contentColor, Modifier.size(62.dp))
+                // A value inside the ring when there is one ("97%", "+6°"), otherwise the icon (sunset...)
+                if (highlight.value != null) {
+                    Text(highlight.value, color = contentColor, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                } else {
+                    Icon(painterResource(highlight.icon), contentDescription = null, tint = contentColor, modifier = Modifier.size(24.dp))
+                }
+            }
+            Text(
+                text = highlight.label,
+                color = contentColor,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+            Text(
+                text = highlight.sublabel ?: "",
+                color = contentColor.copy(alpha = 0.7f),
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        }
     }
 }

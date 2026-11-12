@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Hairline separator between rows inside a glass card -->
-<View xmlns:android="http://schemas.android.com/apk/res/android"
-    style="@style/glass_divider" />

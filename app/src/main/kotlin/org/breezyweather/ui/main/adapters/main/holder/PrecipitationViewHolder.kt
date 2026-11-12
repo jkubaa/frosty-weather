@@ -38,10 +38,6 @@ class PrecipitationViewHolder(parent: ViewGroup) : GlassTileViewHolder(
     R.drawable.ic_precipitation,
     R.string.precipitation
 ) {
-    // The glass tile's value and description lines
-    private val precipitationValueView: TextView get() = valueView
-    private val precipitationAmountView: TextView get() = descriptionView
-
     override fun onBindView(
         activity: BreezyActivity,
         location: Location,
@@ -59,7 +55,6 @@ class PrecipitationViewHolder(parent: ViewGroup) : GlassTileViewHolder(
             },
             TileColors.WATER
         )
-        precipitationAmountView.visibility = android.view.View.VISIBLE
 
         val talkBackBuilder = StringBuilder(context.getString(R.string.precipitation))
         location.weather?.let { weather ->
@@ -78,7 +73,7 @@ class PrecipitationViewHolder(parent: ViewGroup) : GlassTileViewHolder(
             val isDay = currentHour in 5..16
 
             var isSnow = false
-            precipitationAmountView.text = if ((precipitation?.rain?.value ?: 0) > 0 &&
+            val amountText = if ((precipitation?.rain?.value ?: 0) > 0 &&
                 (precipitation?.snow?.value ?: 0) > 0
             ) {
                 context.getString(
@@ -106,17 +101,17 @@ class PrecipitationViewHolder(parent: ViewGroup) : GlassTileViewHolder(
                     if (isDay) R.string.precipitation_total_day else R.string.precipitation_total_night
                 )
             }
-            precipitationAmountView.maxLines = if (itemView.context.areBlocksSquished) 2 else 3
+            setDescription(amountText, maxLines = if (itemView.context.areBlocksSquished) 2 else 3)
 
             precipitation?.total?.let { total ->
-                precipitationValueView.text = UnitUtils.formatUnitsHalfSize(total.formatMeasure(context))
+                setValue(UnitUtils.formatUnitsHalfSize(total.formatMeasure(context)))
 
                 talkBackBuilder.append(context.getString(R.string.colon_separator))
-                talkBackBuilder.append(precipitationAmountView.text)
+                talkBackBuilder.append(amountText)
                 talkBackBuilder.append(context.getString(R.string.colon_separator))
                 talkBackBuilder.append(total.formatMeasure(context, unitWidth = UnitWidth.LONG))
             } ?: run {
-                precipitationValueView.text = "-"
+                setValue(null)
             }
         }
 

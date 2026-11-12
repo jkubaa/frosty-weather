@@ -1,45 +1,68 @@
 /*
- * This file is part of Breezy Weather.
+ * This file is part of Frosty Weather, a modified version of Breezy Weather.
  *
- * Breezy Weather is free software: you can redistribute it and/or modify it
+ * Frosty Weather is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the
  * Free Software Foundation, version 3 of the License.
  *
- * Breezy Weather is distributed in the hope that it will be useful, but
+ * Frosty Weather is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
  * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
  * License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Breezy Weather. If not, see <https://www.gnu.org/licenses/>.
+ * along with Frosty Weather. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.animation.AnimatorSet
-import android.animation.FloatEvaluator
-import android.animation.ValueAnimator
-import android.annotation.SuppressLint
-import android.view.View
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
-import android.view.animation.OvershootInterpolator
-import androidx.core.content.ContextCompat
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import breezyweather.domain.location.model.Location
-import breezyweather.domain.weather.model.Weather
+import breezyweather.domain.weather.model.MoonPhase
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
-import org.breezyweather.common.extensions.areBlocksSquished
+import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.getFormattedTime
-import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.common.extensions.is12Hour
+import org.breezyweather.common.options.appearance.DetailScreen
+import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.domain.weather.model.getDescription
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
+import org.breezyweather.ui.theme.weatherView.sky.drawMoonDisc
+import org.breezyweather.ui.theme.weatherView.sky.moonFraction
+import org.shredzone.commons.suncalc.MoonIllumination
+import java.text.SimpleDateFormat
 import java.util.Date
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 
-class MoonViewHolder(parent: ViewGroup) : AstroViewHolder(parent, isSun = false) {
+/**
+ * Moon tile: the current phase, drawn (the same moon as in the sky) and named, how much of it is
+ * lit, and when it rises and sets; with the whole row to itself, also the next full moon.
+ *
+ * The phase comes from the weather source when it has one, otherwise it is computed on the device.
+ */
+class MoonViewHolder(parent: ViewGroup) : ComposeTileViewHolder(parent) {
 
-    @SuppressLint("SetTextI18n")
+    private val model = mutableStateOf<MoonModel?>(null)
+
     override fun onBindView(
         activity: BreezyActivity,
         location: Location,
@@ -48,91 +71,140 @@ class MoonViewHolder(parent: ViewGroup) : AstroViewHolder(parent, isSun = false)
         itemAnimationEnabled: Boolean,
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
-        mWeather = location.weather!!
-
-        if (itemView.context.areBlocksSquished) bottomGuideline.setGuidelinePercent(0.95f)
-
-        mWeather?.today?.moonPhase?.let { moonPhase ->
-            if (moonPhase.isValid) {
-                descriptionView.visibility = View.VISIBLE
-                descriptionIconView.visibility = View.VISIBLE
-                descriptionIconView.setColor(
-                    ContextCompat.getColor(context, R.color.colorTextLight2nd),
-                    ContextCompat.getColor(context, R.color.colorTextDark2nd),
-                    context.getThemeColor(R.attr.colorBodyText)
-                )
-                descriptionView.text = moonPhase.getDescription(context)
-            } else {
-                descriptionView.visibility = View.GONE
-                descriptionIconView.visibility = View.GONE
-            }
-        } ?: run {
-            descriptionView.visibility = View.GONE
-            descriptionIconView.visibility = View.GONE
-        }
-
-        mWeather?.today?.moon?.let { moon ->
-            if (moon.isValid) {
-                val validatedMoon = if (Date().time < moon.riseDate!!.time) {
-                    val yesterdayMoon =
-                        mWeather!!.dailyForecast.getOrElse(mWeather!!.todayIndex!!.minus(1)) { null }?.moon
-                    if (yesterdayMoon?.isValid == true && yesterdayMoon.setDate!!.time > Date().time) {
-                        yesterdayMoon
-                    } else {
-                        moon
-                    }
-                } else {
-                    moon
-                }
-
-                val moonriseTime = validatedMoon.riseDate!!.getFormattedTime(location, context, context.is12Hour)
-                val moonsetTime = validatedMoon.setDate!!.getFormattedTime(location, context, context.is12Hour)
-                riseTimeView.text = moonriseTime
-                riseTimeView.contentDescription = context.getString(R.string.ephemeris_moonrise_at, moonriseTime)
-                setTimeView.text = moonsetTime
-                setTimeView.contentDescription = context.getString(R.string.ephemeris_moonset_at, moonsetTime)
-            }
-        }
-    }
-
-    @SuppressLint("Recycle")
-    override fun onEnterScreen() {
-        super.onEnterScreen()
-        if (itemAnimationEnabled && mWeather != null) {
-            val timeNight = ValueAnimator.ofObject(LongEvaluator(), mStartTime, mCurrentTime)
-            timeNight.addUpdateListener { animation: ValueAnimator ->
-                mAnimCurrentTime = animation.animatedValue as Long
-                mSunMoonView.setTime(mStartTime, mEndTime, mAnimCurrentTime)
-            }
-            val totalRotationNight = 360.0 * 4 * (mCurrentTime - mStartTime) / (mEndTime - mStartTime)
-            val rotateNight = ValueAnimator.ofObject(
-                FloatEvaluator(),
-                0,
-                (totalRotationNight - totalRotationNight % 360).toInt()
+        model.value = MoonModel.from(activity, location)
+        itemView.contentDescription = model.value?.description
+        itemView.setOnClickListener {
+            IntentHelper.startDailyWeatherActivity(
+                activity,
+                location.formattedId,
+                location.weather!!.todayIndex,
+                DetailScreen.TAG_SUN_MOON
             )
-            rotateNight.addUpdateListener { animation: ValueAnimator ->
-                mSunMoonView.setIndicatorRotation(-1 * animation.animatedValue as Float)
-            }
-            mAttachAnimatorSets[0] = AnimatorSet().apply {
-                playTogether(timeNight, rotateNight)
-                interpolator = OvershootInterpolator(1f)
-                duration = getPathAnimatorDuration()
-            }.also { it.start() }
-            if (mPhaseAngle > 0) {
-                val moonAngle = ValueAnimator.ofObject(FloatEvaluator(), 0, mPhaseAngle)
-                moonAngle.addUpdateListener { animation: ValueAnimator ->
-                    descriptionIconView.setSurfaceAngle((animation.animatedValue as Float))
-                }
-                mAttachAnimatorSets[1] = AnimatorSet().apply {
-                    playTogether(moonAngle)
-                    interpolator = DecelerateInterpolator()
-                    duration = phaseAnimatorDuration
-                }.also { it.start() }
-            }
         }
     }
 
-    override fun ensurePhaseAngle(weather: Weather) {
-        mPhaseAngle = weather.today?.moonPhase?.angle ?: 0
+    @Composable
+    override fun ColumnScope.Content(wide: Boolean) {
+        val moon = model.value ?: return
+        TileHeader(R.drawable.weather_clear_night_mini_xml, moon.title)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = moon.phaseName ?: "-",
+                color = contentColor,
+                fontSize = 17.sp,
+                lineHeight = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Canvas(
+                Modifier
+                    .padding(start = 6.dp)
+                    .size(if (wide) 64.dp else 50.dp)
+            ) {
+                drawMoonDisc(center, size.minDimension / 2f, moon.phase, moon.southern)
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        InfoRow(R.string.tile_moon_illumination, moon.illumination)
+        InfoRow(R.string.tile_moonrise, moon.rise)
+        InfoRow(R.string.tile_moonset, moon.set)
+        if (wide) InfoRow(R.string.tile_next_full_moon, moon.nextFullMoon)
+    }
+
+    @Composable
+    private fun InfoRow(label: Int, value: String?) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 3.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = itemView.context.getString(label),
+                color = contentColor.copy(alpha = 0.7f),
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = value ?: "-",
+                color = contentColor,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+/**
+ * @param phase -180 (new, waxing) .. 0 (full) .. 180 (new, waning), as drawn by the sky
+ */
+@Immutable
+private data class MoonModel(
+    val title: String,
+    val phase: Float,
+    val southern: Boolean,
+    val phaseName: String?,
+    val illumination: String,
+    val rise: String?,
+    val set: String?,
+    val nextFullMoon: String,
+    val description: String,
+) {
+    companion object {
+        /** Mean length of a lunar cycle. */
+        private const val SYNODIC_MONTH_DAYS = 29.530588
+
+        fun from(activity: BreezyActivity, location: Location): MoonModel? {
+            val weather = location.weather ?: return null
+            val now = Date()
+            // Breezy's angle: 0 new moon, 180 full, 360 new again
+            val angle = weather.today?.moonPhase?.angle?.toDouble()
+                ?: (MoonIllumination.compute().on(now).execute().phase + 180.0)
+            val phase = (angle - 180.0).toFloat()
+            fun time(date: Date?) = date?.getFormattedTime(location, activity, activity.is12Hour)
+
+            // Before today's moonrise, yesterday's moon may still be up: show that one
+            val todayMoon = weather.today?.moon
+            val moon = if (todayMoon?.riseDate == null || now.before(todayMoon.riseDate)) {
+                val yesterday = weather.todayIndex?.let { weather.dailyForecast.getOrNull(it - 1) }?.moon
+                if (yesterday?.isValid == true && yesterday.setDate!!.after(now)) yesterday else todayMoon
+            } else {
+                todayMoon
+            }
+
+            val daysToFull = ((180.0 - angle).mod(360.0)) / 360.0 * SYNODIC_MONTH_DAYS
+            val fullMoon = Date(now.time + (daysToFull * 86_400_000L).roundToLong())
+            val locale = activity.currentLocale
+            val dateFormat = SimpleDateFormat(
+                android.text.format.DateFormat.getBestDateTimePattern(locale, "MMMd"),
+                locale
+            ).apply { timeZone = location.timeZone }
+
+            val phaseName = MoonPhase(angle.roundToInt().mod(360)).getDescription(activity)
+            val illumination = "${(moonFraction(phase) * 100f).roundToInt()}%"
+            val rise = time(moon?.riseDate)
+            val set = time(moon?.setDate)
+            return MoonModel(
+                title = activity.getString(R.string.ephemeris_moon),
+                phase = phase,
+                southern = location.latitude < 0.0,
+                phaseName = phaseName,
+                illumination = illumination,
+                rise = rise,
+                set = set,
+                nextFullMoon = dateFormat.format(fullMoon),
+                description = listOfNotNull(
+                    phaseName,
+                    activity.getString(R.string.tile_moon_illumination) + " " + illumination,
+                    rise?.let { activity.getString(R.string.ephemeris_moonrise_at, it) },
+                    set?.let { activity.getString(R.string.ephemeris_moonset_at, it) }
+                ).joinToString(". ")
+            )
+        }
     }
 }

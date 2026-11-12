@@ -1,58 +1,69 @@
 /*
- * This file is part of Breezy Weather.
+ * This file is part of Frosty Weather, a modified version of Breezy Weather.
  *
- * Breezy Weather is free software: you can redistribute it and/or modify it
+ * Frosty Weather is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the
  * Free Software Foundation, version 3 of the License.
  *
- * Breezy Weather is distributed in the hope that it will be useful, but
+ * Frosty Weather is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
  * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
  * License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with Breezy Weather. If not, see <https://www.gnu.org/licenses/>.
+ * along with Frosty Weather. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.annotation.SuppressLint
-import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.RelativeLayout
-import android.widget.TextView
-import androidx.appcompat.widget.AppCompatImageView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
-import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.common.options.appearance.DetailScreen
 import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.domain.weather.index.PollenIndex
-import org.breezyweather.domain.weather.index.PollenIndex.Companion.getNegligiblePollenColor
-import org.breezyweather.domain.weather.index.PollenIndex.Companion.getNegligiblePollenText
 import org.breezyweather.domain.weather.model.getColor
 import org.breezyweather.domain.weather.model.getIndex
 import org.breezyweather.domain.weather.model.getIndexName
 import org.breezyweather.domain.weather.model.getName
 import org.breezyweather.domain.weather.model.pollensWithConcentration
+import org.breezyweather.domain.weather.index.PollenIndex.Companion.getNegligiblePollenColor
+import org.breezyweather.domain.weather.index.PollenIndex.Companion.getNegligiblePollenText
 import org.breezyweather.ui.main.MainActivity
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 
-class PollenViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
-    LayoutInflater.from(parent.context).inflate(R.layout.container_main_pollen, parent, false)
-) {
-    private val pollen1Container: RelativeLayout = itemView.findViewById(R.id.pollen_item_1)
-    private val pollen1Icon: AppCompatImageView = itemView.findViewById(R.id.pollen_item_1_icon)
-    private val pollen1Title: TextView = itemView.findViewById(R.id.pollen_item_1_title)
-    private val pollen1Content: TextView = itemView.findViewById(R.id.pollen_item_1_content)
-    private val pollen2Container: RelativeLayout = itemView.findViewById(R.id.pollen_item_2)
-    private val pollen2Icon: AppCompatImageView = itemView.findViewById(R.id.pollen_item_2_icon)
-    private val pollen2Title: TextView = itemView.findViewById(R.id.pollen_item_2_title)
-    private val pollen2Content: TextView = itemView.findViewById(R.id.pollen_item_2_content)
+/**
+ * Pollen tile: the two most concentrated pollens (mold aside) with their level and its color,
+ * or that pollen is negligible today.
+ */
+class PollenViewHolder(parent: ViewGroup) : ComposeTileViewHolder(parent) {
 
-    @SuppressLint("SetTextI18n")
+    /** [name] null for the "negligible" line. */
+    @Immutable
+    private data class Entry(val name: String?, val level: String?, val color: Int)
+
+    private val entries = mutableStateOf<List<Entry>>(emptyList())
+
     override fun onBindView(
         activity: BreezyActivity,
         location: Location,
@@ -61,78 +72,58 @@ class PollenViewHolder(parent: ViewGroup) : AbstractMainCardViewHolder(
         itemAnimationEnabled: Boolean,
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
-
-        pollen1Container.visibility = View.GONE
-
-        val talkBackBuilder = StringBuilder()
-        location.weather?.today?.pollen?.let { pollen ->
-            val primaryPollens = pollen.pollensWithConcentration
+        val pollen = location.weather?.today?.pollen
+        val source = location.pollenSource?.let { (activity as MainActivity).sourceManager.getPollenIndexSource(it) }
+        entries.value = if (pollen == null) {
+            emptyList()
+        } else {
+            val primary = pollen.pollensWithConcentration
                 .filter { it != PollenIndex.MOLD }
                 .sortedByDescending { pollen.getIndex(it) }
-
-            val pollenIndexSource = location.pollenSource?.let {
-                (activity as MainActivity).sourceManager.getPollenIndexSource(it)
+                .take(2)
+            if (primary.isEmpty() && pollen.isValid) {
+                listOf(Entry(null, getNegligiblePollenText(activity, source), getNegligiblePollenColor(activity, source)))
+            } else {
+                primary.map { Entry(pollen.getName(activity, it), pollen.getIndexName(activity, it, source), pollen.getColor(activity, it, source)) }
             }
-
-            primaryPollens.getOrElse(0) { null }?.let { p ->
-                talkBackBuilder.append(context.getString(R.string.pollen_primary))
-                pollen1Container.visibility = View.VISIBLE
-                pollen1Icon.setColorFilter(pollen.getColor(context, p, pollenIndexSource))
-                pollen1Title.visibility = View.VISIBLE
-                pollen1Title.text = pollen.getName(context, p)
-                pollen1Title.setTextColor(context.getThemeColor(R.attr.colorTitleText))
-                pollen1Content.text = pollen.getIndexName(context, p, pollenIndexSource)
-                pollen1Content.setTextColor(context.getThemeColor(R.attr.colorBodyText))
-
-                talkBackBuilder.append(context.getString(R.string.colon_separator))
-                talkBackBuilder.append(pollen1Title.text)
-                talkBackBuilder.append(context.getString(R.string.colon_separator))
-                talkBackBuilder.append(pollen1Content.text)
-            } ?: run {
-                if (pollen.isValid) {
-                    pollen1Container.visibility = View.VISIBLE
-                    pollen1Icon.setColorFilter(getNegligiblePollenColor(context, pollenIndexSource))
-                    pollen1Title.visibility = View.GONE
-                    pollen1Content.text = getNegligiblePollenText(context, pollenIndexSource)
-                    pollen1Content.setTextColor(context.getThemeColor(R.attr.colorBodyText))
-
-                    talkBackBuilder.append(context.getString(R.string.pollen))
-                    talkBackBuilder.append(context.getString(R.string.colon_separator))
-                    talkBackBuilder.append(pollen1Content.text)
-                } else {
-                    pollen1Container.visibility = View.GONE
-                }
-            }
-
-            primaryPollens.getOrElse(1) { null }?.let { p ->
-                pollen2Container.visibility = View.VISIBLE
-                pollen2Icon.setColorFilter(pollen.getColor(context, p, pollenIndexSource))
-                pollen2Title.text = pollen.getName(context, p)
-                pollen2Title.setTextColor(context.getThemeColor(R.attr.colorTitleText))
-                pollen2Content.text = pollen.getIndexName(context, p, pollenIndexSource)
-                pollen2Content.setTextColor(context.getThemeColor(R.attr.colorBodyText))
-
-                talkBackBuilder.append(context.getString(org.breezyweather.unit.R.string.locale_separator))
-                talkBackBuilder.append(pollen2Title.text)
-                talkBackBuilder.append(context.getString(R.string.colon_separator))
-                talkBackBuilder.append(pollen2Content.text)
-            } ?: run {
-                pollen2Container.visibility = View.GONE
-            }
-        } ?: run {
-            talkBackBuilder.append(context.getString(R.string.pollen))
-            pollen1Container.visibility = View.GONE
-            pollen2Container.visibility = View.GONE
         }
 
-        itemView.contentDescription = talkBackBuilder.toString()
+        val separator = activity.getString(R.string.colon_separator)
+        itemView.contentDescription = listOf(activity.getString(R.string.pollen))
+            .plus(entries.value.map { listOfNotNull(it.name, it.level).joinToString(separator) })
+            .joinToString(separator)
         itemView.setOnClickListener {
-            IntentHelper.startDailyWeatherActivity(
-                context as BreezyActivity,
-                location.formattedId,
-                location.weather!!.todayIndex,
-                DetailScreen.TAG_POLLEN
-            )
+            IntentHelper.startDailyWeatherActivity(activity, location.formattedId, location.weather!!.todayIndex, DetailScreen.TAG_POLLEN)
+        }
+    }
+
+    @Composable
+    override fun ColumnScope.Content(wide: Boolean) {
+        TileHeader(R.drawable.ic_allergy, itemView.context.getString(R.string.pollen))
+        entries.value.forEach { entry ->
+            Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.Top) {
+                Box(
+                    Modifier
+                        .padding(top = 6.dp, end = 8.dp)
+                        .size(10.dp)
+                        .background(Color(entry.color), CircleShape)
+                )
+                Column {
+                    entry.name?.let {
+                        Text(it, color = contentColor, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    entry.level?.let {
+                        Text(
+                            text = it,
+                            color = contentColor.copy(alpha = if (entry.name != null) 0.8f else 1f),
+                            fontSize = if (entry.name != null) 14.sp else 17.sp,
+                            fontWeight = if (entry.name != null) FontWeight.Normal else FontWeight.SemiBold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
         }
     }
 }

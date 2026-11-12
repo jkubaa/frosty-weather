@@ -16,118 +16,91 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.ColorFilter
-import android.graphics.Paint
-import android.graphics.PixelFormat
-import android.graphics.RadialGradient
-import android.graphics.Rect
-import android.graphics.Shader
-import android.graphics.drawable.Drawable
-import android.view.Gravity
-import android.view.LayoutInflater
-import android.view.View
+import android.graphics.Color as AndroidColor
 import android.view.ViewGroup
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.ColorUtils
+import org.breezyweather.ui.main.widgets.Compass
+import org.breezyweather.ui.main.widgets.MiniBars
+import org.breezyweather.ui.main.widgets.ScaleBar
+import org.breezyweather.ui.main.widgets.toAnnotatedString
 import kotlin.math.max
-import org.breezyweather.R
-import org.breezyweather.common.extensions.dpToPx
-import org.breezyweather.common.extensions.getThemeColor
-import org.breezyweather.ui.main.widgets.CompassView
-import org.breezyweather.ui.main.widgets.GradientScaleBarView
-import org.breezyweather.ui.main.widgets.MiniBarsView
 
 /**
- * Square liquid glass tile, iOS weather style (see container_main_glass_tile.xml):
- * header with [iconId] and [titleId], then a big value, a label, an optional graphic and description.
- * Subclasses fill the slots in their onBindView.
+ * Square liquid glass tile, iOS weather style, drawn in Compose: header with [iconId] and
+ * [titleId], then a big value, a label, an optional graphic (scale, bars, compass) and description.
+ * Subclasses fill the slots in their onBindView, through the same calls as when the tiles were Views.
  */
 abstract class GlassTileViewHolder(
     parent: ViewGroup,
-    @DrawableRes iconId: Int,
-    @StringRes titleId: Int,
-) : AbstractMainCardViewHolder(
-    LayoutInflater.from(parent.context).inflate(R.layout.container_main_glass_tile, parent, false)
-) {
-    protected val valueView: TextView = itemView.findViewById(R.id.tile_value)
-    private val labelView: TextView = itemView.findViewById(R.id.tile_label)
-    protected val descriptionView: TextView = itemView.findViewById(R.id.tile_description)
-    private val graphicSlot: FrameLayout = itemView.findViewById(R.id.tile_graphic)
-    private val sideSlot: FrameLayout = itemView.findViewById(R.id.tile_side)
-    private val content: View = itemView.findViewById(R.id.tile_content)
+    @DrawableRes private val iconId: Int,
+    @StringRes private val titleId: Int,
+) : ComposeTileViewHolder(parent) {
 
-    init {
-        itemView.findViewById<ImageView>(R.id.tile_icon).setImageResource(iconId)
-        itemView.findViewById<TextView>(R.id.tile_title).setText(titleId)
+    private sealed interface Graphic {
+        class Scale(val colors: List<Color>, val fraction: Float?) : Graphic
+        class Bars(val values: List<Float?>, val color: Color) : Graphic
     }
 
+    private val value = mutableStateOf<CharSequence>("-")
+    private val label = mutableStateOf<CharSequence?>(null)
+    private val description = mutableStateOf<CharSequence?>(null)
+    private val graphic = mutableStateOf<Graphic?>(null)
+    private val compass = mutableStateOf<Float?>(null)
+    private val hasCompass = mutableStateOf(false)
+    private val accent = mutableStateOf<Color?>(null)
+    private val descriptionLines = mutableIntStateOf(3)
+
     protected fun setValue(value: CharSequence?) {
-        valueView.text = value ?: "-"
+        this.value.value = value ?: "-"
     }
 
     protected fun setLabel(label: CharSequence?) {
-        labelView.text = label
-        labelView.visibility = if (label.isNullOrEmpty()) View.GONE else View.VISIBLE
+        this.label.value = label?.takeIf { it.isNotEmpty() }
     }
 
-    protected fun setDescription(description: CharSequence?) {
-        descriptionView.text = description
-        descriptionView.visibility = if (description.isNullOrEmpty()) View.GONE else View.VISIBLE
+    protected fun setDescription(description: CharSequence?, maxLines: Int = 3) {
+        this.description.value = description?.takeIf { it.isNotEmpty() }
+        descriptionLines.intValue = maxLines
     }
 
     /** Color scale with a dot at [fraction] (0..1), at the bottom of the graphic area. */
     protected fun showScale(@ColorInt colors: IntArray, fraction: Float?) {
-        val bar = graphicSlot.getChildAt(0) as? GradientScaleBarView
-            ?: GradientScaleBarView(itemView.context).also {
-                graphicSlot.removeAllViews()
-                graphicSlot.addView(
-                    it,
-                    FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        Gravity.BOTTOM
-                    )
-                )
-            }
-        bar.setScale(colors, fraction)
+        graphic.value = Graphic.Scale(colors.map { Color(it) }, fraction)
     }
 
     /** Compass to the right of the value; [degree] null for no arrow. */
     protected fun showCompass(degree: Float?) {
-        val compass = sideSlot.getChildAt(0) as? CompassView
-            ?: CompassView(itemView.context).also {
-                sideSlot.removeAllViews()
-                val size = itemView.context.dpToPx(58f).toInt()
-                sideSlot.addView(it, FrameLayout.LayoutParams(size, size))
-            }
-        sideSlot.visibility = View.VISIBLE
-        compass.contentColor = contentColor
-        compass.degree = degree
+        hasCompass.value = true
+        compass.value = degree
     }
 
     /** Small bar chart (values 0..1, null for missing) at the bottom of the graphic area. */
     protected fun showBars(values: List<Float?>, @ColorInt color: Int) {
-        val bars = graphicSlot.getChildAt(0) as? MiniBarsView
-            ?: MiniBarsView(itemView.context).also {
-                graphicSlot.removeAllViews()
-                graphicSlot.addView(
-                    it,
-                    FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        itemView.context.dpToPx(34f).toInt(),
-                        Gravity.BOTTOM
-                    )
-                )
-            }
-        bars.setBars(values, color, contentColor)
+        graphic.value = Graphic.Bars(values, Color(color))
     }
 
     /**
@@ -135,61 +108,92 @@ abstract class GlassTileViewHolder(
      * (e.g. the UV level color). Subtle on purpose: the tile stays glass.
      */
     protected fun setAccent(@ColorInt color: Int) {
-        content.background = AccentGlowDrawable(color)
+        accent.value = Color(color)
     }
 
-    private val contentColor: Int
-        get() = itemView.context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse)
-
     protected fun clearGraphic() {
-        graphicSlot.removeAllViews()
+        graphic.value = null
     }
 
     protected fun levelColors(vararg colorIds: Int): IntArray =
         colorIds.map { ContextCompat.getColor(itemView.context, it) }.toIntArray()
+
+    /** Soft radial glow from the top end corner, fading out across the tile. */
+    override fun DrawScope.tileBackground() {
+        val color = accent.value ?: return
+        val radius = max(size.width, size.height) * 0.95f
+        drawRect(
+            Brush.radialGradient(
+                0f to color.copy(alpha = 0.30f),
+                0.45f to color.copy(alpha = 0.10f),
+                1f to Color.Transparent,
+                center = Offset(size.width, 0f),
+                radius = radius.coerceAtLeast(1f)
+            )
+        )
+    }
+
+    @Composable
+    override fun ColumnScope.Content(wide: Boolean) {
+        TileHeader(iconId, itemView.context.getString(titleId))
+        // Value and label, with the wind compass to their right
+        Row(Modifier.fillMaxWidth()) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = value.value.toAnnotatedString(),
+                    color = contentColor,
+                    fontSize = 32.sp,
+                    lineHeight = 36.sp,
+                    maxLines = 1
+                )
+                label.value?.let {
+                    Text(
+                        text = it.toAnnotatedString(),
+                        color = contentColor,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+            if (hasCompass.value) {
+                Compass(compass.value, contentColor, Modifier.padding(start = 6.dp).size(58.dp))
+            }
+        }
+        // Graphic: fills the remaining space, drawn at its bottom
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(top = 6.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            when (val g = graphic.value) {
+                is Graphic.Scale -> ScaleBar(g.colors, g.fraction)
+                is Graphic.Bars -> MiniBars(g.values, g.color, contentColor)
+                null -> Unit
+            }
+        }
+        description.value?.let {
+            Text(
+                text = it.toAnnotatedString(),
+                color = contentColor.copy(alpha = 0.85f),
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                maxLines = descriptionLines.intValue,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
 }
 
 /** Accent colors of the tiles that don't take theirs from the data (like UV or air quality levels). */
 internal object TileColors {
-    val WATER = Color.rgb(79, 175, 255) // humidity, precipitation
-    val CLEAR_AIR = Color.rgb(207, 230, 255) // visibility
-    val PRESSURE = Color.rgb(167, 139, 250)
-    val WIND = Color.rgb(94, 230, 208)
-}
-
-/** Soft radial glow from the top end corner, fading out across the tile. */
-private class AccentGlowDrawable(@ColorInt private val color: Int) : Drawable() {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
-    override fun onBoundsChange(bounds: Rect) {
-        super.onBoundsChange(bounds)
-        val radius = max(bounds.width(), bounds.height()) * 0.95f
-        paint.shader = RadialGradient(
-            bounds.right.toFloat(),
-            bounds.top.toFloat(),
-            radius.coerceAtLeast(1f),
-            intArrayOf(
-                ColorUtils.setAlphaComponent(color, (0.30f * 255).toInt()),
-                ColorUtils.setAlphaComponent(color, (0.10f * 255).toInt()),
-                Color.TRANSPARENT
-            ),
-            floatArrayOf(0f, 0.45f, 1f),
-            Shader.TileMode.CLAMP
-        )
-    }
-
-    override fun draw(canvas: Canvas) {
-        canvas.drawRect(bounds, paint)
-    }
-
-    override fun setAlpha(alpha: Int) {
-        paint.alpha = alpha
-    }
-
-    override fun setColorFilter(colorFilter: ColorFilter?) {
-        paint.colorFilter = colorFilter
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+    val WATER = AndroidColor.rgb(79, 175, 255) // humidity, precipitation
+    val CLEAR_AIR = AndroidColor.rgb(207, 230, 255) // visibility
+    val PRESSURE = AndroidColor.rgb(167, 139, 250)
+    val WIND = AndroidColor.rgb(94, 230, 208)
 }

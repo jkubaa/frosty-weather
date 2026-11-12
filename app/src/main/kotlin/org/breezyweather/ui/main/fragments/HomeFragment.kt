@@ -276,10 +276,10 @@ class HomeFragment : MainModuleFragment() {
                         // Spreads on the full width
                         GRID_SPAN_COUNT
                     } else {
-                        // This takes into account the actual available width (if drawer is open or not)
-                        GRID_SPAN_COUNT.div(
-                            requireContext().getBlocksPerRow(width.toFloat().div(requireContext().density))
-                        )
+                        // This takes into account the actual available width (if drawer is open or not).
+                        // The last tiles of a run share the whole row rather than leaving a gap.
+                        val blocksPerRow = requireContext().getBlocksPerRow(width.toFloat().div(requireContext().density))
+                        GRID_SPAN_COUNT.div((adapter?.tilesInRow(position, blocksPerRow) ?: blocksPerRow).coerceAtLeast(1))
                     }
                 }
             }

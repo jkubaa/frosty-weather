@@ -34,6 +34,13 @@ abstract class AbstractMainCardViewHolder(
 ) : AbstractMainViewHolder(view) {
     protected var mLocation: Location? = null
 
+    /**
+     * Width of this card compared to a regular tile: 1 for a tile sharing its row as usual, 2 for a
+     * tile left alone in the last row of two (it then spreads over the whole width). Set by the
+     * adapter before binding; tiles use it to keep the same height as the others.
+     */
+    var widthFactor: Float = 1f
+
     @CallSuper
     open fun onBindView(
         activity: BreezyActivity,
