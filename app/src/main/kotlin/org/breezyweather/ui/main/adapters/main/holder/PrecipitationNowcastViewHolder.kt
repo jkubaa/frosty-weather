@@ -127,6 +127,8 @@ class PrecipitationNowcastViewHolder(context: Context) : ComposeCardViewHolder(c
                     Precipitation.PRECIPITATION_HOURLY_MEDIUM -> activity.getString(R.string.precipitation_intensity_medium)
                     else -> activity.getString(R.string.precipitation_intensity_heavy)
                 }
+                // "No precipitation" reads better than "0 in"
+                values[i] <= 0.0 -> activity.getString(R.string.precipitation_none)
                 else -> it.precipitationIntensity?.formatMeasureIntensity(activity) ?: activity.getString(R.string.precipitation_none)
             }
             Bar(
@@ -137,17 +139,12 @@ class PrecipitationNowcastViewHolder(context: Context) : ComposeCardViewHolder(c
             )
         }
 
-        // Fewer guide lines when it rains very hard, so they don't crowd the bottom of the chart
         val guides = if (SettingsManager.getInstance(activity).isTrendHorizontalLinesEnabled) {
-            buildList {
-                if (maxMicrometers / 1000.0 < Precipitation.PRECIPITATION_HOURLY_HEAVY * 2.0) {
-                    add(Precipitation.PRECIPITATION_HOURLY_LIGHT to activity.getString(R.string.precipitation_intensity_light))
-                }
-                if (maxMicrometers / 1000.0 <= Precipitation.PRECIPITATION_HOURLY_HEAVY) {
-                    add(Precipitation.PRECIPITATION_HOURLY_MEDIUM to activity.getString(R.string.precipitation_intensity_medium))
-                }
-                add(Precipitation.PRECIPITATION_HOURLY_HEAVY to activity.getString(R.string.precipitation_intensity_heavy))
-            }.map { (mm, label) -> mm * 1000.0 to label }
+            listOf(
+                Precipitation.PRECIPITATION_HOURLY_LIGHT to activity.getString(R.string.precipitation_intensity_light),
+                Precipitation.PRECIPITATION_HOURLY_MEDIUM to activity.getString(R.string.precipitation_intensity_medium),
+                Precipitation.PRECIPITATION_HOURLY_HEAVY to activity.getString(R.string.precipitation_intensity_heavy)
+            ).map { (mm, label) -> mm * 1000.0 to label }
         } else {
             emptyList()
         }
@@ -182,6 +179,25 @@ class PrecipitationNowcastViewHolder(context: Context) : ComposeCardViewHolder(c
                     .clearAndSetSemantics { contentDescription = m.description }
             )
         }
+    }
+
+    /**
+     * Height of a bar, 0..1: light, medium and heavy each get a third of the chart (iOS style), so
+     * light rain and drizzle show as real bars instead of slivers under a scale made for downpours.
+     * Within the light band, small amounts are lifted a little more; past heavy, bars stay full.
+     */
+    private fun intensityHeight(micrometers: Double): Float {
+        val light = Precipitation.PRECIPITATION_HOURLY_LIGHT * 1000.0
+        val medium = Precipitation.PRECIPITATION_HOURLY_MEDIUM * 1000.0
+        val heavy = Precipitation.PRECIPITATION_HOURLY_HEAVY * 1000.0
+        val fraction = when {
+            micrometers <= 0.0 -> 0.0
+            micrometers <= light -> Math.pow(micrometers / light, 0.35) / 3.0
+            micrometers <= medium -> 1.0 / 3.0 + (micrometers - light) / (medium - light) / 3.0
+            micrometers <= heavy -> 2.0 / 3.0 + (micrometers - medium) / (heavy - medium) / 3.0
+            else -> 1.0
+        }
+        return fraction.toFloat().coerceIn(0f, 1f)
     }
 
     @Composable
@@ -232,7 +248,7 @@ class PrecipitationNowcastViewHolder(context: Context) : ComposeCardViewHolder(c
             ) {
                 val slot = size.width / m.bars.size.coerceAtLeast(1)
                 val barWidth = slot * 0.62f
-                fun y(micrometers: Double) = size.height * (1f - (micrometers / m.maxMicrometers).toFloat().coerceIn(0f, 1f))
+                fun y(micrometers: Double) = size.height * (1f - intensityHeight(micrometers))
 
                 // Guide lines, labelled at the end
                 m.guides.forEach { (micrometers, label) ->

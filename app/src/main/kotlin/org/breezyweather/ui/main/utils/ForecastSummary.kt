@@ -123,14 +123,19 @@ object ForecastSummary {
         }
     }
 
+    /** Keeps a measure on one line: "10 m/s" must not wrap as "10 m/" + "s". */
+    private fun unbreakable(measure: String): String =
+        // No-break space, and a word joiner after the slash
+        measure.replace(" ", "\u00A0").replace("/", "/\u2060")
+
     private fun wind(context: Context, hours: List<Hourly>): String? {
         val gusts = hours.mapNotNull { it.wind?.gusts }.maxByOrNull { it.toDouble(SpeedUnit.KILOMETER_PER_HOUR) }
         if (gusts != null && gusts.toDouble(SpeedUnit.KILOMETER_PER_HOUR) >= NOTABLE_GUSTS_KMH) {
-            return context.getString(R.string.summary_gusts, gusts.formatMeasure(context, valueWidth = UnitWidth.NARROW))
+            return context.getString(R.string.summary_gusts, unbreakable(gusts.formatMeasure(context, valueWidth = UnitWidth.NARROW)))
         }
         val speed = hours.mapNotNull { it.wind?.speed }.maxByOrNull { it.toDouble(SpeedUnit.KILOMETER_PER_HOUR) }
         if (speed != null && speed.toDouble(SpeedUnit.KILOMETER_PER_HOUR) >= NOTABLE_WIND_KMH) {
-            return context.getString(R.string.summary_wind, speed.formatMeasure(context, valueWidth = UnitWidth.NARROW))
+            return context.getString(R.string.summary_wind, unbreakable(speed.formatMeasure(context, valueWidth = UnitWidth.NARROW)))
         }
         return null
     }
