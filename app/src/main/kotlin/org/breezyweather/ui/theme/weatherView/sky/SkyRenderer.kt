@@ -73,8 +73,8 @@ internal class SkyAssets private constructor(
             val clouds = style.clouds.map { it to CloudTextures.get(it, style.cloudLight, style.cloudShadow) }
             val fog = if (style.fog > 0f) {
                 listOf(
-                    CloudLayer(71, 0.30f, 0.55f, 2.3f, 0.006f, 1f, 0.7f, true, 0.3f),
-                    CloudLayer(83, 0.52f, 0.62f, 1.9f, 0.010f, 1f, 0.85f, true, 0.5f)
+                    CloudLayer(71, 0.22f, 0.42f, 2.0f, 0.006f, 1f, 0.55f, 0.85f, 0.3f, topFade = true),
+                    CloudLayer(83, 0.44f, 0.42f, 1.7f, 0.010f, 1f, 0.6f, 0.85f, 0.5f, topFade = true)
                 ).map { it to CloudTextures.get(it, style.fogColor, style.fogColor, shaded = false) }
             } else {
                 emptyList()
