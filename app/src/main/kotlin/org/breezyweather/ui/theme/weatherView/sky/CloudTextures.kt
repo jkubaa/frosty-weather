@@ -183,7 +183,7 @@ internal fun smoothstep(edge0: Float, edge1: Float, x: Float): Float {
 }
 
 /** Value noise that repeats every `period` cells horizontally (vertically it doesn't need to). */
-private class PeriodicNoise(seed: Int) {
+internal class PeriodicNoise(seed: Int) {
 
     private val perm = IntArray(512).also { p ->
         val shuffled = (0 until 256).shuffled(Random(seed))

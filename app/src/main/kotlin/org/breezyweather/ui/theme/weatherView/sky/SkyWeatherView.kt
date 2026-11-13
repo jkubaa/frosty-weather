@@ -38,6 +38,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
@@ -56,6 +59,7 @@ import org.shredzone.commons.suncalc.MoonIllumination
 import org.shredzone.commons.suncalc.MoonPosition
 import org.shredzone.commons.suncalc.SunPosition
 import java.util.Date
+import kotlin.math.abs
 
 /**
  * Home screen sky, drawn with Compose: painterly drifting clouds, stars and moon at night, sun
@@ -78,6 +82,8 @@ class SkyWeatherView(context: Context) : AbstractComposeView(context), WeatherVi
     private var drawing by mutableStateOf(false)
     private var animating by mutableStateOf(true)
     private var scroll by mutableFloatStateOf(0f)
+    private var tiltEnabled by mutableStateOf(false)
+    private val tilt = TiltSensor(context)
 
     /** This sky, for the glass cards to draw behind them. */
     val backdrop = SkyBackdrop()
@@ -117,11 +123,17 @@ class SkyWeatherView(context: Context) : AbstractComposeView(context), WeatherVi
     }
 
     override fun setGravitySensorEnabled(enabled: Boolean) {
-        // The sky doesn't tilt with the device
+        tiltEnabled = enabled
     }
 
     @Composable
     override fun Content() {
+        // Listen to the tilt only while the sky is on screen and moving, and the setting allows it
+        val listen = tiltEnabled && drawing && animating
+        DisposableEffect(listen) {
+            if (listen) tilt.start()
+            onDispose { tilt.stop() }
+        }
         var debug by remember { mutableStateOf(DebugSky()) }
         if (BuildConfig.DEBUG) {
             LaunchedEffect(Unit) {
@@ -137,8 +149,10 @@ class SkyWeatherView(context: Context) : AbstractComposeView(context), WeatherVi
             coordinates = coordinates,
             running = drawing && animating,
             scroll = { scroll },
+            tilt = { tilt.value },
             debugSunAltitude = debug.sunAltitude,
             debugMoonPhase = debug.moonPhase,
+            debugAurora = debug.aurora,
             backdrop = backdrop,
             modifier = Modifier.fillMaxSize()
         )
@@ -155,6 +169,7 @@ class SkyWeatherView(context: Context) : AbstractComposeView(context), WeatherVi
  * - `adb shell setprop debug.frosty.sky 4` forces a WeatherView kind, optionally `4,night`
  * - `adb shell setprop debug.frosty.sun -2` forces the sun altitude in degrees (sunset is around 0)
  * - `adb shell setprop debug.frosty.moon 90` forces the moon phase, -180 new / 0 full / 180 new
+ * - `adb shell setprop debug.frosty.aurora 1` forces the aurora strength (0..1) on clear nights
  * An empty value (`setprop debug.frosty.sky ""`) goes back to the real sky.
  */
 @Immutable
@@ -163,6 +178,7 @@ private data class DebugSky(
     val daytime: Boolean? = null,
     val sunAltitude: Double? = null,
     val moonPhase: Double? = null,
+    val aurora: Float? = null,
 ) {
     companion object {
         @SuppressLint("PrivateApi")
@@ -180,7 +196,8 @@ private data class DebugSky(
                 kind = sky[0].trim().toIntOrNull(),
                 daytime = sky[0].trim().toIntOrNull()?.let { sky.getOrNull(1)?.trim() != "night" },
                 sunAltitude = prop("debug.frosty.sun").trim().toDoubleOrNull(),
-                moonPhase = prop("debug.frosty.moon").trim().toDoubleOrNull()
+                moonPhase = prop("debug.frosty.moon").trim().toDoubleOrNull(),
+                aurora = prop("debug.frosty.aurora").trim().toFloatOrNull()
             )
         }
     }
@@ -210,8 +227,10 @@ private fun SkyScene(
     coordinates: Pair<Double, Double>?,
     running: Boolean,
     scroll: () -> Float,
+    tilt: () -> Offset,
     debugSunAltitude: Double?,
     debugMoonPhase: Double?,
+    debugAurora: Float?,
     backdrop: SkyBackdrop,
     modifier: Modifier = Modifier,
 ) {
@@ -233,7 +252,7 @@ private fun SkyScene(
         }
         while (true) {
             value = withContext(Dispatchers.Default) { computeAstro(latitude, longitude) }
-            delay(60_000)
+            delay(20_000)
         }
     }
 
@@ -245,7 +264,7 @@ private fun SkyScene(
     }
     val targetGolden = if (sunAltitude != null) {
         val a = sunAltitude.toFloat()
-        smoothstep(-9f, -1f, a) * (1f - smoothstep(5f, 13f, a))
+        smoothstep(-9f, -1f, a) * (1f - smoothstep(3f, 10f, a))
     } else {
         0f
     }
@@ -258,6 +277,8 @@ private fun SkyScene(
         else -> smoothstep(-3f, 3f, astro!!.moonAltitude.toFloat())
     }
     val southern = astro?.southern ?: false
+    // Without space weather data, aurora shows where it is common: clear nights from about 55° of latitude
+    val aurora = debugAurora ?: coordinates?.let { smoothstep(55f, 62f, abs(it.first.toFloat())) } ?: 0f
 
     // Cross-fade between weather kinds. The new sky only fades in once its textures are ready.
     var shown by remember { mutableStateOf<SkyPair?>(null) }
@@ -275,7 +296,7 @@ private fun SkyScene(
         leaving = shown
         shown = next
         fade.snapTo(0f)
-        fade.animateTo(1f, tween(if (leaving == null) 600 else 900, easing = FastOutSlowInEasing))
+        fade.animateTo(1f, tween(if (leaving == null) 600 else 2400, easing = FastOutSlowInEasing))
         leaving = null
     }
     val placeholder = remember(weatherKind) {
@@ -283,10 +304,23 @@ private fun SkyScene(
     }
 
     // Shared with the glass cards (see SkyBackdrop): they draw the same sky, blurred, behind them
-    val painter: DrawScope.() -> Unit = {
-        val light = SkyLight(dayAmount, golden, sunAlpha, moonAlpha, moonPhase, southern)
+    // Rainy weather is seen through a wet window (Android 10+), which fades in and out with the weather
+    val glassTarget = when (weatherKind) {
+        WeatherView.WEATHER_KIND_RAINY -> GlassWeather.RAIN
+        WeatherView.WEATHER_KIND_SLEET -> GlassWeather.SLEET
+        WeatherView.WEATHER_KIND_THUNDERSTORM -> GlassWeather.STORM
+        else -> null
+    }
+    var glassWeather by remember { mutableStateOf(GlassWeather.RAIN) }
+    if (glassTarget != null) glassWeather = glassTarget
+    val glassAmount by animateFloatAsState(if (glassTarget != null) 1f else 0f, tween(2000), label = "glass")
+    val rainGlass = remember { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) RainGlass() else null }
+
+    val sky: DrawScope.() -> Unit = {
+        val light = SkyLight(dayAmount, golden, sunAlpha, moonAlpha, moonPhase, southern, sunAltitude?.toFloat(), aurora)
         val t = time.floatValue
         val s = scroll()
+        val tl = tilt()
         val current = shown
         val previous = leaving
         val p = fade.value
@@ -296,11 +330,28 @@ private fun SkyScene(
                 drawSkyGradient(placeholder.first, dayAmount)
             }
             previous != null -> {
-                drawPair(previous, light, t, s, backgroundAlpha = 1f, effectsAlpha = 1f - p)
-                drawPair(current, light, t, s, backgroundAlpha = p, effectsAlpha = p)
+                // The weather arrives: new clouds drift in from the side as the old ones drift away
+                val eased = p * p * (3f - 2f * p)
+                drawPair(previous, light, t, s, backgroundAlpha = 1f, effectsAlpha = 1f - p, tilt = tl, slide = -eased * 0.5f)
+                drawPair(current, light, t, s, backgroundAlpha = p, effectsAlpha = p, tilt = tl, slide = (1f - eased) * 0.6f)
             }
-            else -> drawPair(current, light, t, s, backgroundAlpha = 1f, effectsAlpha = p)
+            else -> drawPair(current, light, t, s, backgroundAlpha = 1f, effectsAlpha = p, tilt = tl)
         }
+    }
+    val painter: DrawScope.() -> Unit = {
+        val glass = rainGlass
+        if (glass != null && glassAmount > 0.01f && drawContext.canvas.nativeCanvas.isHardwareAccelerated) {
+            glass.draw(this, time.floatValue, glassAmount, glassWeather, sky)
+            // A storm's bolts stay readable through the fogged glass
+            if (weatherKind == WeatherView.WEATHER_KIND_THUNDERSTORM) {
+                drawStrikeBolts(strikesAt(time.floatValue, bolts = true), time.floatValue, glassAmount, coreOnly = true)
+            }
+        } else {
+            sky()
+        }
+        // Cards scrolled over the sky: it settles back and dims a little, so they read well
+        val settled = scroll()
+        if (settled > 0.01f) drawRect(Color.Black, alpha = 0.12f * settled)
     }
     SideEffect { backdrop.painter = painter }
     val density = LocalDensity.current
@@ -333,14 +384,16 @@ private fun DrawScope.drawPair(
     scroll: Float,
     backgroundAlpha: Float,
     effectsAlpha: Float,
+    tilt: Offset = Offset.Zero,
+    slide: Float = 0f,
 ) {
     val day = light.dayAmount
     if (day < 1f) drawSkyBackground(pair.night, backgroundAlpha)
     if (day > 0f) drawSkyBackground(pair.day, backgroundAlpha * if (day < 1f) day else 1f)
     val golden = light.golden * pair.day.style.goldenStrength
-    drawGoldenHour(golden * effectsAlpha)
-    drawSkyEffects(pair.night, light, time, scroll, effectsAlpha * (1f - day), warmth = golden)
-    drawSkyEffects(pair.day, light, time, scroll, effectsAlpha * day, warmth = golden)
+    drawGoldenHour(golden * effectsAlpha, light.sunAltitude)
+    drawSkyEffects(pair.night, light, time, scroll, effectsAlpha * (1f - day), warmth = golden, tilt = tilt, slide = slide)
+    drawSkyEffects(pair.day, light, time, scroll, effectsAlpha * day, warmth = golden, tilt = tilt, slide = slide)
 }
 
 private fun computeAstro(latitude: Double, longitude: Double): Astro {
