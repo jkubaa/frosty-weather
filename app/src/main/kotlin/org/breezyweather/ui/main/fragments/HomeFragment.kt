@@ -367,13 +367,18 @@ class HomeFragment : MainModuleFragment() {
             .indexOfFirst { it.isCurrentPosition }
             .takeIf { it >= 0 }
 
+        val temperatureUnit = SettingsManager.getInstance(requireContext()).getTemperatureUnit(requireContext())
+        binding.topBar.caption = location?.takeIf { it.isCurrentPosition }?.let { getString(R.string.location_current) }
         binding.topBar.subtitle = location?.weather?.current?.let { current ->
-            val temperatureUnit = SettingsManager.getInstance(requireContext()).getTemperatureUnit(requireContext())
             listOfNotNull(
                 current.temperature?.temperature?.let { "${it.toDouble(temperatureUnit).roundToInt()}°" },
                 current.weatherText?.takeIf { it.isNotEmpty() }
-                    ?: current.weatherCode?.let { WeatherViewController.getWeatherText(it) }
-            ).joinToString("  ").takeIf { it.isNotEmpty() }
+                    ?: current.weatherCode?.let { WeatherViewController.getWeatherText(it) },
+                // Feels like, only when it differs from the actual temperature (as in the hero)
+                current.temperature?.feelsLikeTemperature?.toDouble(temperatureUnit)?.roundToInt()
+                    ?.takeIf { it != current.temperature?.temperature?.toDouble(temperatureUnit)?.roundToInt() }
+                    ?.let { getString(R.string.temperature_feels_like_with_unit, "${it}°") }
+            ).joinToString("  ·  ").takeIf { it.isNotEmpty() }
         }
         updateToolbarTitleAlpha()
 
@@ -441,7 +446,9 @@ class HomeFragment : MainModuleFragment() {
         // Fade the compact toolbar title in once the hero header has mostly scrolled away
         val fadeStart = requireContext().dpToPx(TOOLBAR_TITLE_FADE_START_DP)
         val fadeLength = requireContext().dpToPx(TOOLBAR_TITLE_FADE_LENGTH_DP)
-        val fraction = ((scrollY - fadeStart) / fadeLength).coerceIn(0f, 1f)
+        val linear = ((scrollY - fadeStart) / fadeLength).coerceIn(0f, 1f)
+        // Eased like the hero's fade, so the hand-off doesn't move at a constant, mechanical rate
+        val fraction = linear * linear * (3f - 2f * linear)
         if (fraction != toolbarTitleFraction) {
             toolbarTitleFraction = fraction
             updateToolbarTitleAlpha()
@@ -449,7 +456,8 @@ class HomeFragment : MainModuleFragment() {
     }
 
     companion object {
-        private const val TOOLBAR_TITLE_FADE_START_DP = 70f
-        private const val TOOLBAR_TITLE_FADE_LENGTH_DP = 60f
+        // Overlaps the hero's own fade (40dp, see HomeCardsView): the title is fully in once the hero is gone
+        private const val TOOLBAR_TITLE_FADE_START_DP = 20f
+        private const val TOOLBAR_TITLE_FADE_LENGTH_DP = 30f
     }
 }

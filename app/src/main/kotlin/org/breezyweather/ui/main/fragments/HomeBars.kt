@@ -25,6 +25,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -85,6 +86,9 @@ class HomeTopBarView @JvmOverloads constructor(
     var title by mutableStateOf("")
     var subtitle by mutableStateOf<String?>(null)
 
+    /** Small line above the title: "Current location" for the GPS location. */
+    var caption by mutableStateOf<String?>(null)
+
     /** 0 hidden, 1 fully shown. */
     var fraction by mutableFloatStateOf(0f)
 
@@ -100,6 +104,17 @@ class HomeTopBarView @JvmOverloads constructor(
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            caption?.let {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painterResource(R.drawable.ic_location_arrow),
+                        contentDescription = null,
+                        tint = content.copy(alpha = 0.8f),
+                        modifier = Modifier.size(12.dp).padding(end = 2.dp)
+                    )
+                    Text(it, color = content.copy(alpha = 0.8f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
             Text(title, color = content, fontSize = 20.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             subtitle?.let {
                 Text(it, color = content.copy(alpha = 0.8f), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

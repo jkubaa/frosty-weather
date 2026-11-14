@@ -81,6 +81,11 @@ val GlassRimBrush = Brush.verticalGradient(
     listOf(Color.White.copy(alpha = 0.5f), Color.White.copy(alpha = 0.1f))
 )
 
+/** Softer rim for cards and tiles, so their outline doesn't compete with the content. */
+val GlassCardRimBrush = Brush.verticalGradient(
+    listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.04f))
+)
+
 /**
  * Liquid glass in Compose, the same material as the View-based [LiquidGlass]: the sky behind the
  * element, blurred, with boosted colors (vibrancy) and, on Android 13+, bent towards the inside near
@@ -215,7 +220,7 @@ class GlassPainter internal constructor(
         if (rim) {
             // Thin rim of light, drawn here so it also shows on a card that collapses under the list
             drawRoundRect(
-                brush = GlassRimBrush,
+                brush = GlassCardRimBrush,
                 topLeft = box.topLeft,
                 size = box.size,
                 cornerRadius = CornerRadius(cornerRadius),

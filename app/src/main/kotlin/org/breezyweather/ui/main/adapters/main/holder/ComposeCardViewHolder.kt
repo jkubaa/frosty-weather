@@ -303,9 +303,10 @@ internal fun MetricSwitcher(
     val scroll = rememberScrollState()
     Box(
         modifier
+            // Icons melt away at the edges while there are more metrics to scroll to. Before the scroll, so
+            // the fade sits on the visible window, not on the full row scrolling inside it
+            .fadeHorizontalEdges(scroll.value > 0, scroll.canScrollForward, 24.dp)
             .horizontalScroll(scroll)
-            // Icons melt away at the edges while there are more metrics to scroll to
-            .fadeHorizontalEdges(scroll.value > 0, scroll.canScrollForward, 16.dp)
             .background(content.copy(alpha = 0.086f), RoundedCornerShape(50))
             .padding(2.dp)
     ) {

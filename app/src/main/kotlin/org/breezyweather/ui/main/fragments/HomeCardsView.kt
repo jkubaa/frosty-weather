@@ -221,10 +221,12 @@ class HomeCardsView @JvmOverloads constructor(
             modifier = modifier
                 .graphicsLayer {
                     val f = state.distanceFraction
-                    // From hidden above the top, down to its resting place, a little further when pulled hard
-                    translationY = f.coerceAtMost(1.5f) * PULL_ROOM.toPx() - 52.dp.toPx()
-                    alpha = (f * 2f).coerceIn(0f, 1f)
-                    val scale = 0.7f + 0.3f * f.coerceIn(0f, 1f)
+                    // Apple style: it appears where it rests (fading and growing with the pull, following it only a
+                    // little) instead of sliding out from above the top edge, where it would seem to come out of a wall
+                    translationY = REFRESH_REST.toPx() + (f.coerceAtMost(1.5f) - 1f) * 16.dp.toPx()
+                    val t = (f * 1.4f).coerceIn(0f, 1f)
+                    alpha = t * t * (3f - 2f * t)
+                    val scale = 0.6f + 0.4f * f.coerceIn(0f, 1f)
                     scaleX = scale
                     scaleY = scale
                 }
@@ -401,6 +403,17 @@ class HomeCardsView @JvmOverloads constructor(
                                         val end = header * (1f - FADE_COVER)
                                         ((nextTop - pad - end) / (start - end)).coerceIn(0f, 1f)
                                     } ?: 1f
+                                    // Apple Weather style: the hero stays where it is (drifting up only slightly) and fades out
+                                    // as the cards come up, instead of scrolling into the top edge where it would get cut off.
+                                    // The top title fades in over the same scroll (see HomeFragment.onCardsScrolled)
+                                    if (type == ViewType.HEADER) {
+                                        gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == type }?.let {
+                                            val scrolled = (-it.offset.y).coerceAtLeast(0).toFloat()
+                                            translationY = scrolled * (1f - HERO_DRIFT)
+                                            val t = (scrolled / HERO_FADE.toPx()).coerceIn(0f, 1f)
+                                            alpha *= 1f - t * t * (3f - 2f * t)
+                                        }
+                                    }
                                 }
                                 .drawWithContent {
                                     val top = if (isDragged) null else collapseOf(type)
@@ -535,6 +548,9 @@ class HomeCardsView @JvmOverloads constructor(
         /** How far the cards come down when pulled to refresh: room for the indicator. */
         val PULL_ROOM = 64.dp
 
+        /** Where the refresh indicator rests, below the status bar (it never goes above the top edge). */
+        val REFRESH_REST = 36.dp
+
         /** 60 divides by 1, 2, 3, 4 and 5: any number of tiles per row gets a whole span. */
         const val SPANS = 60
 
@@ -543,6 +559,12 @@ class HomeCardsView @JvmOverloads constructor(
 
         /** Room under a card's header that stays with it when the card collapses. */
         val HEADER_GAP = 8.dp
+
+        /** Scroll over which the hero fades out (the top title fades in over the same range). */
+        val HERO_FADE = 40.dp
+
+        /** How much the hero still moves with the scroll while it fades: a slight drift, not a slide. */
+        const val HERO_DRIFT = 0.3f
 
         /** Fade length of a collapsing card without a header. */
         val MIN_STRIP = 40.dp
