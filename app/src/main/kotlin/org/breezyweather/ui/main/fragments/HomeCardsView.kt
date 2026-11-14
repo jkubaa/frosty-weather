@@ -362,7 +362,15 @@ class HomeCardsView @JvmOverloads constructor(
                         saturation = cardGlass?.glassSaturation ?: GlassVividSaturation,
                         rim = cardGlass?.glassRim ?: false,
                     )
-                    val glassHidden = remember(type) { { dragging != type && collapseOf(type) != null } }
+                    // Observable state: when the card stops collapsing, the glass that reads this redraws
+                    // (a plain read at draw time didn't, so the card's background stayed missing)
+                    // Keyed on the location's data too: a new location gives the glass a new state, so it redraws
+                    val collapsingNow = remember(type, data.version) {
+                        androidx.compose.runtime.derivedStateOf {
+                            dragging != type && collapseOf(type) != null
+                        }
+                    }
+                    val glassHidden = remember(type, data.version) { { collapsingNow.value } }
                     CompositionLocalProvider(
                         LocalCardHeader provides reportHeader,
                         LocalCardHeaderPin provides headerPin,

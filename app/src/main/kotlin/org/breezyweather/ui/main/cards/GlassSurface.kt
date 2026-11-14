@@ -71,7 +71,7 @@ val GlassCornerRadius = 26.dp
 const val GlassEdgeRefraction = 2.4f
 
 /** Backdrop saturation of the cards and tiles: a bit more vivid, but warm backdrops don't get too bright. */
-const val GlassVividSaturation = 1.8f
+const val GlassVividSaturation = 1.4f
 
 /** Backdrop saturation of the bottom bar: more vivid, like the reference glass. */
 const val GlassBarSaturation = 2.6f
@@ -174,6 +174,7 @@ class GlassPainter internal constructor(
     private val rim: Boolean,
 ) {
     private val effects = EffectCache()
+
     private var sheenRadius = radiusPx
     private var sheen = LiquidGlassDrawable(radiusPx, isLight = isLight)
 
