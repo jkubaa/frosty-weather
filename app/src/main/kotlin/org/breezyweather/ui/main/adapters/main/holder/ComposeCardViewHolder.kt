@@ -68,6 +68,11 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -118,10 +123,52 @@ val LocalHorizontalRegions = compositionLocalOf<MutableMap<String, Rect>?> { nul
  */
 val LocalCardHeader = compositionLocalOf<((LayoutCoordinates) -> Unit)?> { null }
 
-/** Marks a card's header for [LocalCardHeader]. */
+/**
+ * A collapsing card's header, kept at the top by the list (see HomeCardsView): laid out [offset] px
+ * further down, so taps reach it there (the metric switcher). While it is (offset above 0), it
+ * doesn't draw itself but records into [layer], which the list draws at the top.
+ */
+class CardHeaderPin(val offset: () -> Int, val layer: GraphicsLayer) {
+    /** The offset the header was last laid out with (included in the position it reports). */
+    var applied = 0
+}
+
+val LocalCardHeaderPin = compositionLocalOf<CardHeaderPin?> { null }
+
+/** Marks a card's header for [LocalCardHeader] and [LocalCardHeaderPin]. */
 internal fun Modifier.cardHeader(): Modifier = composed {
     val report = LocalCardHeader.current
-    if (report != null) Modifier.onGloballyPositioned(report) else Modifier
+    val pin = LocalCardHeaderPin.current
+    // The offset comes first: taps only reach the header within the bounds of every layout step
+    // around it, so nothing may keep its unpinned place outside the offset. The position reported
+    // includes the offset ([CardHeaderPin.applied])
+    (
+        if (pin != null) {
+            Modifier
+                // Pinned, the header sits over the rest of the card scrolling up under it: taps on it go
+                // to it first (not to what comes after it in the card, like the day rows)...
+                .zIndex(1f)
+                // ...and stop there, also on its title (the list above still scrolls from it)
+                .pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } }
+                .offset { IntOffset(0, pin.offset().also { pin.applied = it }) }
+        } else {
+            Modifier
+        }
+        )
+        .then(if (report != null) Modifier.onGloballyPositioned(report) else Modifier)
+        .then(
+            if (pin != null) {
+                Modifier.drawWithContent {
+                    if (pin.offset() > 0) {
+                        pin.layer.record { this@drawWithContent.drawContent() }
+                    } else {
+                        drawContent()
+                    }
+                }
+            } else {
+                Modifier
+            }
+        )
 }
 
 /**

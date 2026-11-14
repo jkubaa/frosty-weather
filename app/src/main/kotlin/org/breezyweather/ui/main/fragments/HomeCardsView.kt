@@ -60,6 +60,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -99,10 +100,17 @@ import org.breezyweather.ui.main.adapters.main.holder.AbstractMainCardViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.AbstractMainViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.HorizontalRegionsComposeView
 import org.breezyweather.ui.main.adapters.main.holder.LocalCardHeader
+import org.breezyweather.ui.main.adapters.main.holder.LocalCardHeaderPin
 import org.breezyweather.ui.main.adapters.main.holder.LocalHorizontalRegions
 import org.breezyweather.ui.main.adapters.main.holder.LocalSkyBackdrop
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.ui.theme.weatherView.sky.SkyBackdrop
+import kotlin.math.roundToInt
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.unit.IntOffset
+import org.breezyweather.ui.main.adapters.main.holder.CardHeaderPin
 
 /**
  * The home screen's cards, in Compose: a grid where tiles go two per row (more on wide screens)
@@ -324,15 +332,29 @@ class HomeCardsView @JvmOverloads constructor(
                     val itemCoords = remember { arrayOfNulls<LayoutCoordinates>(1) }
                     val headerCoords = remember { arrayOfNulls<LayoutCoordinates>(1) }
                     val reportHeader = remember { { header: LayoutCoordinates -> headerCoords[0] = header } }
-                    fun headerBottom(gap: Float): Float? {
+                    // The header, kept at the top while the card collapses: laid out there (for taps), and
+                    // drawn there by drawCollapsed from what it records
+                    val headerLayer = rememberGraphicsLayer()
+                    // How far down it is kept: set when the card is drawn (where the exact scroll position is
+                    // known), and read by the header's layout, which follows in the next frame if it changed
+                    val pinPx = remember(type) { mutableIntStateOf(0) }
+                    val headerPin = remember(type, headerLayer) { CardHeaderPin(offset = { pinPx.intValue }, layer = headerLayer) }
+                    // Where the header is in the card, without its pinning (it reports where it is laid out)
+                    fun headerAt(): Offset? {
                         val item = itemCoords[0]?.takeIf { it.isAttached } ?: return null
                         val header = headerCoords[0]?.takeIf { it.isAttached } ?: return null
-                        return item.localPositionOf(header, Offset.Zero).y + header.size.height + gap
+                        return item.localPositionOf(header, Offset.Zero) - Offset(0f, headerPin.applied.toFloat())
                     }
+                    fun headerBottom(gap: Float): Float? =
+                        headerAt()?.let { it.y + (headerCoords[0]?.size?.height ?: 0) + gap }
                     // While the card collapses, the list draws its glass (see drawCollapsed), the card only its content
                     val glass = rememberGlassPainter(LocalSkyBackdrop.current, (holder as? AbstractMainCardViewHolder)?.glassTint)
                     val glassHidden = remember(type) { { dragging != type && collapseOf(type) != null } }
-                    CompositionLocalProvider(LocalCardHeader provides reportHeader, LocalGlassHidden provides glassHidden) {
+                    CompositionLocalProvider(
+                        LocalCardHeader provides reportHeader,
+                        LocalCardHeaderPin provides headerPin,
+                        LocalGlassHidden provides glassHidden
+                    ) {
                         holder.Render(
                             Modifier
                                 .then(if (isDragged) Modifier else Modifier.animateItem(placementSpec = spring(stiffness = 600f)))
@@ -361,11 +383,20 @@ class HomeCardsView @JvmOverloads constructor(
                                 }
                                 .drawWithContent {
                                     val top = if (isDragged) null else collapseOf(type)
+                                    val item = itemCoords[0]?.takeIf { it.isAttached }
+                                    val headerAt = headerAt()
+                                    val pinNow = if (top != null && headerAt != null) (-top).roundToInt() else 0
+                                    if (pinPx.intValue != pinNow) pinPx.intValue = pinNow
                                     if (top == null) {
                                         drawContent()
                                     } else {
-                                        val window = itemCoords[0]?.takeIf { it.isAttached }?.positionInWindow() ?: Offset.Zero
-                                        drawCollapsed(top, headerBottom(HEADER_GAP.toPx()), glass, window)
+                                        drawCollapsed(
+                                            top = top,
+                                            headerBottom = headerBottom(HEADER_GAP.toPx()),
+                                            header = headerAt?.let { headerPin.layer to it },
+                                            glass = glass,
+                                            itemWindow = item?.positionInWindow() ?: Offset.Zero
+                                        )
                                     }
                                 }
                                 .onGloballyPositioned { itemCoords[0] = it }
@@ -412,10 +443,18 @@ class HomeCardsView @JvmOverloads constructor(
      * Draws a card that has scrolled [top] px (negative) past the top of the cards area, iOS weather
      * style: the card's rounded top and its header stay at the top, the rest of the card scrolls up
      * underneath the header and the bottom edge rises, until only the header strip is left; it stays,
-     * fading, while the next card scrolls up over it. [headerBottom]: where the header strip ends, in px from the top of the item
-     * (spacing included); null for cards without a header, which simply shrink as a rounded box.
+     * fading, while the next card scrolls up over it. [headerBottom]: where the header strip ends, in px
+     * from the top of the item (spacing included); null for cards without a header, which simply shrink
+     * as a rounded box. [header]: the header's recording and its place in the card (unpinned), drawn
+     * at the top.
      */
-    private fun ContentDrawScope.drawCollapsed(top: Float, headerBottom: Float?, glass: GlassPainter, itemWindow: Offset) {
+    private fun ContentDrawScope.drawCollapsed(
+        top: Float,
+        headerBottom: Float?,
+        header: Pair<GraphicsLayer, Offset>?,
+        glass: GlassPainter,
+        itemWindow: Offset,
+    ) {
         val pad = CARD_SPACING.toPx()
         val right = size.width - pad
         val glassBottom = size.height - pad
@@ -441,17 +480,21 @@ class HomeCardsView @JvmOverloads constructor(
                 with(glass) {
                     drawGlass(Rect(pad, pad, right, boxBottom), itemWindow + Offset(pad, pad - top), r)
                 }
-                // Header
-                if (hasHeader) {
-                    clipRect(0f, 0f, size.width, stripBottom) { this@drawCollapsed.drawContent() }
-                }
-                // The rest where it is, scrolling up under the header
-                if (bottomEdge > stripBottom) {
-                    translate(top = top) {
-                        clipRect(0f, stripBottom - top, size.width, size.height) { this@drawCollapsed.drawContent() }
+                // The rest where it is, scrolling up under the header (always drawn, even when there is
+                // nothing left of it to show: that is also when the header records itself)
+                translate(top = top) {
+                    clipRect(0f, stripBottom - top, size.width, maxOf(stripBottom - top, bottomEdge - top + pad)) {
+                        this@drawCollapsed.drawContent()
                     }
                 }
             }
+        }
+        // The header, at the top (it is laid out there too, so taps reach it), from its recording. Placed
+        // by the layer's own position: drawn under a canvas translation, it didn't show
+        if (hasHeader && header != null) {
+            val (layer, at) = header
+            layer.topLeft = IntOffset(at.x.roundToInt(), (at.y - top).roundToInt())
+            drawLayer(layer)
         }
     }
 
