@@ -68,7 +68,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
 import org.breezyweather.ui.main.cards.GlassCornerRadius
+import org.breezyweather.ui.main.cards.GlassEdgeRefraction
 import org.breezyweather.ui.main.cards.GlassPainter
+import org.breezyweather.ui.main.cards.GlassVividSaturation
 import org.breezyweather.ui.main.cards.LocalGlassHidden
 import org.breezyweather.ui.main.cards.rememberGlassPainter
 import androidx.compose.ui.draw.scale
@@ -162,6 +164,9 @@ class HomeCardsView @JvmOverloads constructor(
         data = location?.takeIf { it.weather != null }?.let {
             Data(it, provider, listAnimationEnabled, itemAnimationEnabled, ++version)
         }
+        // The glass blurs a recording of these cards, which only the glass re-reads when told: after a
+        // location swipe the new cards are drawn first, then the glass is redrawn from them
+        post { cardsBackdrop.moved() }
     }
 
     @Composable
@@ -348,7 +353,15 @@ class HomeCardsView @JvmOverloads constructor(
                     fun headerBottom(gap: Float): Float? =
                         headerAt()?.let { it.y + (headerCoords[0]?.size?.height ?: 0) + gap }
                     // While the card collapses, the list draws its glass (see drawCollapsed), the card only its content
-                    val glass = rememberGlassPainter(LocalSkyBackdrop.current, (holder as? AbstractMainCardViewHolder)?.glassTint)
+                    // Same glass as the card itself, so the header doesn't change look while collapsing
+                    val cardGlass = holder as? AbstractMainCardViewHolder
+                    val glass = rememberGlassPainter(
+                        LocalSkyBackdrop.current,
+                        cardGlass?.glassTint,
+                        refractionStrength = cardGlass?.glassRefraction ?: GlassEdgeRefraction,
+                        saturation = cardGlass?.glassSaturation ?: GlassVividSaturation,
+                        rim = cardGlass?.glassRim ?: false,
+                    )
                     val glassHidden = remember(type) { { dragging != type && collapseOf(type) != null } }
                     CompositionLocalProvider(
                         LocalCardHeader provides reportHeader,

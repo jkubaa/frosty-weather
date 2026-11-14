@@ -146,8 +146,8 @@ class LiquidGlassDrawable(
 object LiquidGlass {
 
     /** Opacity of the tinted glass body, on top of the animated weather background. */
-    internal const val BODY_ALPHA_LIGHT = 0.42f
-    internal const val BODY_ALPHA_DARK = 0.30f
+    internal const val BODY_ALPHA_LIGHT = 0.36f
+    internal const val BODY_ALPHA_DARK = 0.24f
 
     /** Blur radius at 100% intensity, at BlurView's downscaled resolution. */
     internal const val MAX_BLUR_RADIUS = 25f

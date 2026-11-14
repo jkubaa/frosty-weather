@@ -119,10 +119,10 @@ class LiquidGlassBlur(
         private const val SCALE_FACTOR = 6f
 
         /** Vibrancy: 1 = unchanged, iOS-like glass sits around 1.5 to 1.8. */
-        internal const val SATURATION = 1.6f
+        internal const val SATURATION = 2.0f
 
         /** How far content is pulled at the very edge, relative to the band width. */
-        internal const val REFRACTION_STRENGTH = 0.9f
+        internal const val REFRACTION_STRENGTH = 1.6f
 
         /**
          * Lens refraction near the edges of a rounded rectangle. For each pixel, the signed distance

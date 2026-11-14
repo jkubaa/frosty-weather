@@ -19,7 +19,9 @@ package org.breezyweather.ui.main.fragments
 import android.content.Context
 import android.util.AttributeSet
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,6 +64,9 @@ import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.common.widgets.SwipeSwitchLayout
 import org.breezyweather.ui.main.cards.GlassBackdrop
+import org.breezyweather.ui.main.cards.GlassEdgeRefraction
+import org.breezyweather.ui.main.cards.GlassRimBrush
+import org.breezyweather.ui.main.cards.GlassBarSaturation
 import org.breezyweather.ui.main.cards.liquidGlass
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -176,9 +182,10 @@ class HomeBottomBarView @JvmOverloads constructor(
         val version = glassVersion
         val content = Color(context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
         val surface = context.getThemeColor(com.google.android.material.R.attr.colorSurface)
-        // Frosted, the bar stays readable over the cards with a light tint; without blur it needs a denser body
+        // Frosted, the glass stays clear so the sky shows through (like the reference glass); a light
+        // tint keeps the icons readable. Without blur it needs a denser body
         val tint = Color(
-            ColorUtils.setAlphaComponent(surface, ((if (LiquidGlass.isBlurEnabled(context)) 0.35f else 0.72f) * 255).toInt())
+            ColorUtils.setAlphaComponent(surface, ((if (LiquidGlass.isBlurEnabled(context)) 0.12f else 0.72f) * 255).toInt())
         )
         Box(
             modifier = Modifier
@@ -197,7 +204,8 @@ class HomeBottomBarView @JvmOverloads constructor(
                         .padding(horizontal = 56.dp)
                         .fillMaxHeight()
                         .widthIn(min = 96.dp)
-                        .liquidGlass(backdrop, tint, cornerRadius = BAR_HEIGHT / 2)
+                        .liquidGlass(backdrop, tint, cornerRadius = BAR_HEIGHT / 2, refractionStrength = GlassEdgeRefraction, saturation = GlassBarSaturation)
+                        .border(BorderStroke(1.dp, GlassRimBrush), RoundedCornerShape(BAR_HEIGHT / 2))
                         .padding(horizontal = 20.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -222,8 +230,9 @@ class HomeBottomBarView @JvmOverloads constructor(
         Box(
             modifier = modifier
                 .size(BAR_HEIGHT)
-                .liquidGlass(backdrop, tint, cornerRadius = BAR_HEIGHT / 2)
+                .liquidGlass(backdrop, tint, cornerRadius = BAR_HEIGHT / 2, refractionStrength = GlassEdgeRefraction, saturation = GlassBarSaturation)
                 .clip(CircleShape)
+                .border(BorderStroke(1.dp, GlassRimBrush), CircleShape)
                 .clickable(onClickLabel = description, onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
@@ -252,6 +261,7 @@ class HomeBottomBarView @JvmOverloads constructor(
             val windowStart = (position - (slots - 1) / 2f).coerceIn(0f, (pageCount - slots).toFloat())
             val rowWidth = slots * diameter + (slots - 1) * DOT_GAP.toPx()
             val firstX = (size.width - rowWidth) / 2f + diameter / 2f
+
 
             for (i in (floor(windowStart).toInt() - 1)..ceil(windowStart + slots).toInt()) {
                 if (i !in 0 until pageCount) continue

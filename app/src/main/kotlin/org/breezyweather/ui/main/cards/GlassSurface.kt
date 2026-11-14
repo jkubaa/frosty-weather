@@ -34,12 +34,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -64,6 +67,20 @@ import kotlin.math.roundToInt
 /** Corner radius of the glass cards (glass_corner_radius). */
 val GlassCornerRadius = 26.dp
 
+/** Edge refraction of the bottom bar and the tiles: how strongly light bends at the rounded rim. */
+const val GlassEdgeRefraction = 2.4f
+
+/** Backdrop saturation of the cards and tiles: a bit more vivid, but warm backdrops don't get too bright. */
+const val GlassVividSaturation = 1.8f
+
+/** Backdrop saturation of the bottom bar: more vivid, like the reference glass. */
+const val GlassBarSaturation = 2.6f
+
+/** Thin rim of light around glass: brighter at the top, fading towards the bottom. */
+val GlassRimBrush = Brush.verticalGradient(
+    listOf(Color.White.copy(alpha = 0.5f), Color.White.copy(alpha = 0.1f))
+)
+
 /**
  * Liquid glass in Compose, the same material as the View-based [LiquidGlass]: the sky behind the
  * element, blurred, with boosted colors (vibrancy) and, on Android 13+, bent towards the inside near
@@ -80,8 +97,11 @@ fun Modifier.liquidGlass(
     backdrop: GlassBackdrop?,
     tint: Color? = null,
     cornerRadius: Dp = GlassCornerRadius,
+    refractionStrength: Float = LiquidGlassBlur.REFRACTION_STRENGTH,
+    saturation: Float = LiquidGlassBlur.SATURATION,
+    rim: Boolean = false,
 ): Modifier = composed {
-    val glass = rememberGlassPainter(backdrop, tint, cornerRadius)
+    val glass = rememberGlassPainter(backdrop, tint, cornerRadius, refractionStrength, saturation, rim)
     val hidden = LocalGlassHidden.current
     var origin by remember { mutableStateOf(Offset.Zero) }
     val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
@@ -119,6 +139,9 @@ fun rememberGlassPainter(
     backdrop: GlassBackdrop?,
     tint: Color? = null,
     cornerRadius: Dp = GlassCornerRadius,
+    refractionStrength: Float = LiquidGlassBlur.REFRACTION_STRENGTH,
+    saturation: Float = LiquidGlassBlur.SATURATION,
+    rim: Boolean = false,
 ): GlassPainter {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -132,8 +155,8 @@ fun rememberGlassPainter(
     val blurPx = intensity / 100f * LiquidGlass.MAX_BLUR_RADIUS * BLUR_SCALE
     val edgePx = minOf(radiusPx * 0.6f, with(density) { LiquidGlass.REFRACTION_EDGE_DP.dp.toPx() })
     val layer = rememberGraphicsLayer()
-    return remember(backdrop, body, frosted, blurPx, radiusPx, edgePx, isLight, layer) {
-        GlassPainter(backdrop?.takeIf { frosted }, body, blurPx, radiusPx, edgePx, isLight, layer)
+    return remember(backdrop, body, frosted, blurPx, radiusPx, edgePx, isLight, layer, refractionStrength, saturation, rim) {
+        GlassPainter(backdrop?.takeIf { frosted }, body, blurPx, radiusPx, edgePx, isLight, layer, refractionStrength, saturation, rim)
     }
 }
 
@@ -146,6 +169,9 @@ class GlassPainter internal constructor(
     private val edgePx: Float,
     private val isLight: Boolean,
     private val layer: GraphicsLayer,
+    private val refractionStrength: Float,
+    private val saturation: Float,
+    private val rim: Boolean,
 ) {
     private val effects = EffectCache()
     private var sheenRadius = radiusPx
@@ -164,7 +190,7 @@ class GlassPainter internal constructor(
     ) {
         if (box.width <= 0f || box.height <= 0f) return
         if (backdrop != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && backdrop.isReady) {
-            layer.renderEffect = effects.get(box.size, blurPx, cornerRadius, minOf(edgePx, cornerRadius * 0.6f))
+            layer.renderEffect = effects.get(box.size, blurPx, cornerRadius, minOf(edgePx, cornerRadius * 0.6f), refractionStrength, saturation)
             layer.topLeft = IntOffset(box.left.roundToInt(), box.top.roundToInt())
             layer.record(size = IntSize(box.width.roundToInt(), box.height.roundToInt())) {
                 drawIntoCanvas { backdrop.drawBackdrop(it.nativeCanvas, windowPosition) }
@@ -185,6 +211,16 @@ class GlassPainter internal constructor(
             box.bottom.roundToInt()
         )
         drawIntoCanvas { sheen.draw(it.nativeCanvas) }
+        if (rim) {
+            // Thin rim of light, drawn here so it also shows on a card that collapses under the list
+            drawRoundRect(
+                brush = GlassRimBrush,
+                topLeft = box.topLeft,
+                size = box.size,
+                cornerRadius = CornerRadius(cornerRadius),
+                style = Stroke(width = 1.dp.toPx()),
+            )
+        }
     }
 }
 
@@ -195,34 +231,34 @@ private class EffectCache {
     private var key: List<Float>? = null
     private var effect: androidx.compose.ui.graphics.RenderEffect? = null
 
-    fun get(size: Size, blur: Float, cornerRadius: Float, edge: Float): androidx.compose.ui.graphics.RenderEffect? {
+    fun get(size: Size, blur: Float, cornerRadius: Float, edge: Float, strength: Float, saturation: Float): androidx.compose.ui.graphics.RenderEffect? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || size.width <= 0f || size.height <= 0f) return null
-        val newKey = listOf(size.width, size.height, blur, cornerRadius, edge)
+        val newKey = listOf(size.width, size.height, blur, cornerRadius, edge, strength, saturation)
         if (newKey != key) {
             key = newKey
-            effect = build(size, blur, cornerRadius, edge).asComposeRenderEffect()
+            effect = build(size, blur, cornerRadius, edge, strength, saturation).asComposeRenderEffect()
         }
         return effect
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private fun build(size: Size, blur: Float, cornerRadius: Float, edge: Float): RenderEffect {
+    private fun build(size: Size, blur: Float, cornerRadius: Float, edge: Float, strength: Float, saturation: Float): RenderEffect {
         val blurred = RenderEffect.createBlurEffect(blur.coerceAtLeast(0.1f), blur.coerceAtLeast(0.1f), Shader.TileMode.CLAMP)
         val vibrancy = RenderEffect.createColorFilterEffect(
-            ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(LiquidGlassBlur.SATURATION) }),
+            ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(saturation) }),
             blurred
         )
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return vibrancy
-        return refraction(vibrancy, size, cornerRadius, edge)
+        return refraction(vibrancy, size, cornerRadius, edge, strength)
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private fun refraction(input: RenderEffect, size: Size, cornerRadius: Float, edge: Float): RenderEffect {
+    private fun refraction(input: RenderEffect, size: Size, cornerRadius: Float, edge: Float, strength: Float): RenderEffect {
         val shader = RuntimeShader(LiquidGlassBlur.REFRACTION_SHADER).apply {
             setFloatUniform("size", size.width, size.height)
             setFloatUniform("cornerRadius", cornerRadius.coerceAtMost(minOf(size.width, size.height) / 2f))
             setFloatUniform("edge", edge.coerceAtLeast(1f))
-            setFloatUniform("strength", edge * LiquidGlassBlur.REFRACTION_STRENGTH)
+            setFloatUniform("strength", edge * strength)
         }
         return RenderEffect.createChainEffect(RenderEffect.createRuntimeShaderEffect(shader, "content"), input)
     }
