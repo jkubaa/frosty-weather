@@ -34,10 +34,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,7 +44,6 @@ import org.breezyweather.ui.main.widgets.Compass
 import org.breezyweather.ui.main.widgets.MiniBars
 import org.breezyweather.ui.main.widgets.ScaleBar
 import org.breezyweather.ui.main.widgets.toAnnotatedString
-import kotlin.math.max
 
 /**
  * Square liquid glass tile, iOS weather style, drawn in Compose: header with [iconId] and
@@ -71,7 +67,6 @@ abstract class GlassTileViewHolder(
     private val graphic = mutableStateOf<Graphic?>(null)
     private val compass = mutableStateOf<Float?>(null)
     private val hasCompass = mutableStateOf(false)
-    private val accent = mutableStateOf<Color?>(null)
     private val descriptionLines = mutableIntStateOf(3)
 
     protected fun setValue(value: CharSequence?) {
@@ -103,35 +98,12 @@ abstract class GlassTileViewHolder(
         graphic.value = Graphic.Bars(values, Color(color))
     }
 
-    /**
-     * Faint glow of [color] in the top corner of the tile, hinting at what it shows
-     * (e.g. the UV level color). Subtle on purpose: the tile stays glass.
-     */
-    protected fun setAccent(@ColorInt color: Int) {
-        accent.value = Color(color)
-    }
-
     protected fun clearGraphic() {
         graphic.value = null
     }
 
     protected fun levelColors(vararg colorIds: Int): IntArray =
         colorIds.map { ContextCompat.getColor(itemView.context, it) }.toIntArray()
-
-    /** Soft radial glow from the top end corner, fading out across the tile. */
-    override fun DrawScope.tileBackground() {
-        val color = accent.value ?: return
-        val radius = max(size.width, size.height) * 0.95f
-        drawRect(
-            Brush.radialGradient(
-                0f to color.copy(alpha = 0.30f),
-                0.45f to color.copy(alpha = 0.10f),
-                1f to Color.Transparent,
-                center = Offset(size.width, 0f),
-                radius = radius.coerceAtLeast(1f)
-            )
-        )
-    }
 
     @Composable
     override fun ColumnScope.Content(wide: Boolean) {

@@ -49,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.AbstractComposeView
@@ -72,6 +73,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import org.breezyweather.common.extensions.getThemeColor
+import org.breezyweather.ui.main.cards.fadeHorizontalEdges
 import org.breezyweather.ui.main.utils.ForecastMetric
 import kotlin.math.abs
 
@@ -109,6 +111,18 @@ abstract class ComposeCardViewHolder(
 
 /** Areas of the card list that scroll sideways, in the list view's coordinates. */
 val LocalHorizontalRegions = compositionLocalOf<MutableMap<String, Rect>?> { null }
+
+/**
+ * Told where a card's header is laid out, so the list can keep the header at the top while the rest
+ * of the card scrolls away under it (see HomeCardsView).
+ */
+val LocalCardHeader = compositionLocalOf<((LayoutCoordinates) -> Unit)?> { null }
+
+/** Marks a card's header for [LocalCardHeader]. */
+internal fun Modifier.cardHeader(): Modifier = composed {
+    val report = LocalCardHeader.current
+    if (report != null) Modifier.onGloballyPositioned(report) else Modifier
+}
 
 /**
  * ComposeView for content in the location pager. [SwipeSwitchLayout] switches locations on
@@ -170,7 +184,8 @@ internal fun GlassCardHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp)
+            .cardHeader(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // The title keeps its room; the control gets what's left (the switcher scrolls in it)
@@ -238,9 +253,12 @@ internal fun MetricSwitcher(
         spring(dampingRatio = 0.75f, stiffness = 500f),
         label = "pill"
     )
+    val scroll = rememberScrollState()
     Box(
         modifier
-            .horizontalScroll(rememberScrollState())
+            .horizontalScroll(scroll)
+            // Icons melt away at the edges while there are more metrics to scroll to
+            .fadeHorizontalEdges(scroll.value > 0, scroll.canScrollForward, 16.dp)
             .background(content.copy(alpha = 0.086f), RoundedCornerShape(50))
             .padding(2.dp)
     ) {

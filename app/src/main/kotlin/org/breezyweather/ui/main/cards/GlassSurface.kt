@@ -24,6 +24,8 @@ import android.graphics.Shader
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,10 +35,13 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -46,12 +51,15 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.common.glass.LiquidGlassBlur
 import org.breezyweather.ui.common.glass.LiquidGlassDrawable
+import kotlin.math.roundToInt
 
 /** Corner radius of the glass cards (glass_corner_radius). */
 val GlassCornerRadius = 26.dp
@@ -73,6 +81,45 @@ fun Modifier.liquidGlass(
     tint: Color? = null,
     cornerRadius: Dp = GlassCornerRadius,
 ): Modifier = composed {
+    val glass = rememberGlassPainter(backdrop, tint, cornerRadius)
+    val hidden = LocalGlassHidden.current
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
+
+    this
+        // Read at draw time: scrolling moves the card, so its piece of sky is redrawn
+        .onGloballyPositioned {
+            coordinates[0] = it
+            origin = it.positionInWindow()
+        }
+        .clip(RoundedCornerShape(cornerRadius))
+        .drawWithContent {
+            // Always read the tracked position: that read is what redraws the glass whenever the
+            // element moves (scrolling), since the sky no longer redraws it every frame.
+            // Then take the exact position now, which also covers moves without a layout (dragging)
+            val tracked = origin
+            if (hidden?.invoke() == true) {
+                drawContent()
+            } else {
+                val at = coordinates[0]?.takeIf { it.isAttached }?.positionInWindow() ?: tracked
+                with(glass) { drawGlass(Rect(Offset.Zero, size), at) { this@drawWithContent.drawContent() } }
+            }
+        }
+}
+
+/**
+ * Tells the [liquidGlass] under it to draw its content only, no glass, while this returns true (read
+ * at draw time): the card list draws the glass of a collapsing card itself, in its real place.
+ */
+val LocalGlassHidden = compositionLocalOf<(() -> Boolean)?> { null }
+
+/** The [liquidGlass] material, to draw by hand in any rounded box (see [GlassPainter.drawGlass]). */
+@Composable
+fun rememberGlassPainter(
+    backdrop: GlassBackdrop?,
+    tint: Color? = null,
+    cornerRadius: Dp = GlassCornerRadius,
+): GlassPainter {
     val context = LocalContext.current
     val density = LocalDensity.current
     val radiusPx = with(density) { cornerRadius.toPx() }
@@ -84,36 +131,61 @@ fun Modifier.liquidGlass(
     // BlurView blurred a 1/6 scale snapshot: the same look at full resolution needs 6x the radius
     val blurPx = intensity / 100f * LiquidGlass.MAX_BLUR_RADIUS * BLUR_SCALE
     val edgePx = minOf(radiusPx * 0.6f, with(density) { LiquidGlass.REFRACTION_EDGE_DP.dp.toPx() })
-
-    var origin by remember { mutableStateOf(Offset.Zero) }
-    val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
     val layer = rememberGraphicsLayer()
-    val sheen = remember(radiusPx, isLight) { LiquidGlassDrawable(radiusPx, isLight = isLight) }
-    val effects = remember { EffectCache() }
+    return remember(backdrop, body, frosted, blurPx, radiusPx, edgePx, isLight, layer) {
+        GlassPainter(backdrop?.takeIf { frosted }, body, blurPx, radiusPx, edgePx, isLight, layer)
+    }
+}
 
-    this
-        // Read at draw time: scrolling moves the card, so its piece of sky is redrawn
-        .onGloballyPositioned {
-            coordinates[0] = it
-            origin = it.positionInWindow()
-        }
-        .clip(RoundedCornerShape(cornerRadius))
-        .drawWithContent {
-            if (frosted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && backdrop.isReady) {
-                layer.renderEffect = effects.get(size, blurPx, radiusPx, edgePx)
-                // Always read the tracked position: that read is what redraws the glass whenever the
-                // element moves (scrolling), since the sky no longer redraws it every frame.
-                // Then take the exact position now, which also covers moves without a layout (dragging)
-                val tracked = origin
-                val at = coordinates[0]?.takeIf { it.isAttached }?.positionInWindow() ?: tracked
-                layer.record { drawIntoCanvas { backdrop.drawBackdrop(it.nativeCanvas, at) } }
-                drawLayer(layer)
+/** Draws the liquid glass material (sky blur, tint, rims of light) in a box. */
+class GlassPainter internal constructor(
+    private val backdrop: GlassBackdrop?,
+    private val body: Color,
+    private val blurPx: Float,
+    private val radiusPx: Float,
+    private val edgePx: Float,
+    private val isLight: Boolean,
+    private val layer: GraphicsLayer,
+) {
+    private val effects = EffectCache()
+    private var sheenRadius = radiusPx
+    private var sheen = LiquidGlassDrawable(radiusPx, isLight = isLight)
+
+    /**
+     * Draws the glass in [box] (the caller clips it to its rounded shape), [content] over the tint
+     * and under the rims of light. [windowPosition]: where the box's top left corner is in the
+     * window, which picks the piece of sky behind it.
+     */
+    fun DrawScope.drawGlass(
+        box: Rect,
+        windowPosition: Offset,
+        cornerRadius: Float = radiusPx,
+        content: (DrawScope.() -> Unit)? = null,
+    ) {
+        if (box.width <= 0f || box.height <= 0f) return
+        if (backdrop != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && backdrop.isReady) {
+            layer.renderEffect = effects.get(box.size, blurPx, cornerRadius, minOf(edgePx, cornerRadius * 0.6f))
+            layer.topLeft = IntOffset(box.left.roundToInt(), box.top.roundToInt())
+            layer.record(size = IntSize(box.width.roundToInt(), box.height.roundToInt())) {
+                drawIntoCanvas { backdrop.drawBackdrop(it.nativeCanvas, windowPosition) }
             }
-            drawRect(body)
-            drawContent()
-            sheen.setBounds(0, 0, size.width.toInt(), size.height.toInt())
-            drawIntoCanvas { sheen.draw(it.nativeCanvas) }
+            drawLayer(layer)
         }
+        drawRect(body, box.topLeft, box.size)
+        content?.invoke(this)
+        if (cornerRadius != sheenRadius) {
+            // Rims to match the corners (tighter in a box too short for the usual ones)
+            sheenRadius = cornerRadius
+            sheen = LiquidGlassDrawable(cornerRadius, isLight = isLight)
+        }
+        sheen.setBounds(
+            box.left.roundToInt(),
+            box.top.roundToInt(),
+            box.right.roundToInt(),
+            box.bottom.roundToInt()
+        )
+        drawIntoCanvas { sheen.draw(it.nativeCanvas) }
+    }
 }
 
 private const val BLUR_SCALE = 6f

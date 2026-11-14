@@ -26,7 +26,6 @@ import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.getFormattedTime
 import org.breezyweather.common.extensions.is12Hour
-import org.breezyweather.domain.weather.model.getUVColor
 import java.util.Date
 import kotlin.time.Duration.Companion.hours
 import org.breezyweather.common.options.appearance.DetailScreen
@@ -63,7 +62,6 @@ class UvViewHolder(context: Context) : GlassTileViewHolder(
             ),
             uv?.index?.let { (it / UV.UV_INDEX_EXCESSIVE).toFloat() }
         )
-        uv?.let { setAccent(it.getUVColor(context)) }
 
         // When the UV index will be at its highest in the next 24 hours, if higher than now
         val now = Date()

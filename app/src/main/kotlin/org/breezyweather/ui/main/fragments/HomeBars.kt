@@ -85,12 +85,14 @@ class HomeTopBarView @JvmOverloads constructor(
     @Composable
     override fun Content() {
         val content = Color(context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
+        // Centered, like the hero header it stands in for
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
                 .alpha(fraction),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(title, color = content, fontSize = 20.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             subtitle?.let {

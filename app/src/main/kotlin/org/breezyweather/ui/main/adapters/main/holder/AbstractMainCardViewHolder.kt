@@ -52,7 +52,7 @@ abstract class AbstractMainCardViewHolder(
     var widthFactor: Float = 1f
 
     /** Glass body color; null for the theme's default glass. */
-    protected open val glassTint: Color? = null
+    open val glassTint: Color? = null
 
     @CallSuper
     open fun onBindView(

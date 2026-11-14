@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -68,6 +69,7 @@ import org.breezyweather.common.extensions.getHour
 import org.breezyweather.common.extensions.is12Hour
 import org.breezyweather.common.options.appearance.DetailScreen
 import org.breezyweather.common.utils.helpers.IntentHelper
+import org.breezyweather.ui.main.cards.fadeHorizontalEdges
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.ui.main.utils.ForecastMetric
 import org.breezyweather.ui.main.utils.ForecastMetrics
@@ -149,10 +151,14 @@ class HourlyViewHolder(context: Context) : ComposeCardViewHolder(context) {
             GlassDivider(contentColor, Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp))
             Crossfade(metric, animationSpec = tween(250), label = "metric") { shown ->
                 val entries = remember(b, shown) { entries(b, shown) }
+                val strip = rememberLazyListState()
                 LazyRow(
+                    state = strip,
                     modifier = Modifier
                         .padding(top = 8.dp)
-                        .horizontalScrollRegion("strip"),
+                        .horizontalScrollRegion("strip")
+                        // Hours melt away at the edges while there is more to scroll to
+                        .fadeHorizontalEdges(strip.canScrollBackward, strip.canScrollForward, 28.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
                     items(entries, key = { it.key }) { entry ->

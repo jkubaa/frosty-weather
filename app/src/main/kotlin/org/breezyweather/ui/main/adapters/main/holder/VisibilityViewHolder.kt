@@ -47,7 +47,6 @@ class VisibilityViewHolder(context: Context) : GlassTileViewHolder(
         val description = visibility?.getVisibilityDescription(context)
         setValue(visibility?.let { UnitUtils.formatUnitsHalfSize(it.formatMeasure(context)) })
         setLabel(description)
-        setAccent(TileColors.CLEAR_AIR)
         // From fog (grey) to crystal clear (white), up to 20 km
         showScale(
             intArrayOf(Color.rgb(120, 128, 140), Color.rgb(196, 214, 232), Color.WHITE),

@@ -54,7 +54,6 @@ class PressureViewHolder(context: Context) : GlassTileViewHolder(
             intArrayOf(ColorUtils.setAlphaComponent(content, 60), ColorUtils.setAlphaComponent(content, 160)),
             pressure?.let { ((it.inHectopascals - LOW_HPA) / (HIGH_HPA - LOW_HPA)).toFloat() }
         )
-        setAccent(TileColors.PRESSURE)
         // Trend over the next 3 hours
         val later = location.weather!!.nextHourlyForecast.getOrNull(3)?.pressure
         setDescription(

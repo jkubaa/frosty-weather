@@ -58,7 +58,6 @@ class WindViewHolder(context: Context) : GlassTileViewHolder(
         // -1 (or anything out of range): variable direction, no arrow
         val degree = wind?.degree?.takeIf { it in 0.0..360.0 }
         showCompass(degree?.toFloat())
-        setAccent(TileColors.WIND)
         setDescription(
             wind?.getDirection(context, short = true)?.let {
                 if (degree != null) context.getString(R.string.wind_origin, it) else it

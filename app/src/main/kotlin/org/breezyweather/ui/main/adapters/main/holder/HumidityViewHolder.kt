@@ -55,7 +55,6 @@ class HumidityViewHolder(context: Context) : GlassTileViewHolder(
         )
         setValue(humidity)
         setLabel(null)
-        setAccent(TileColors.WATER)
         // The next 12 hours of humidity
         showBars(
             location.weather!!.nextHourlyForecast.take(12).map { h ->

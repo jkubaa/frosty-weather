@@ -25,7 +25,6 @@ import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.options.appearance.DetailScreen
 import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.domain.weather.index.PollutantIndex
-import org.breezyweather.domain.weather.model.getColor
 import org.breezyweather.domain.weather.model.getIndex
 import org.breezyweather.domain.weather.model.getName
 import org.breezyweather.domain.weather.model.validAirQuality
@@ -63,7 +62,6 @@ class AirQualityViewHolder(context: Context) : GlassTileViewHolder(
             ),
             index?.let { it.toFloat() / PollutantIndex.indexExcessivePollution }
         )
-        airQuality?.let { setAccent(it.getColor(context)) }
         setDescription(null)
 
         val talkBackBuilder = StringBuilder()

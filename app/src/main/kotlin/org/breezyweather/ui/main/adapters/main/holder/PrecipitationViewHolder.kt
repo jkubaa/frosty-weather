@@ -48,7 +48,6 @@ class PrecipitationViewHolder(context: Context) : GlassTileViewHolder(
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
         setLabel(null)
-        setAccent(TileColors.WATER)
         // Chance of precipitation over the next 12 hours
         showBars(
             location.weather?.nextHourlyForecast.orEmpty().take(12).map { h ->

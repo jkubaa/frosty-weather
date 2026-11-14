@@ -99,7 +99,9 @@ abstract class ComposeTileViewHolder(
     @Composable
     protected fun TileHeader(@DrawableRes icon: Int, title: String) {
         Row(
-            modifier = Modifier.alpha(0.6f),
+            modifier = Modifier
+                .alpha(0.6f)
+                .cardHeader(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(

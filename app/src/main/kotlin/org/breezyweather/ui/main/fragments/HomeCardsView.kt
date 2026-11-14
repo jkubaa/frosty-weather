@@ -18,10 +18,7 @@ package org.breezyweather.ui.main.fragments
 
 import android.content.Context
 import android.util.AttributeSet
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -35,6 +32,18 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -57,6 +66,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
+import org.breezyweather.ui.main.cards.GlassCornerRadius
+import org.breezyweather.ui.main.cards.GlassPainter
+import org.breezyweather.ui.main.cards.LocalGlassHidden
+import org.breezyweather.ui.main.cards.rememberGlassPainter
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -68,13 +81,13 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toOffset
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
-import kotlinx.coroutines.delay
 import org.breezyweather.common.extensions.density
 import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.ui.main.cards.ViewBackdrop
@@ -85,6 +98,7 @@ import org.breezyweather.ui.main.adapters.main.ViewType
 import org.breezyweather.ui.main.adapters.main.holder.AbstractMainCardViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.AbstractMainViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.HorizontalRegionsComposeView
+import org.breezyweather.ui.main.adapters.main.holder.LocalCardHeader
 import org.breezyweather.ui.main.adapters.main.holder.LocalHorizontalRegions
 import org.breezyweather.ui.main.adapters.main.holder.LocalSkyBackdrop
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
@@ -234,7 +248,6 @@ class HomeCardsView @JvmOverloads constructor(
         val gridState = remember(data.version) { LazyGridState() }
         // Cards keep their state while scrolled away (no re-bind, no animations played again)
         val holders = remember(data.version) { mutableMapOf<Int, Pair<Float, AbstractMainViewHolder>>() }
-        val appeared = remember(data.version) { mutableSetOf<Int>() }
         var dragging by remember(data.version) { mutableStateOf<Int?>(null) }
         var dragOffset by remember(data.version) { mutableStateOf(Offset.Zero) }
 
@@ -246,6 +259,16 @@ class HomeCardsView @JvmOverloads constructor(
                     gridState.layoutInfo.visibleItemsInfo.forEach { heights[it.index] = it.size.height }
                     onScroll?.invoke((0 until first).sumOf { heights[it] ?: 0 } + offset)
                 }
+        }
+
+        /**
+         * How far a card has scrolled up past the top of the cards area, in px (its top edge, negative).
+         * Null for cards fully on screen, the hero and the footer.
+         */
+        fun collapseOf(type: Int): Float? {
+            if (type == ViewType.HEADER || type == ViewType.FOOTER) return null
+            val info = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == type } ?: return null
+            return info.offset.y.toFloat().takeIf { it < 0f }
         }
 
         fun moveDragged(type: Int) {
@@ -273,7 +296,7 @@ class HomeCardsView @JvmOverloads constructor(
             val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
                 dimensionResource(R.dimen.glass_capsule_content_clearance)
             LazyVerticalGrid(
-                columns = GridCells.Fixed(SPANS),
+                columns = EvenCells,
                 state = gridState,
                 contentPadding = PaddingValues(start = 8.dp, end = 8.dp, bottom = bottom),
                 modifier = Modifier
@@ -295,63 +318,152 @@ class HomeCardsView @JvmOverloads constructor(
                             holders[type] = widthFactor to it
                         }
 
-                    // Fade and rise in, the first time each card shows up
-                    val appear = remember { Animatable(if (!data.listAnimationEnabled || type in appeared) 1f else 0f) }
-                    LaunchedEffect(Unit) {
-                        if (appear.value < 1f) {
-                            val visibleRank = (index - gridState.firstVisibleItemIndex).coerceIn(0, 6)
-                            delay(visibleRank * 45L)
-                            appear.animateTo(1f, tween(450, easing = FastOutSlowInEasing))
-                        }
-                        appeared += type
-                    }
-
                     val isDragged = dragging == type
                     val draggable = cards.isDraggable(type)
-                    holder.Render(
-                        Modifier
-                            .then(if (isDragged) Modifier else Modifier.animateItem(placementSpec = spring(stiffness = 600f)))
-                            .zIndex(if (isDragged) 1f else 0f)
-                            .graphicsLayer {
-                                alpha = appear.value
-                                translationY = (1f - appear.value) * 24.dp.toPx() + if (isDragged) dragOffset.y else 0f
-                                translationX = if (isDragged) dragOffset.x else 0f
-                            }
-                            .scale(if (isDragged) 1.03f else 1f)
-                            .then(
-                                if (draggable) {
-                                    Modifier.pointerInput(type, data.version) {
-                                        detectDragGesturesAfterLongPress(
-                                            onDragStart = {
-                                                dragging = type
-                                                dragOffset = Offset.Zero
-                                                // Keep the page and the location pager still while dragging
-                                                view.parent?.requestDisallowInterceptTouchEvent(true)
-                                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            },
-                                            onDragEnd = {
-                                                dragging = null
-                                                dragOffset = Offset.Zero
-                                            },
-                                            onDragCancel = {
-                                                dragging = null
-                                                dragOffset = Offset.Zero
-                                            }
-                                        ) { change, amount ->
-                                            change.consume()
-                                            dragOffset += amount
-                                            moveDragged(type)
-                                        }
-                                    }
-                                } else {
-                                    Modifier
+                    // Where the card's header ends, reported by the header itself (none for cards without one)
+                    val itemCoords = remember { arrayOfNulls<LayoutCoordinates>(1) }
+                    val headerCoords = remember { arrayOfNulls<LayoutCoordinates>(1) }
+                    val reportHeader = remember { { header: LayoutCoordinates -> headerCoords[0] = header } }
+                    fun headerBottom(gap: Float): Float? {
+                        val item = itemCoords[0]?.takeIf { it.isAttached } ?: return null
+                        val header = headerCoords[0]?.takeIf { it.isAttached } ?: return null
+                        return item.localPositionOf(header, Offset.Zero).y + header.size.height + gap
+                    }
+                    // While the card collapses, the list draws its glass (see drawCollapsed), the card only its content
+                    val glass = rememberGlassPainter(LocalSkyBackdrop.current, (holder as? AbstractMainCardViewHolder)?.glassTint)
+                    val glassHidden = remember(type) { { dragging != type && collapseOf(type) != null } }
+                    CompositionLocalProvider(LocalCardHeader provides reportHeader, LocalGlassHidden provides glassHidden) {
+                        holder.Render(
+                            Modifier
+                                .then(if (isDragged) Modifier else Modifier.animateItem(placementSpec = spring(stiffness = 600f)))
+                                .zIndex(if (isDragged) 1f else 0f)
+                                .graphicsLayer {
+                                    translationX = if (isDragged) dragOffset.x else 0f
+                                    translationY = if (isDragged) dragOffset.y else 0f
+                                    // A collapsing card fades out under the next card as that card covers it.
+                                    // Its header is drawn outside its bounds by then: fade each drawing instead
+                                    // of through a layer, which would be cut off at the bounds
+                                    compositingStrategy = CompositingStrategy.ModulateAlpha
+                                    val top = if (isDragged) null else collapseOf(type)
+                                    alpha = top?.let {
+                                        val pad = CARD_SPACING.toPx()
+                                        // Bottom of the header text (or a stand-in for cards without a header)
+                                        val text = headerBottom(0f) ?: (pad + MIN_STRIP.toPx())
+                                        // Already fading as the last of the card scrolls away under the header
+                                        // ([FADE_LEAD] before the next card reaches the header text), evenly,
+                                        // gone once the next card has covered [FADE_COVER] of the header
+                                        val header = text - pad
+                                        val nextTop = it + size.height + pad
+                                        val start = header + FADE_LEAD.toPx()
+                                        val end = header * (1f - FADE_COVER)
+                                        ((nextTop - pad - end) / (start - end)).coerceIn(0f, 1f)
+                                    } ?: 1f
                                 }
-                            )
-                            // Space between cards; the hero and the footer bring their own
-                            .padding(if (type == ViewType.HEADER || type == ViewType.FOOTER) 0.dp else 8.dp)
-                    )
+                                .drawWithContent {
+                                    val top = if (isDragged) null else collapseOf(type)
+                                    if (top == null) {
+                                        drawContent()
+                                    } else {
+                                        val window = itemCoords[0]?.takeIf { it.isAttached }?.positionInWindow() ?: Offset.Zero
+                                        drawCollapsed(top, headerBottom(HEADER_GAP.toPx()), glass, window)
+                                    }
+                                }
+                                .onGloballyPositioned { itemCoords[0] = it }
+                                .scale(if (isDragged) 1.03f else 1f)
+                                .then(
+                                    if (draggable) {
+                                        Modifier.pointerInput(type, data.version) {
+                                            detectDragGesturesAfterLongPress(
+                                                onDragStart = {
+                                                    dragging = type
+                                                    dragOffset = Offset.Zero
+                                                    // Keep the page and the location pager still while dragging
+                                                    view.parent?.requestDisallowInterceptTouchEvent(true)
+                                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                },
+                                                onDragEnd = {
+                                                    dragging = null
+                                                    dragOffset = Offset.Zero
+                                                },
+                                                onDragCancel = {
+                                                    dragging = null
+                                                    dragOffset = Offset.Zero
+                                                }
+                                            ) { change, amount ->
+                                                change.consume()
+                                                dragOffset += amount
+                                                moveDragged(type)
+                                            }
+                                        }
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                                // Space between cards; the hero and the footer bring their own
+                                .padding(if (type == ViewType.HEADER || type == ViewType.FOOTER) 0.dp else CARD_SPACING)
+                        )
+                    }
                 }
             }
+        }
+    }
+
+    /**
+     * Draws a card that has scrolled [top] px (negative) past the top of the cards area, iOS weather
+     * style: the card's rounded top and its header stay at the top, the rest of the card scrolls up
+     * underneath the header and the bottom edge rises, until only the header strip is left; it stays,
+     * fading, while the next card scrolls up over it. [headerBottom]: where the header strip ends, in px from the top of the item
+     * (spacing included); null for cards without a header, which simply shrink as a rounded box.
+     */
+    private fun ContentDrawScope.drawCollapsed(top: Float, headerBottom: Float?, glass: GlassPainter, itemWindow: Offset) {
+        val pad = CARD_SPACING.toPx()
+        val right = size.width - pad
+        val glassBottom = size.height - pad
+        val radius = GlassCornerRadius.toPx()
+        // The card's bottom edge, in the cards area's coordinates: it keeps rising as the card scrolls
+        val bottomEdge = top + glassBottom
+        // The header stays at the top; no header, nothing stays
+        val stripBottom = headerBottom?.coerceIn(pad, glassBottom) ?: pad
+        val hasHeader = stripBottom > pad
+        // What is left of the card, a rounded box from the top of the area down to its bottom edge. With
+        // a header, it never gets shorter than the header plus the gap to the next card: that card meets
+        // it and slides up over it, with no gap in between
+        val boxBottom = if (hasHeader) maxOf(bottomEdge, stripBottom + 2 * pad) else bottomEdge
+        if (boxBottom <= pad) return
+        val r = radius.coerceAtMost((boxBottom - pad) / 2f)
+        val box = Path().apply { addRoundRect(RoundRect(pad, pad, right, boxBottom, CornerRadius(r))) }
+
+        // Drawing in the area's coordinates, with the card's top kept at the top of the area
+        translate(top = -top) {
+            clipPath(box) {
+                // The glass, one piece where the box really is, with the sky really behind it (the card
+                // itself draws its content only meanwhile, see LocalGlassHidden)
+                with(glass) {
+                    drawGlass(Rect(pad, pad, right, boxBottom), itemWindow + Offset(pad, pad - top), r)
+                }
+                // Header
+                if (hasHeader) {
+                    clipRect(0f, 0f, size.width, stripBottom) { this@drawCollapsed.drawContent() }
+                }
+                // The rest where it is, scrolling up under the header
+                if (bottomEdge > stripBottom) {
+                    translate(top = top) {
+                        clipRect(0f, stripBottom - top, size.width, size.height) { this@drawCollapsed.drawContent() }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * [SPANS] columns like GridCells.Fixed, but with the pixels left over from dividing the width
+     * spread along the row, instead of all given to the first columns (which made the left tile of a
+     * pair wider than the right one).
+     */
+    private object EvenCells : GridCells {
+        override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
+            val free = availableSize - spacing * (SPANS - 1)
+            return List(SPANS) { i -> free * (i + 1) / SPANS - free * i / SPANS }
         }
     }
 
@@ -361,5 +473,20 @@ class HomeCardsView @JvmOverloads constructor(
 
         /** 60 divides by 1, 2, 3, 4 and 5: any number of tiles per row gets a whole span. */
         const val SPANS = 60
+
+        /** Space around each card (between cards, and above a collapsing card). */
+        val CARD_SPACING = 8.dp
+
+        /** Room under a card's header that stays with it when the card collapses. */
+        val HEADER_GAP = 8.dp
+
+        /** Fade length of a collapsing card without a header. */
+        val MIN_STRIP = 40.dp
+
+        /** How far before the next card reaches a collapsing header it starts fading. */
+        val FADE_LEAD = 40.dp
+
+        /** How much of a collapsed header the next card has covered when the header is gone. */
+        const val FADE_COVER = 0.6f
     }
 }
