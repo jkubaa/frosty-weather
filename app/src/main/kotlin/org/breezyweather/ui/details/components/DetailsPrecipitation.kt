@@ -63,6 +63,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.R
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.formatMeasure
 import org.breezyweather.common.extensions.formatPercent
 import org.breezyweather.common.extensions.formatTime
@@ -161,7 +162,7 @@ fun DetailsPrecipitation(
         )
     ) {
         item {
-            PrecipitationHeader(location, daily, activeQuantityItem)
+            DetailsHeaderRow { PrecipitationHeader(location, daily, activeQuantityItem) }
         }
         item {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
@@ -280,7 +281,6 @@ private fun PrecipitationItem(
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
-        header()
         TextFixedHeight(
             text = precipitation?.let { prec ->
                 UnitUtils.formatUnitsDifferentFontSize(
@@ -296,6 +296,7 @@ private fun PrecipitationItem(
                     }
                 }
         )
+        header()
     }
 }
 

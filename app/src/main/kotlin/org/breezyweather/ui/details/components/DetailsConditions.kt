@@ -85,6 +85,12 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.launch
 import org.breezyweather.R
+import androidx.compose.foundation.layout.padding
+import org.breezyweather.domain.location.model.isDaylight
+import org.breezyweather.domain.weather.model.isToday
+import org.breezyweather.ui.details.LocalDetailsPalette
+import org.breezyweather.ui.details.DetailsSegmentedControl
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.formatMeasure
 import org.breezyweather.common.extensions.getCalendarMonth
@@ -203,14 +209,15 @@ fun DetailsConditions(
         )
     ) {
         item {
-            TemperatureHeader(
-                location,
-                daily,
-                activeItem,
-                selectedChart != DetailScreen.TAG_FEELS_LIKE,
-                normals,
-                temperatureUnit
-            )
+            DetailsHeaderRow {
+                ConditionsHeader(
+                    location,
+                    daily,
+                    activeItem,
+                    selectedChart != DetailScreen.TAG_FEELS_LIKE,
+                    temperatureUnit
+                )
+            }
         }
         item {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
@@ -233,10 +240,19 @@ fun DetailsConditions(
             }
         }
         item {
-            TemperatureSwitcher(setShowRealTemp, selectedChart != DetailScreen.TAG_FEELS_LIKE)
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
+            DetailsSegmentedControl(
+                options = listOf(
+                    stringResource(R.string.temperature_real),
+                    stringResource(R.string.temperature_feels_like)
+                ),
+                selectedIndex = if (selectedChart != DetailScreen.TAG_FEELS_LIKE) 0 else 1,
+                onSelect = { setShowRealTemp(it == 0) }
+            )
         }
         item {
             Text(
+                modifier = Modifier.padding(start = 8.dp, top = 12.dp, bottom = 12.dp),
                 text = stringResource(
                     if (selectedChart != DetailScreen.TAG_FEELS_LIKE) {
                         R.string.temperature_real_details
@@ -895,6 +911,91 @@ private fun TemperatureChart(
         }.toImmutableMap(),
         minY = minY,
         endAxisItemPlacer = remember { VerticalAxis.ItemPlacer.step({ step }) },
-        markerVisibilityListener = markerVisibilityListener
+        markerVisibilityListener = markerVisibilityListener,
+        highLowLabels = true
     )
+}
+
+/**
+ * "8° ☁" in large, "H:8° L:2°" under it: now for today, the day's high otherwise, or the hour being
+ * pointed at on the chart.
+ */
+@Composable
+private fun ConditionsHeader(
+    location: Location,
+    daily: Daily,
+    activeItem: Pair<Date, Hourly>?,
+    showRealTemp: Boolean,
+    temperatureUnit: TemperatureUnit,
+) {
+    val context = LocalContext.current
+    val palette = LocalDetailsPalette.current
+    val pick: (breezyweather.domain.weather.model.Temperature?) -> Temperature? = { t ->
+        if (showRealTemp) t?.temperature else t?.feelsLikeTemperature
+    }
+
+    val current = location.weather?.current
+    val showCurrent = activeItem == null && daily.isToday(location) && current?.temperature?.temperature != null
+    val temperature: Temperature?
+    val weatherCode: WeatherCode?
+    val isDaytime: Boolean
+    when {
+        activeItem != null -> {
+            temperature = pick(activeItem.second.temperature)
+            weatherCode = activeItem.second.weatherCode
+            isDaytime = activeItem.second.isDaylight
+        }
+        showCurrent -> {
+            temperature = pick(current!!.temperature)
+            weatherCode = current.weatherCode
+            isDaytime = location.isDaylight
+        }
+        else -> {
+            temperature = pick(daily.day?.temperature)
+            weatherCode = daily.day?.weatherCode
+            isDaytime = true
+        }
+    }
+    val high = pick(daily.day?.temperature)
+    val low = pick(daily.night?.temperature)
+
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = temperature?.formatMeasure(context, temperatureUnit, valueWidth = UnitWidth.NARROW, unitWidth = UnitWidth.NARROW) ?: "",
+                style = MaterialTheme.typography.displaySmall,
+                color = palette.text,
+                modifier = Modifier.clearAndSetSemantics {
+                    temperature?.let {
+                        contentDescription = it.formatMeasure(context, temperatureUnit, unitWidth = UnitWidth.LONG)
+                    }
+                }
+            )
+            if (weatherCode != null) {
+                Spacer(Modifier.width(10.dp))
+                Image(
+                    bitmap = remember(weatherCode, isDaytime) {
+                        ResourcesProviderFactory.newInstance.getWeatherIcon(weatherCode, isDaytime)
+                            .toBitmap()
+                            .asImageBitmap()
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+        }
+        Text(
+            text = if (activeItem != null) {
+                activeItem.first.getFormattedTime(location, context, context.is12Hour)
+            } else {
+                stringResource(
+                    R.string.hero_high_low,
+                    high?.formatMeasure(context, temperatureUnit, valueWidth = UnitWidth.NARROW, unitWidth = UnitWidth.NARROW) ?: "-",
+                    low?.formatMeasure(context, temperatureUnit, valueWidth = UnitWidth.NARROW, unitWidth = UnitWidth.NARROW) ?: "-"
+                ).replace("  ", " ")
+            },
+            style = MaterialTheme.typography.labelMedium,
+            color = palette.secondaryText
+        )
+    }
 }

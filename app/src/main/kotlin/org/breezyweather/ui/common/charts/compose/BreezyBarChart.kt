@@ -59,6 +59,7 @@ import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import org.breezyweather.R
+import org.breezyweather.ui.details.LocalDetailsPalette
 import org.breezyweather.common.extensions.getFormattedTime
 import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.common.extensions.is12Hour
@@ -95,6 +96,7 @@ fun BreezyBarChart(
     trendHorizontalLines: ImmutableMap<Double, String> = persistentMapOf(),
     markerFormatter: DefaultCartesianMarker.ValueFormatter? = null,
     markerVisibilityListener: CartesianMarkerVisibilityListener? = null,
+    highLowLabels: Boolean = false,
 ) {
     val context = LocalContext.current
 
@@ -111,14 +113,22 @@ fun BreezyBarChart(
         maxY = maxY
     )
 
-    val lineColor = Color(context.getThemeColor(com.google.android.material.R.attr.colorOutline))
-    val labelColor = colorResource(
-        if (ThemeManager.isLightTheme(context, location)) {
-            R.color.colorTextGrey
-        } else {
-            R.color.colorTextGrey2nd
-        }
-    )
+    val palette = LocalDetailsPalette.current
+    val lineColor = palette.grid
+    val labelColor = palette.secondaryText
+    val nowDecoration = remember(theDay, palette, highLowLabels) {
+        val now = System.currentTimeMillis()
+        NowDecoration(
+            now = now,
+            dimColor = palette.sheet.copy(alpha = 0.5f),
+            lineColor = palette.secondaryText.copy(alpha = 0.6f),
+            dotColor = palette.text,
+            dotRingColor = palette.sheet,
+            labelColor = palette.secondaryText,
+            highLabel = if (highLowLabels) "H" else null,
+            lowLabel = if (highLowLabels) "L" else null
+        )
+    }
     val marker = rememberDefaultCartesianMarker(
         label = if (markerFormatter == null) {
             // TODO: Report upstream to have a way to hide it
@@ -192,7 +202,7 @@ fun BreezyBarChart(
                     TimeHorizontalAxisItemPlacer(startingDate, location.timeZone)
                 }
             ),
-            decorations = if (isTrendHorizontalLinesEnabled) {
+            decorations = listOf(nowDecoration) + if (isTrendHorizontalLinesEnabled) {
                 trendHorizontalLines.entries.map { line ->
                     HorizontalLine(
                         y = { line.key },
@@ -211,7 +221,7 @@ fun BreezyBarChart(
         ),
         modelProducer = modelProducer,
         modifier = modifier
-            .height(max(BAR_CHART_HEIGHT_MIN_DP.toFloat(), context.windowHeightInDp.div(4)).dp),
+            .height(max(BAR_CHART_HEIGHT_MIN_DP.toFloat(), context.windowHeightInDp.div(3)).dp),
         scrollState = rememberVicoScrollState(scrollEnabled = false),
         animateIn = SettingsManager.getInstance(context).isElementsAnimationEnabled
     )

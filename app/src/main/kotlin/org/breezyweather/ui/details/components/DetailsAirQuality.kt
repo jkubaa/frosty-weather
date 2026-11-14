@@ -82,6 +82,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.R
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.formatMeasure
 import org.breezyweather.common.extensions.getFormattedTime
@@ -237,7 +238,7 @@ fun DetailsAirQuality(
         )
     ) {
         item {
-            AirQualityHeader(location, daily, selectedPollutant, activeItem, defaultValue)
+            DetailsHeaderRow { AirQualityHeader(location, daily, selectedPollutant, activeItem, defaultValue) }
         }
         item {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
@@ -406,10 +407,6 @@ private fun AirQualityItem(
         )
         Column {
             TextFixedHeight(
-                text = header ?: "",
-                style = MaterialTheme.typography.labelMedium
-            )
-            TextFixedHeight(
                 text = buildAnnotatedString {
                     if (selectedPollutant == null) {
                         airQuality?.getIndex()?.let {
@@ -440,6 +437,10 @@ private fun AirQualityItem(
                     }
                 },
                 style = MaterialTheme.typography.displaySmall
+            )
+            TextFixedHeight(
+                text = header ?: "",
+                style = MaterialTheme.typography.labelMedium
             )
         }
     }

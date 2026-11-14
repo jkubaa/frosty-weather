@@ -53,6 +53,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.R
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.formatMeasure
 import org.breezyweather.common.extensions.formatPercent
 import org.breezyweather.common.extensions.getFormattedTime
@@ -153,7 +154,7 @@ fun DetailsHumidity(
         )
     ) {
         item {
-            HumidityHeader(location, daily, activeHumidityItem, defaultHumidityValue)
+            DetailsHeaderRow { HumidityHeader(location, daily, activeHumidityItem, defaultHumidityValue) }
         }
         item {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
@@ -268,12 +269,12 @@ private fun HumiditySummary(
         modifier = modifier.fillMaxWidth()
     ) {
         TextFixedHeight(
-            text = daily.getFullLabel(location, context),
-            style = MaterialTheme.typography.labelMedium
-        )
-        TextFixedHeight(
             text = daily.relativeHumidity?.getRangeSummary(context) ?: "",
             style = MaterialTheme.typography.displaySmall
+        )
+        TextFixedHeight(
+            text = daily.getFullLabel(location, context),
+            style = MaterialTheme.typography.labelMedium
         )
     }
 }
@@ -289,11 +290,11 @@ private fun HumidityItem(
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
-        header()
         TextFixedHeight(
             text = relativeHumidity?.formatPercent(context) ?: "",
             style = MaterialTheme.typography.displaySmall
         )
+        header()
     }
 }
 
@@ -410,10 +411,6 @@ private fun DewPointSummary(
         modifier = modifier.fillMaxWidth()
     ) {
         TextFixedHeight(
-            text = daily.getFullLabel(location, context),
-            style = MaterialTheme.typography.labelMedium
-        )
-        TextFixedHeight(
             text = daily.dewPoint?.getRangeSummary(context, temperatureUnit) ?: "",
             style = MaterialTheme.typography.displaySmall,
             modifier = Modifier
@@ -422,6 +419,10 @@ private fun DewPointSummary(
                         contentDescription = it
                     }
                 }
+        )
+        TextFixedHeight(
+            text = daily.getFullLabel(location, context),
+            style = MaterialTheme.typography.labelMedium
         )
     }
 }
@@ -438,7 +439,6 @@ private fun DewPointItem(
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
-        header()
         TextFixedHeight(
             text = dewPoint?.formatMeasure(context, temperatureUnit, unitWidth = UnitWidth.NARROW) ?: "",
             style = MaterialTheme.typography.displaySmall,
@@ -449,6 +449,7 @@ private fun DewPointItem(
                     }
                 }
         )
+        header()
     }
 }
 

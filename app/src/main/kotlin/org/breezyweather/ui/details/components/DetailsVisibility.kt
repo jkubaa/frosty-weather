@@ -60,6 +60,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.R
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.formatMeasure
 import org.breezyweather.common.extensions.formatValue
@@ -132,7 +133,7 @@ fun DetailsVisibility(
         )
     ) {
         item {
-            VisibilityHeader(location, daily, activeItem, defaultValue)
+            DetailsHeaderRow { VisibilityHeader(location, daily, activeItem, defaultValue) }
         }
         item {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
@@ -214,7 +215,6 @@ private fun VisibilityItem(
         modifier = Modifier
             .fillMaxWidth()
     ) {
-        header()
         TextFixedHeight(
             text = visibility?.let { vis ->
                 UnitUtils.formatUnitsDifferentFontSize(
@@ -230,6 +230,7 @@ private fun VisibilityItem(
                     }
                 }
         )
+        header()
         TextFixedHeight(
             text = visibility?.getVisibilityDescription(context) ?: "",
             style = MaterialTheme.typography.labelMedium
@@ -249,10 +250,6 @@ private fun VisibilitySummary(
             .fillMaxWidth()
     ) {
         TextFixedHeight(
-            text = daily.getFullLabel(location, context),
-            style = MaterialTheme.typography.labelMedium
-        )
-        TextFixedHeight(
             text = buildAnnotatedString {
                 daily.visibility?.getRangeSummary(context)?.let {
                     append(
@@ -270,6 +267,10 @@ private fun VisibilitySummary(
                         contentDescription = it
                     }
                 }
+        )
+        TextFixedHeight(
+            text = daily.getFullLabel(location, context),
+            style = MaterialTheme.typography.labelMedium
         )
         TextFixedHeight(
             text = daily.visibility?.getRangeDescriptionSummary(context) ?: "",

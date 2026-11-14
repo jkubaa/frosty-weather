@@ -38,3 +38,5 @@ See [PRIVACY.md](PRIVACY.md).
 ## Credits
 
 Frosty Weather is based on [Breezy Weather](https://github.com/breezy-weather/breezy-weather), © Breezy Weather contributors, licensed under LGPL-3.0. All credit for the original app, its weather sources and its features goes to them. “Breezy Weather” and its logo belong to their respective owners and are not used to brand this fork.
+
+The moon surface in the Moon details screen (`app/src/main/res/drawable-nodpi/moon_surface.jpg`) is the LRO colour map from the [CGI Moon Kit](https://svs.gsfc.nasa.gov/4720/) by NASA's Scientific Visualization Studio, in the public domain.

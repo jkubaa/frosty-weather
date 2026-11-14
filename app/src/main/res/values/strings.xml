@@ -49,6 +49,27 @@
     <string name="tile_moonrise">Moonrise</string>
     <string name="tile_moonset">Moonset</string>
     <string name="tile_next_full_moon">Next full moon</string>
+    <!-- Detail sheets (Sun and Moon screens) -->
+    <string name="details_sunrise">Sunrise</string>
+    <string name="details_sunset">Sunset</string>
+    <string name="details_first_light">First light</string>
+    <string name="details_last_light">Last light</string>
+    <string name="details_sunrise_today">Sunrise today</string>
+    <string name="details_sunset_today">Sunset today</string>
+    <string name="details_total_daylight">Total daylight</string>
+    <!-- %s: duration, like "1 hr 10 min" -->
+    <string name="details_daylight_remaining">Daylight remaining: %s</string>
+    <!-- %s: time -->
+    <string name="details_first_light_at">First light: %s</string>
+    <!-- %s: time -->
+    <string name="details_sunset_was_at">Sunset today: %s</string>
+    <string name="details_moon_distance">Distance</string>
+    <!-- %1$s: date, %2$s: time, like "Saturday 14 November at 2 pm" -->
+    <string name="details_date_at_time">%1$s at %2$s</string>
+    <plurals name="details_in_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
     <!-- Forecast summary under the hero (iOS style). Kinds of weather, as used in the sentences below -->
     <string name="summary_kind_clear">Clear</string>
     <string name="summary_kind_partly_cloudy">Partly cloudy</string>

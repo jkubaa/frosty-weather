@@ -42,7 +42,9 @@ enum class DetailScreen(
     TAG_PRESSURE("pressure", R.string.pressure, R.drawable.ic_gauge),
     TAG_CLOUD_COVER("cloud_cover", R.string.cloud_cover, R.drawable.ic_cloud),
     TAG_VISIBILITY("visibility", R.string.visibility, R.drawable.ic_eye),
-    TAG_SUN_MOON("sun_moon", R.string.ephemeris, R.drawable.weather_clear_night_mini_xml),
+    // Keeps the old "sun_moon" id so saved links still open the sun screen
+    TAG_SUN("sun_moon", R.string.ephemeris_sun, R.drawable.weather_clear_day_mini_xml),
+    TAG_MOON("moon", R.string.ephemeris_moon, R.drawable.weather_clear_night_mini_xml),
     ;
 
     companion object {
@@ -86,7 +88,7 @@ enum class DetailScreen(
                             it.visibility?.min != null || it.visibility?.max != null
                         } == true ||
                             location.weather?.hourlyForecast?.any { it.visibility != null } == true
-                        TAG_SUN_MOON -> true // Should always be computed, no need to check
+                        TAG_SUN, TAG_MOON -> true // Should always be computed, no need to check
                     }
                 }.toImmutableList()
         }

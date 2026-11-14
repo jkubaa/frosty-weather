@@ -64,6 +64,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.R
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.getColorResource
 import org.breezyweather.common.extensions.getFormattedTime
@@ -130,7 +131,7 @@ fun DetailsUV(
         )
     ) {
         item {
-            UVHeader(location, daily, activeItem, defaultValue)
+            DetailsHeaderRow { UVHeader(location, daily, activeItem, defaultValue) }
         }
         item {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
@@ -210,22 +211,11 @@ private fun UVItem(
         modifier = modifier
             .fillMaxWidth()
     ) {
-        Icon(
-            modifier = Modifier
-                .size(dimensionResource(R.dimen.material_icon_size)),
-            painter = painterResource(R.drawable.ic_circle),
-            contentDescription = null,
-            tint = uV?.getUVColor(context)?.let { Color(it) } ?: Color.Transparent
-        )
         Column {
-            TextFixedHeight(
-                text = header ?: "",
-                style = MaterialTheme.typography.labelMedium
-            )
             TextFixedHeight(
                 text = buildAnnotatedString {
                     uV?.index?.let {
-                        append(it.format(decimals = 1, locale = context.currentLocale))
+                        append(it.format(decimals = 0, locale = context.currentLocale))
                         append(" ")
                     }
                     uV?.getLevel(context)?.let {
@@ -240,6 +230,10 @@ private fun UVItem(
                     }
                 },
                 style = MaterialTheme.typography.displaySmall
+            )
+            TextFixedHeight(
+                text = header ?: "",
+                style = MaterialTheme.typography.labelMedium
             )
         }
     }

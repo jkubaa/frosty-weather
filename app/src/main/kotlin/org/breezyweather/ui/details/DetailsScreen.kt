@@ -18,33 +18,30 @@ package org.breezyweather.ui.details
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButtonMenu
-import androidx.compose.material3.FloatingActionButtonMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.Tab
-import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleFloatingActionButton
-import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
-import androidx.compose.material3.animateFloatingActionButton
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -52,62 +49,56 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.semantics.traversalIndex
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import breezyweather.domain.location.model.Location
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import org.breezyweather.R
 import org.breezyweather.common.extensions.getCalendarMonth
-import org.breezyweather.common.extensions.getFormattedDate
-import org.breezyweather.common.extensions.getFormattedDayOfTheMonth
-import org.breezyweather.common.extensions.getFormattedFullDayAndMonth
-import org.breezyweather.common.extensions.getFormattedMediumDayAndMonthInAdditionalCalendar
-import org.breezyweather.common.extensions.getWeek
 import org.breezyweather.common.extensions.setSystemBarStyle
 import org.breezyweather.common.extensions.toCalendarWithTimeZone
 import org.breezyweather.common.extensions.toTimezoneSpecificHour
-import org.breezyweather.common.options.appearance.CalendarHelper
 import org.breezyweather.common.options.appearance.DetailScreen
 import org.breezyweather.common.source.PollenIndexSource
 import org.breezyweather.domain.weather.index.PollutantIndex
 import org.breezyweather.domain.weather.model.getConcentration
 import org.breezyweather.domain.weather.model.isToday
-import org.breezyweather.ui.common.widgets.Material3Scaffold
-import org.breezyweather.ui.common.widgets.insets.BWCenterAlignedTopAppBar
 import org.breezyweather.ui.details.components.DetailsAirQuality
 import org.breezyweather.ui.details.components.DetailsCloudCover
 import org.breezyweather.ui.details.components.DetailsConditions
 import org.breezyweather.ui.details.components.DetailsHumidity
+import org.breezyweather.ui.details.components.DetailsMoon
 import org.breezyweather.ui.details.components.DetailsPollen
 import org.breezyweather.ui.details.components.DetailsPrecipitation
 import org.breezyweather.ui.details.components.DetailsPressure
-import org.breezyweather.ui.details.components.DetailsSunMoon
+import org.breezyweather.ui.details.components.DetailsSun
 import org.breezyweather.ui.details.components.DetailsUV
 import org.breezyweather.ui.details.components.DetailsVisibility
 import org.breezyweather.ui.details.components.DetailsWind
+import org.breezyweather.ui.details.components.sunHeadline
 import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
 import java.util.Calendar
-import java.util.Date
+import kotlin.math.roundToInt
 
+/**
+ * Detail screens, presented as an Apple Weather-style sheet over the home screen: a close button and
+ * the metric's title, a week strip to pick the day, then the metric's page. Drag the sheet down (or
+ * pull a page down from its top) to dismiss it.
+ */
 @Composable
 internal fun DailyWeatherScreen(
     onBackPressed: () -> Unit,
@@ -119,72 +110,132 @@ internal fun DailyWeatherScreen(
     val activity = LocalActivity.current
 
     val isLightTheme = ThemeManager.isLightTheme(context, detailsUiState.location)
-    LaunchedEffect(detailsUiState.location) {
-        // re-setting the status bar color once the location is fetched
-        if (detailsUiState.location != null && activity != null) {
-            activity.window.setSystemBarStyle(isLightTheme)
+    LaunchedEffect(Unit) {
+        // The status bar sits over the dimmed home screen
+        activity?.window?.setSystemBarStyle(false)
+    }
+
+    val scope = rememberCoroutineScope()
+    // 0 = fully presented, 1 = fully below the screen
+    val sheetPosition = remember { Animatable(1f) }
+    var dismissing by remember { mutableStateOf(false) }
+    val dismiss: () -> Unit = {
+        if (!dismissing) {
+            dismissing = true
+            scope.launch {
+                sheetPosition.animateTo(1f, tween(durationMillis = 240))
+                onBackPressed()
+            }
+        }
+    }
+    BackHandler { dismiss() }
+    LaunchedEffect(Unit) {
+        sheetPosition.animateTo(0f, spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow))
+    }
+
+    val palette = remember(isLightTheme, detailsUiState.selectedChart) {
+        if (detailsUiState.selectedChart == DetailScreen.TAG_MOON) {
+            // The moon is shown on a night sky black, whatever the theme
+            DetailsPalette.Dark.copy(sheet = Color.Black, card = Color(0xFF1C1C1E))
+        } else if (isLightTheme) {
+            DetailsPalette.Light
+        } else {
+            DetailsPalette.Dark
         }
     }
 
     BreezyWeatherTheme(!isLightTheme) {
-        Material3Scaffold(
-            topBar = {
-                BWCenterAlignedTopAppBar(
-                    title = detailsUiState.selectedChart.getName(context),
-                    onBackPressed = onBackPressed
+        DetailsSheetTheme(palette) {
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                val heightPx = constraints.maxHeight.toFloat().coerceAtLeast(1f)
+
+                fun settle(velocity: Float) {
+                    if (sheetPosition.value > 0.25f || velocity > 2200f) {
+                        dismiss()
+                    } else {
+                        scope.launch { sheetPosition.animateTo(0f, spring(dampingRatio = 0.86f)) }
+                    }
+                }
+
+                val nestedScrollConnection = remember(heightPx) {
+                    object : NestedScrollConnection {
+                        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                            // While the sheet is pulled down, scrolling up first lifts it back
+                            if (available.y < 0f && sheetPosition.value > 0f) {
+                                val before = sheetPosition.value
+                                val after = (before + available.y / heightPx).coerceAtLeast(0f)
+                                scope.launch { sheetPosition.snapTo(after) }
+                                return Offset(0f, (after - before) * heightPx)
+                            }
+                            return Offset.Zero
+                        }
+
+                        override fun onPostScroll(
+                            consumed: Offset,
+                            available: Offset,
+                            source: NestedScrollSource,
+                        ): Offset {
+                            // Pulling down past the top of a page drags the sheet down
+                            if (available.y > 0f && source == NestedScrollSource.UserInput) {
+                                scope.launch { sheetPosition.snapTo(sheetPosition.value + available.y / heightPx) }
+                                return Offset(0f, available.y)
+                            }
+                            return Offset.Zero
+                        }
+
+                        override suspend fun onPreFling(available: Velocity): Velocity {
+                            if (sheetPosition.value > 0f) {
+                                settle(available.y)
+                                return available
+                            }
+                            return Velocity.Zero
+                        }
+                    }
+                }
+
+                // Dimmed home screen behind the sheet
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.45f * (1f - sheetPosition.value)))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = dismiss
+                        )
                 )
-            },
-            floatingActionButton = {
-                detailsUiState.location?.let { loc ->
-                    DetailsDropdownMenu(
-                        location = loc,
-                        selectedChart = detailsUiState.selectedChart,
-                        setSelectedChart = { chart -> detailsViewModel.setSelectedChart(chart) }
-                    )
-                }
-            },
-            floatingActionButtonPosition = FabPosition.End
-        ) { paddings ->
-            detailsUiState.location?.let { loc ->
-                val scope = rememberCoroutineScope()
-                val pages = remember(loc.weather!!.dailyForecast) {
-                    loc.weather!!.dailyForecast.map { it.date }.toImmutableList()
-                }
-                val pagerState = rememberPagerState(initialPage = detailsUiState.initialIndex) {
-                    loc.weather!!.dailyForecast.size
-                }
-                val pagerPage by remember {
-                    derivedStateOf { pagerState.currentPage }
-                }
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(
-                            top = paddings.calculateTopPadding(),
-                            start = paddings.calculateStartPadding(LocalLayoutDirection.current),
-                            end = paddings.calculateEndPadding(LocalLayoutDirection.current)
+                        .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 10.dp)
+                        .offset { IntOffset(0, (sheetPosition.value * heightPx).roundToInt()) }
+                        .clip(RoundedCornerShape(topStart = 34.dp, topEnd = 34.dp))
+                        .background(palette.sheet)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {}
                         )
+                        .nestedScroll(nestedScrollConnection)
                 ) {
-                    DailyPagerIndicator(
-                        pages = pages,
-                        selected = pagerPage,
-                        location = loc,
-                        onClick = {
-                            scope.launch {
-                                pagerState.animateScrollToPage(it)
-                            }
-                        },
-                        todayIndex = loc.weather!!.todayIndex
-                    )
-                    HorizontalPager(state = pagerState) { page ->
-                        DailyPagerContent(
+                    detailsUiState.location?.let { loc ->
+                        DetailsSheetContent(
                             location = loc,
-                            selected = page,
-                            selectedChart = detailsUiState.selectedChart,
-                            setSelectedChart = { chart -> detailsViewModel.setSelectedChart(chart) },
-                            selectedPollutant = detailsUiState.selectedPollutant,
-                            setSelectedPollutant = { pollutant -> detailsViewModel.setSelectedPollutant(pollutant) },
-                            pollenIndexSource = detailsViewModel.getPollenIndexSource(loc)
+                            detailsUiState = detailsUiState,
+                            detailsViewModel = detailsViewModel,
+                            onClose = dismiss,
+                            dragModifier = Modifier.draggable(
+                                orientation = Orientation.Vertical,
+                                state = rememberDraggableState { delta ->
+                                    scope.launch {
+                                        sheetPosition.snapTo(
+                                            (sheetPosition.value + delta / heightPx).coerceAtLeast(0f)
+                                        )
+                                    }
+                                },
+                                onDragStopped = { velocity -> settle(velocity) }
+                            )
                         )
                     }
                 }
@@ -194,155 +245,86 @@ internal fun DailyWeatherScreen(
 }
 
 @Composable
-fun DailyPagerIndicator(
-    pages: ImmutableList<Date>,
-    selected: Int,
+private fun DetailsSheetContent(
     location: Location,
-    onClick: (index: Int) -> Unit,
-    modifier: Modifier = Modifier,
-    todayIndex: Int? = null,
+    detailsUiState: DetailsUiState,
+    detailsViewModel: DetailsViewModel,
+    onClose: () -> Unit,
+    dragModifier: Modifier,
 ) {
     val context = LocalContext.current
-    val alternateCalendar = remember {
-        CalendarHelper.getAlternateCalendarSetting(context)
+    val scope = rememberCoroutineScope()
+    val selectedChart = detailsUiState.selectedChart
+    val weather = location.weather!!
+    val todayIndex = weather.todayIndex
+
+    val detailScreenEntries = remember(location) { DetailScreen.toDetailScreenList(location) }
+    val metricSwitcher: @Composable () -> Unit = {
+        DetailsMetricPill(
+            entries = detailScreenEntries,
+            selected = selectedChart,
+            onSelect = { detailsViewModel.setSelectedChart(it) }
+        )
     }
 
-    PrimaryScrollableTabRow(
-        selectedTabIndex = selected,
-        modifier = modifier.fillMaxWidth()
-    ) {
-        pages.forEachIndexed { i, date ->
-            Tab(
-                selected = (selected == i),
-                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                onClick = {
-                    onClick(i)
-                },
-                text = {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .clearAndSetSemantics {
-                                contentDescription = when {
-                                    todayIndex == null -> date.getWeek(location, context, full = true)
-                                    i == todayIndex - 1 -> context.getString(R.string.daily_yesterday)
-                                    i == todayIndex -> context.getString(R.string.daily_today)
-                                    i == todayIndex + 1 -> context.getString(R.string.daily_tomorrow)
-                                    else -> date.getWeek(location, context, full = true)
-                                } +
-                                    " " +
-                                    date.getFormattedFullDayAndMonth(location, context)
-                            }
-                    ) {
-                        Text(
-                            text = when {
-                                todayIndex == null -> date.getWeek(location, context)
-                                i == todayIndex - 1 -> stringResource(R.string.daily_yesterday_short)
-                                i == todayIndex -> stringResource(R.string.daily_today_short)
-                                i == todayIndex + 1 -> stringResource(R.string.daily_tomorrow_short)
-                                else -> date.getWeek(location, context)
-                            }
-                        )
-                        Text(
-                            text = date.getFormattedDayOfTheMonth(location, context),
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                        Text(
-                            text = alternateCalendar?.let {
-                                date.getFormattedMediumDayAndMonthInAdditionalCalendar(location, context)
-                            } ?: date.getFormattedDate("MMM", location, context, withBestPattern = true)
-                        )
-                    }
-                }
-            )
+    when (selectedChart) {
+        DetailScreen.TAG_SUN -> {
+            val headline = remember(location) { sunHeadline(location) }
+            Column(dragModifier) {
+                DetailsTopBar(
+                    title = context.getString(
+                        if (headline.isSunset) R.string.details_sunset else R.string.details_sunrise
+                    ),
+                    icon = R.drawable.ic_twilight,
+                    onClose = onClose
+                )
+            }
+            DetailsSun(location, headline)
         }
-    }
-}
-
-@Composable
-fun DetailsDropdownMenu(
-    location: Location,
-    selectedChart: DetailScreen,
-    setSelectedChart: (DetailScreen) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    val detailScreenEntries = remember(location) {
-        DetailScreen.toDetailScreenList(location)
-    }
-
-    val listState = rememberLazyListState()
-    val fabVisible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
-
-    Box(
-        modifier = modifier
-    ) {
-        var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
-
-        BackHandler(fabMenuExpanded) { fabMenuExpanded = false }
-
-        FloatingActionButtonMenu(
-            modifier = Modifier.align(Alignment.BottomEnd),
-            expanded = fabMenuExpanded,
-            button = {
-                ToggleFloatingActionButton(
-                    modifier = Modifier
-                        .semantics {
-                            traversalIndex = -1f
-                            stateDescription = context.getString(
-                                if (fabMenuExpanded) R.string.label_expanded else R.string.label_collapsed
-                            )
-                            contentDescription = context.getString(R.string.action_toggle_data_type_menu)
-                        }.animateFloatingActionButton(
-                            visible = fabVisible || fabMenuExpanded,
-                            alignment = Alignment.BottomEnd
-                        ),
-                    checked = fabMenuExpanded,
-                    onCheckedChange = { fabMenuExpanded = !fabMenuExpanded }
-                ) {
-                    val imageVector by remember(selectedChart.iconId, checkedProgress) {
-                        derivedStateOf {
-                            if (checkedProgress > 0.5f) R.drawable.ic_close else selectedChart.iconId
-                        }
-                    }
-                    Icon(
-                        painter = painterResource(imageVector),
-                        contentDescription = null,
-                        modifier = Modifier.animateIcon({ checkedProgress })
+        DetailScreen.TAG_MOON -> {
+            Column(dragModifier) {
+                DetailsTopBar(title = null, icon = null, onClose = onClose)
+            }
+            DetailsMoon(location)
+        }
+        else -> {
+            val pages = remember(weather.dailyForecast) {
+                weather.dailyForecast.map { it.date }.toImmutableList()
+            }
+            val pagerState = rememberPagerState(initialPage = detailsUiState.initialIndex) {
+                weather.dailyForecast.size
+            }
+            val pagerPage by remember { derivedStateOf { pagerState.currentPage } }
+            Column(dragModifier) {
+                DetailsTopBar(
+                    title = selectedChart.getName(context),
+                    icon = if (selectedChart == DetailScreen.TAG_FEELS_LIKE) {
+                        DetailScreen.TAG_CONDITIONS.iconId
+                    } else {
+                        selectedChart.iconId
+                    },
+                    onClose = onClose
+                )
+                DetailsWeekStrip(
+                    location = location,
+                    dates = pages,
+                    selected = pagerPage,
+                    todayIndex = todayIndex,
+                    onSelect = { scope.launch { pagerState.animateScrollToPage(it) } }
+                )
+            }
+            CompositionLocalProvider(LocalDetailsMetricSwitcher provides metricSwitcher) {
+                HorizontalPager(state = pagerState) { page ->
+                    DailyPagerContent(
+                        location = location,
+                        selected = page,
+                        selectedChart = selectedChart,
+                        setSelectedChart = { chart -> detailsViewModel.setSelectedChart(chart) },
+                        selectedPollutant = detailsUiState.selectedPollutant,
+                        setSelectedPollutant = { pollutant -> detailsViewModel.setSelectedPollutant(pollutant) },
+                        pollenIndexSource = detailsViewModel.getPollenIndexSource(location)
                     )
                 }
-            }
-        ) {
-            // Workaround until the missing spacing is fixed upstream
-            Spacer(modifier = Modifier.height(WindowInsets.statusBars.asPaddingValues().calculateTopPadding() * 2))
-            detailScreenEntries.forEachIndexed { i, item ->
-                FloatingActionButtonMenuItem(
-                    modifier = Modifier
-                        .semantics {
-                            isTraversalGroup = true
-                            // Add a custom a11y action to allow closing the menu when focusing
-                            // the last menu item, since the close button comes before the first
-                            // menu item in the traversal order.
-                            if (i == detailScreenEntries.size - 1) {
-                                customActions =
-                                    listOf(
-                                        CustomAccessibilityAction(
-                                            label = context.getString(R.string.action_close_menu),
-                                            action = {
-                                                fabMenuExpanded = false
-                                                true
-                                            }
-                                        )
-                                    )
-                            }
-                        },
-                    onClick = {
-                        setSelectedChart(item)
-                        fabMenuExpanded = false
-                    },
-                    icon = { Icon(painterResource(item.iconId), contentDescription = null) },
-                    text = { Text(text = item.getName(context)) }
-                )
             }
         }
     }
@@ -504,15 +486,7 @@ fun DailyPagerContent(
                     }
                 )
             }
-            DetailScreen.TAG_SUN_MOON -> {
-                val sunTimes = remember(location) {
-                    location.weather!!.dailyForecast.mapNotNull { it.sun }
-                }
-                val moonTimes = remember(location) {
-                    location.weather!!.dailyForecast.mapNotNull { it.moon }
-                }
-                DetailsSunMoon(location, daily, sunTimes, moonTimes)
-            }
+            DetailScreen.TAG_SUN, DetailScreen.TAG_MOON -> Unit // Shown without the day pager
         }
     }
 }

@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import breezyweather.domain.weather.model.Pollen
 import org.breezyweather.R
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.source.PollenIndexSource
 import org.breezyweather.domain.weather.model.getPollenWithMaxIndex
 import org.breezyweather.domain.weather.model.isIndexValid
@@ -52,6 +53,9 @@ fun DetailsPollen(
             vertical = dimensionResource(R.dimen.small_margin)
         )
     ) {
+        item {
+            DetailsHeaderRow {}
+        }
         if (pollen?.isIndexValid == true) {
             pollen.getPollenWithMaxIndex()?.let {
                 item {

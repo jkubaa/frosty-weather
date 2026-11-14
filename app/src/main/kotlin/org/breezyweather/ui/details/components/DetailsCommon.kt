@@ -18,6 +18,7 @@ package org.breezyweather.ui.details.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,6 +35,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
@@ -52,6 +54,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
@@ -71,11 +74,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import org.breezyweather.R
 import org.breezyweather.common.extensions.pxToDp
 import org.breezyweather.common.extensions.spToPx
-import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
+import org.breezyweather.ui.details.LocalDetailsPalette
 import kotlin.math.roundToInt
 
 @Composable
@@ -299,7 +303,7 @@ internal fun DetailsSectionHeader(
 ) {
     Column(
         modifier = modifier
-            .padding(start = dimensionResource(R.dimen.normal_margin))
+            .padding(top = 8.dp, bottom = 4.dp)
     ) {
         section()
         subtitle?.invoke()
@@ -322,23 +326,18 @@ fun DetailsCardText(
     text2: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    Material3ExpressiveCardListItem(
-        isFirst = true,
-        isLast = true,
+    val palette = LocalDetailsPalette.current
+    Column(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(palette.card)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.normal_margin))
     ) {
-        Column(
-            modifier = Modifier.padding(
-                horizontal = dimensionResource(R.dimen.normal_margin),
-                vertical = dimensionResource(R.dimen.small_margin)
-            ),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.normal_margin))
-        ) {
-            Text(text1)
-            text2?.let {
-                Text(it)
-            }
+        Text(text1, color = palette.text, fontSize = 17.sp, lineHeight = 23.sp)
+        text2?.let {
+            Text(it, color = palette.text, fontSize = 17.sp, lineHeight = 23.sp)
         }
     }
 }
@@ -444,14 +443,12 @@ fun TextFixedHeight(
 }
 
 /**
- * Add an inset of top + bottom padding + fab menu size
- * Currently top + bottom padding is applied twice due to an upstream bug, but we only apply the top padding once on
- *  our side (hence the * 3 multiplier)
+ * Room at the end of a page, above the navigation bar
  */
 fun LazyListScope.bottomDetailsInset(modifier: Modifier = Modifier) {
     item(key = "bottom_inset") {
         Column(modifier = modifier) {
-            Spacer(modifier = Modifier.height(16.dp * 3 + 56.dp))
+            Spacer(modifier = Modifier.height(32.dp))
             Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }

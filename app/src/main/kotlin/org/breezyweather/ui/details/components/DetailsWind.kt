@@ -70,6 +70,11 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.R
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
+import org.breezyweather.ui.details.LocalDetailsPalette
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.formatMeasure
 import org.breezyweather.common.extensions.getBeaufortScaleColor
@@ -145,7 +150,7 @@ fun DetailsWind(
         )
     ) {
         item {
-            WindHeader(location, daily, activeItem, defaultValue)
+            DetailsHeaderRow { WindHeader(location, daily, activeItem, defaultValue) }
         }
         item {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
@@ -190,28 +195,44 @@ fun WindHeader(
     defaultValue: Pair<Date, Wind>?,
 ) {
     val context = LocalContext.current
-
-    if (activeItem != null) {
-        WindItem(
-            {
-                TextFixedHeight(
-                    text = activeItem.first.getFormattedTime(location, context, context.is12Hour),
-                    style = MaterialTheme.typography.labelMedium
-                )
+    val palette = LocalDetailsPalette.current
+    // The hour pointed at, else the current wind (today), else the day's wind
+    val wind = activeItem?.second
+        ?: defaultValue?.second
+        ?: daily.day?.wind?.takeIf { it.isValid }
+        ?: daily.night?.wind
+    Column {
+        Text(
+            text = buildAnnotatedString {
+                wind?.speed?.let { speed ->
+                    append(speed.formatMeasure(context))
+                    wind.getDirection(context, short = true)?.let {
+                        append(" ")
+                        withStyle(SpanStyle(color = palette.secondaryText)) { append(it) }
+                    }
+                }
             },
-            activeItem.second
+            style = MaterialTheme.typography.displaySmall.copy(fontSize = 40.sp),
+            color = palette.text,
+            maxLines = 1,
+            modifier = Modifier.clearAndSetSemantics {
+                wind?.speed?.let { speed ->
+                    contentDescription = speed.formatMeasure(context, unitWidth = UnitWidth.LONG) +
+                        (wind.getDirection(context, short = false)?.let { ", $it" } ?: "")
+                }
+            }
         )
-    } else if (daily.day?.wind?.isValid == true || daily.night?.wind?.isValid == true) {
-        WindSummary(daily.day?.wind, daily.night?.wind)
-    } else {
-        WindItem(
-            {
-                TextFixedHeight(
-                    text = defaultValue?.first?.getFormattedTime(location, context, context.is12Hour) ?: "",
-                    style = MaterialTheme.typography.labelMedium
-                )
-            },
-            activeItem?.second
+        val subtitle = listOfNotNull(
+            activeItem?.first?.getFormattedTime(location, context, context.is12Hour),
+            wind?.gusts?.takeIf { wind.speed == null || it > wind.speed!! }?.let {
+                stringResource(R.string.wind_gusts_short) + stringResource(R.string.colon_separator) +
+                    it.formatMeasure(context)
+            }
+        ).joinToString(" · ")
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.labelMedium,
+            color = palette.secondaryText
         )
     }
 }

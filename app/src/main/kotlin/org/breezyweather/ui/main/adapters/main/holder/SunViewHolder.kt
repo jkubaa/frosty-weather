@@ -82,7 +82,7 @@ class SunViewHolder(context: Context) : ComposeTileViewHolder(context) {
                 activity,
                 location.formattedId,
                 location.weather!!.todayIndex,
-                DetailScreen.TAG_SUN_MOON
+                DetailScreen.TAG_SUN
             )
         }
     }

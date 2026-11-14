@@ -59,6 +59,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.R
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.CLOUD_COVER_BKN
 import org.breezyweather.common.extensions.CLOUD_COVER_FEW
 import org.breezyweather.common.extensions.CLOUD_COVER_OVC
@@ -130,7 +131,7 @@ fun DetailsCloudCover(
         )
     ) {
         item {
-            CloudCoverHeader(location, daily, activeItem, defaultValue)
+            DetailsHeaderRow { CloudCoverHeader(location, daily, activeItem, defaultValue) }
         }
         item {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
@@ -220,12 +221,12 @@ private fun CloudCoverItem(
         modifier = modifier.fillMaxWidth()
     ) {
         TextFixedHeight(
-            text = header ?: "",
-            style = MaterialTheme.typography.labelMedium
-        )
-        TextFixedHeight(
             text = cloudCover?.formatPercent(context) ?: "",
             style = MaterialTheme.typography.displaySmall
+        )
+        TextFixedHeight(
+            text = header ?: "",
+            style = MaterialTheme.typography.labelMedium
         )
         TextFixedHeight(
             text = cloudCover?.getCloudCoverDescription(context) ?: "",
@@ -245,12 +246,12 @@ private fun CloudCoverSummary(
         modifier = modifier.fillMaxWidth()
     ) {
         TextFixedHeight(
-            text = daily.getFullLabel(location, context),
-            style = MaterialTheme.typography.labelMedium
-        )
-        TextFixedHeight(
             text = daily.cloudCover?.getRangeSummary(context) ?: "",
             style = MaterialTheme.typography.displaySmall
+        )
+        TextFixedHeight(
+            text = daily.getFullLabel(location, context),
+            style = MaterialTheme.typography.labelMedium
         )
         TextFixedHeight(
             text = daily.cloudCover?.getRangeDescriptionSummary(context) ?: "",

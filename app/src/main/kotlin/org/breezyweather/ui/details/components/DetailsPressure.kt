@@ -56,6 +56,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.R
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.formatMeasure
 import org.breezyweather.common.extensions.getFormattedTime
 import org.breezyweather.common.extensions.is12Hour
@@ -123,7 +124,7 @@ fun DetailsPressure(
         )
     ) {
         item {
-            PressureHeader(location, daily, activeItem, defaultValue)
+            DetailsHeaderRow { PressureHeader(location, daily, activeItem, defaultValue) }
         }
         item {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.normal_margin)))
@@ -193,10 +194,6 @@ private fun PressureItem(
         modifier = modifier.fillMaxWidth()
     ) {
         TextFixedHeight(
-            text = header ?: "",
-            style = MaterialTheme.typography.labelMedium
-        )
-        TextFixedHeight(
             text = pressure?.let {
                 UnitUtils.formatUnitsDifferentFontSize(
                     formattedMeasure = it.formatMeasure(context),
@@ -210,6 +207,10 @@ private fun PressureItem(
                         contentDescription = it.formatMeasure(context, unitWidth = UnitWidth.LONG)
                     }
                 }
+        )
+        TextFixedHeight(
+            text = header ?: "",
+            style = MaterialTheme.typography.labelMedium
         )
     }
 }
