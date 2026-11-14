@@ -48,9 +48,9 @@ import androidx.compose.ui.text.style.TextAlign
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
-import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import org.breezyweather.ui.common.charts.compose.ChartYLabels
+import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
+import org.breezyweather.ui.common.charts.compose.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
 import kotlinx.collections.immutable.ImmutableList
@@ -299,7 +299,7 @@ private fun CloudCoverChart(
                 )
             )
         },
-        endAxisItemPlacer = remember { VerticalAxis.ItemPlacer.step({ 20.0 }) }, // Every 20 %
+        endAxisItemPlacer = remember { ChartYLabels.step({ 20.0 }) }, // Every 20 %
         markerVisibilityListener = markerVisibilityListener
     )
 }

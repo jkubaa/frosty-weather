@@ -29,6 +29,7 @@ import org.breezyweather.unit.supportsMeasureFormatPerUnit
 import org.breezyweather.unit.supportsNumberFormatterUsage
 import java.text.FieldPosition
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
 /**
@@ -46,20 +47,38 @@ fun MeasureUnit.formatWithNumberFormatter(
     numberFormatterWidth: NumberFormatter.UnitWidth,
     showSign: Boolean = false,
 ): String {
-    return (NumberFormatter.withLocale(locale) as LocalizedNumberFormatter)
-        .precision(if (precision == 0) Precision.integer() else Precision.maxFraction(precision))
-        .sign(if (showSign) NumberFormatter.SignDisplay.ALWAYS else NumberFormatter.SignDisplay.AUTO)
-        .unit(this)
-        .perUnit(perUnit)
-        .unitWidth(numberFormatterWidth)
-        .apply {
-            if (supportsNumberFormatterUsage()) {
-                usage(if (isDurationUnit()) "duration" else null)
+    val key = MeasureFormatterKey(locale, this, perUnit, precision, numberFormatterWidth, showSign)
+    return measureFormatters.getOrPut(key) {
+        (NumberFormatter.withLocale(locale) as LocalizedNumberFormatter)
+            .precision(if (precision == 0) Precision.integer() else Precision.maxFraction(precision))
+            .sign(if (showSign) NumberFormatter.SignDisplay.ALWAYS else NumberFormatter.SignDisplay.AUTO)
+            .unit(this)
+            .perUnit(perUnit)
+            .unitWidth(numberFormatterWidth)
+            .apply {
+                if (supportsNumberFormatterUsage()) {
+                    usage(if (isDurationUnit()) "duration" else null)
+                }
             }
-        }
+    }
         .format(if (precision == 0) value.toDouble().roundToInt() else value)
         .toString()
 }
+
+/*
+ * Formatters are kept and reused: building one is costly (it was most of the time spent formatting each value,
+ * and a detail screen formats hundreds), and they are immutable and thread-safe.
+ */
+private data class MeasureFormatterKey(
+    val locale: Locale,
+    val unit: MeasureUnit,
+    val perUnit: MeasureUnit?,
+    val precision: Int,
+    val width: NumberFormatter.UnitWidth,
+    val showSign: Boolean,
+)
+
+private val measureFormatters = ConcurrentHashMap<MeasureFormatterKey, LocalizedNumberFormatter>()
 
 fun MeasureUnit.isDurationUnit(): Boolean {
     return this == MeasureUnit.NANOSECOND ||

@@ -48,9 +48,9 @@ import androidx.compose.ui.text.style.TextAlign
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
-import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import org.breezyweather.ui.common.charts.compose.ChartYLabels
+import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
+import org.breezyweather.ui.common.charts.compose.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
 import kotlinx.collections.immutable.ImmutableList
@@ -78,7 +78,6 @@ import org.breezyweather.domain.weather.model.getRangeContentDescriptionSummary
 import org.breezyweather.domain.weather.model.getRangeDescriptionSummary
 import org.breezyweather.domain.weather.model.getRangeSummary
 import org.breezyweather.ui.common.charts.compose.BreezyLineChart
-import org.breezyweather.ui.common.charts.compose.TimeTopAxisItemPlacer
 import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
 import org.breezyweather.unit.distance.Distance
 import org.breezyweather.unit.distance.Distance.Companion.meters
@@ -321,8 +320,8 @@ private fun VisibilityChart(
         modelProducer = modelProducer,
         theDay = daily.date,
         maxY = maxYRounded,
-        topAxisItemPlacer = remember(mappedValues) {
-            TimeTopAxisItemPlacer(mappedValues.keys.toImmutableList())
+        topAxisValues = remember(mappedValues) {
+            mappedValues.keys.toImmutableList()
         },
         endAxisValueFormatter = { _, value, _ -> value.toDistance(distanceUnit).formatMeasure(context) },
         colors = remember {
@@ -345,7 +344,7 @@ private fun VisibilityChart(
                 mappedValues.getOrElse(value.toLong()) { null }?.formatValue(context) ?: "-"
             }
         },
-        endAxisItemPlacer = remember { VerticalAxis.ItemPlacer.step({ step }) },
+        endAxisItemPlacer = remember { ChartYLabels.step({ step }) },
         markerVisibilityListener = markerVisibilityListener
     )
 }

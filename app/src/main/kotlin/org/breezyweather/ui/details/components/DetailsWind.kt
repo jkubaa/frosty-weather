@@ -58,9 +58,9 @@ import breezyweather.domain.location.model.Location
 import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
 import breezyweather.domain.weather.model.Wind
-import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import org.breezyweather.ui.common.charts.compose.ChartYLabels
+import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
+import org.breezyweather.ui.common.charts.compose.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
 import kotlinx.collections.immutable.ImmutableList
@@ -92,7 +92,7 @@ import org.breezyweather.domain.weather.model.drawableArrow
 import org.breezyweather.domain.weather.model.getDirection
 import org.breezyweather.domain.weather.model.getIndex
 import org.breezyweather.ui.common.charts.compose.BreezyLineChart
-import org.breezyweather.ui.common.charts.compose.IconCartesianMarker
+import org.breezyweather.ui.common.charts.compose.ChartIconSize
 import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
 import org.breezyweather.unit.formatting.UnitWidth
 import org.breezyweather.unit.formatting.format
@@ -363,7 +363,7 @@ private fun WindChart(
         ).metersPerSecond.toDouble(speedUnit).roundUpToNearestMultiplier(step)
     }
     val iconColor = MaterialTheme.colorScheme.onSurface
-    val iconSizePx = with(LocalDensity.current) { IconCartesianMarker.DEFAULT_ICON_SIZE.roundToPx() }
+    val iconSizePx = with(LocalDensity.current) { ChartIconSize.roundToPx() }
 
     val modelProducer = remember { CartesianChartModelProducer() }
 
@@ -491,7 +491,7 @@ private fun WindChart(
                 put(3.beaufort.toDouble(speedUnit), 3.beaufort.getBeaufortScaleStrength(context)!!)
             }
         }.toImmutableMap(),
-        endAxisItemPlacer = remember { VerticalAxis.ItemPlacer.step({ step }) },
+        endAxisItemPlacer = remember { ChartYLabels.step({ step }) },
         markerVisibilityListener = markerVisibilityListener
     )
 }

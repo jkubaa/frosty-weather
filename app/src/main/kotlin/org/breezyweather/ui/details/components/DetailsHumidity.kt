@@ -41,9 +41,9 @@ import androidx.compose.ui.semantics.contentDescription
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
-import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import org.breezyweather.ui.common.charts.compose.ChartYLabels
+import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
+import org.breezyweather.ui.common.charts.compose.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
 import kotlinx.collections.immutable.ImmutableList
@@ -67,7 +67,6 @@ import org.breezyweather.domain.weather.model.getFullLabel
 import org.breezyweather.domain.weather.model.getRangeContentDescriptionSummary
 import org.breezyweather.domain.weather.model.getRangeSummary
 import org.breezyweather.ui.common.charts.compose.BreezyLineChart
-import org.breezyweather.ui.common.charts.compose.TimeTopAxisItemPlacer
 import org.breezyweather.unit.formatting.UnitWidth
 import org.breezyweather.unit.ratio.Ratio
 import org.breezyweather.unit.ratio.Ratio.Companion.percent
@@ -327,8 +326,8 @@ private fun HumidityChart(
         modelProducer = modelProducer,
         theDay = daily.date,
         maxY = maxY,
-        topAxisItemPlacer = remember(mappedValues) {
-            TimeTopAxisItemPlacer(mappedValues.keys.toImmutableList())
+        topAxisValues = remember(mappedValues) {
+            mappedValues.keys.toImmutableList()
         },
         endAxisValueFormatter = { _, value, _ -> value.percent.formatPercent(context) },
         colors = remember {
@@ -356,7 +355,7 @@ private fun HumidityChart(
                 mappedValues.getOrElse(value.toLong()) { null }?.formatPercent(context, UnitWidth.NARROW) ?: "-"
             }
         },
-        endAxisItemPlacer = remember { VerticalAxis.ItemPlacer.step({ 20.0 }) }, // Every 20 %
+        endAxisItemPlacer = remember { ChartYLabels.step({ 20.0 }) }, // Every 20 %
         markerVisibilityListener = markerVisibilityListener
     )
 }
@@ -489,8 +488,8 @@ private fun DewPointChart(
         modelProducer = modelProducer,
         theDay = daily.date,
         maxY = maxY,
-        topAxisItemPlacer = remember(mappedValues) {
-            TimeTopAxisItemPlacer(mappedValues.keys.toImmutableList())
+        topAxisValues = remember(mappedValues) {
+            mappedValues.keys.toImmutableList()
         },
         endAxisValueFormatter = { _, value, _ ->
             value.toTemperature(temperatureUnit)
@@ -527,7 +526,7 @@ private fun DewPointChart(
             }
         },
         minY = minY,
-        endAxisItemPlacer = remember { VerticalAxis.ItemPlacer.step({ step }) },
+        endAxisItemPlacer = remember { ChartYLabels.step({ step }) },
         markerVisibilityListener = markerVisibilityListener
     )
 }

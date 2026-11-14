@@ -73,9 +73,9 @@ import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
 import breezyweather.domain.weather.model.Normals
 import breezyweather.domain.weather.reference.WeatherCode
-import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import org.breezyweather.ui.common.charts.compose.ChartYLabels
+import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
+import org.breezyweather.ui.common.charts.compose.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
 import kotlinx.collections.immutable.ImmutableList
@@ -105,7 +105,7 @@ import org.breezyweather.common.extensions.toDate
 import org.breezyweather.common.options.appearance.DetailScreen
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.ui.common.charts.compose.BreezyLineChart
-import org.breezyweather.ui.common.charts.compose.IconCartesianMarker
+import org.breezyweather.ui.common.charts.compose.ChartIconSize
 import org.breezyweather.ui.common.widgets.AnimatableIconView
 import org.breezyweather.ui.theme.resource.ResourceHelper
 import org.breezyweather.ui.theme.resource.ResourcesProviderFactory
@@ -827,7 +827,7 @@ private fun TemperatureChart(
     }
 
     val modelProducer = remember { CartesianChartModelProducer() }
-    val iconSizePx = with(LocalDensity.current) { IconCartesianMarker.DEFAULT_ICON_SIZE.roundToPx() }
+    val iconSizePx = with(LocalDensity.current) { ChartIconSize.roundToPx() }
 
     LaunchedEffect(mappedValues, showRealTemp) {
         modelProducer.runTransaction {
@@ -915,7 +915,7 @@ private fun TemperatureChart(
             }
         }.toImmutableMap(),
         minY = minY,
-        endAxisItemPlacer = remember { VerticalAxis.ItemPlacer.step({ step }) },
+        endAxisItemPlacer = remember { ChartYLabels.step({ step }) },
         markerVisibilityListener = markerVisibilityListener,
         highLowLabels = true
     )

@@ -24,6 +24,7 @@ import org.breezyweather.unit.supportsNumberFormatter
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
 /**
@@ -39,9 +40,12 @@ fun Number.format(
     useNumberFormat: Boolean = true,
 ): String {
     return if (supportsNumberFormatter() && useNumberFormatter) {
-        (NumberFormatter.withLocale(locale) as LocalizedNumberFormatter)
-            .precision(if (decimals == 0) Precision.integer() else Precision.maxFraction(decimals))
-            .sign(if (showSign) NumberFormatter.SignDisplay.ALWAYS else NumberFormatter.SignDisplay.AUTO)
+        // Kept and reused: building a formatter is the costly part (they are immutable and thread-safe)
+        numberFormatters.getOrPut(Triple(locale, decimals, showSign)) {
+            (NumberFormatter.withLocale(locale) as LocalizedNumberFormatter)
+                .precision(if (decimals == 0) Precision.integer() else Precision.maxFraction(decimals))
+                .sign(if (showSign) NumberFormatter.SignDisplay.ALWAYS else NumberFormatter.SignDisplay.AUTO)
+        }
             .format(if (decimals == 0) this.toDouble().roundToInt() else this)
             .toString()
     } else if (useNumberFormat && !showSign) {
@@ -56,3 +60,5 @@ fun Number.format(
             .format(if (decimals == 0) this.toDouble().roundToInt() else this)
     }
 }
+
+private val numberFormatters = ConcurrentHashMap<Triple<Locale, Int, Boolean>, LocalizedNumberFormatter>()

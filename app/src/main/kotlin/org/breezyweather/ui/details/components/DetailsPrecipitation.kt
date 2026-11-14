@@ -50,13 +50,12 @@ import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
 import breezyweather.domain.weather.model.PrecipitationDuration
 import breezyweather.domain.weather.model.PrecipitationProbability
-import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.columnModel
-import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import org.breezyweather.ui.common.charts.compose.ChartYLabels
+import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
+import org.breezyweather.ui.common.charts.compose.columnModel
+import org.breezyweather.ui.common.charts.compose.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
-import com.patrykandpatrick.vico.compose.common.Fill
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
@@ -378,7 +377,7 @@ internal fun PrecipitationChart(
         endAxisValueFormatter = { _, value, _ ->
             value.toPrecipitation(precipitationUnit).formatMeasure(context, precipitationUnit)
         },
-        barColorFill = remember { Fill(Color(60, 116, 160)) },
+        barColor = Color(60, 116, 160),
         /*colors = remember {
             persistentMapOf(
                 50 to Fill(Color(168, 168, 168).toArgb()),
@@ -413,7 +412,7 @@ internal fun PrecipitationChart(
                 )
             }
         }.toImmutableMap(),
-        endAxisItemPlacer = remember { VerticalAxis.ItemPlacer.step({ step }) },
+        endAxisItemPlacer = remember { ChartYLabels.step({ step }) },
         markerVisibilityListener = markerVisibilityListener
     )
 }
@@ -627,7 +626,7 @@ internal fun PrecipitationProbabilityChart(
                 )
             )
         },
-        endAxisItemPlacer = remember { VerticalAxis.ItemPlacer.step({ 20.0 }) }, // Every 20 %
+        endAxisItemPlacer = remember { ChartYLabels.step({ 20.0 }) }, // Every 20 %
         markerVisibilityListener = markerVisibilityListener
     )
 }

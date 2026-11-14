@@ -71,8 +71,8 @@ import breezyweather.domain.location.model.Location
 import breezyweather.domain.weather.model.AirQuality
 import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
+import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
+import org.breezyweather.ui.common.charts.compose.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
 import kotlinx.collections.immutable.ImmutableList
@@ -99,8 +99,7 @@ import org.breezyweather.domain.weather.model.getDescription
 import org.breezyweather.domain.weather.model.getIndex
 import org.breezyweather.domain.weather.model.getName
 import org.breezyweather.ui.common.charts.compose.BreezyLineChart
-import org.breezyweather.ui.common.charts.compose.SpecificVerticalAxisItemPlacer
-import org.breezyweather.ui.common.charts.compose.TimeTopAxisItemPlacer
+import org.breezyweather.ui.common.charts.compose.ChartYLabels
 import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
 import org.breezyweather.unit.formatting.UnitWidth
 import org.breezyweather.unit.formatting.format
@@ -498,8 +497,8 @@ private fun AirQualityChart(
         modelProducer = modelProducer,
         theDay = daily.date,
         maxY = maxY.toDouble(),
-        topAxisItemPlacer = remember(mappedValues) {
-            TimeTopAxisItemPlacer(mappedValues.keys.toImmutableList())
+        topAxisValues = remember(mappedValues) {
+            mappedValues.keys.toImmutableList()
         },
         endAxisValueFormatter = remember(selectedPollutant) {
             { _, value, _ ->
@@ -545,7 +544,7 @@ private fun AirQualityChart(
             }
         },
         endAxisItemPlacer = remember(selectedPollutant) {
-            SpecificVerticalAxisItemPlacer(
+            ChartYLabels.Values(
                 (selectedPollutant?.thresholds ?: PollutantIndex.aqiThresholds)
                     .map { it.toDouble() }
                     .toMutableList()

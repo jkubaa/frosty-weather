@@ -45,10 +45,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,6 +68,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import breezyweather.domain.location.model.Location
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.breezyweather.R
@@ -234,6 +237,7 @@ internal fun DailyWeatherScreen(
                             detailsUiState = detailsUiState,
                             detailsViewModel = detailsViewModel,
                             onClose = dismiss,
+                            sheetMoving = { dismissing || sheetPosition.isRunning || sheetPosition.value != 0f },
                             dragModifier = Modifier.draggable(
                                 orientation = Orientation.Vertical,
                                 state = rememberDraggableState { delta ->
@@ -259,6 +263,7 @@ private fun DetailsSheetContent(
     detailsUiState: DetailsUiState,
     detailsViewModel: DetailsViewModel,
     onClose: () -> Unit,
+    sheetMoving: () -> Boolean,
     dragModifier: Modifier,
 ) {
     val context = LocalContext.current
@@ -321,19 +326,33 @@ private fun DetailsSheetContent(
                     todayIndex = todayIndex,
                     onSelect = { day ->
                         scope.launch {
-                            // A far day: jump next to it first, so the slide doesn't build every day in between
+                            // The days on each side are ready (built while at rest): slide to them. A day further
+                            // away is shown at once: built during a slide, it made the slide stutter
                             if (kotlin.math.abs(day - pagerState.currentPage) > 1) {
-                                pagerState.scrollToPage(if (day > pagerState.currentPage) day - 1 else day + 1)
+                                pagerState.scrollToPage(day)
+                            } else {
+                                pagerState.animateScrollToPage(day)
                             }
-                            pagerState.animateScrollToPage(day)
                         }
                     }
                 )
             }
             CompositionLocalProvider(LocalDetailsMetricSwitcher provides metricSwitcher) {
-                // The days on each side are built (and their charts drawn) ahead of time: built as they slid
-                // in, the swipe to the next day stuttered
-                HorizontalPager(state = pagerState, beyondViewportPageCount = 1) { page ->
+                // Every day is built ahead of time, a pair at a time while the sheet is still: building a day's
+                // page takes longer than a frame, so done as a swipe started (the pager builds the page after
+                // the next one then), the swipe stuttered. Once they are all built, switching days builds nothing
+                var prepared by remember { mutableIntStateOf(1) }
+                LaunchedEffect(pagerState) {
+                    // Only while nothing moves: not while the sheet slides up, is dragged or closes, nor while
+                    // switching days (a page takes longer than a frame to build)
+                    val still = { !pagerState.isScrollInProgress && !sheetMoving() }
+                    while (prepared < weather.dailyForecast.size) {
+                        snapshotFlow { still() }.first { it }
+                        delay(300)
+                        if (still()) prepared++
+                    }
+                }
+                HorizontalPager(state = pagerState, beyondViewportPageCount = prepared) { page ->
                     DailyPagerContent(
                         location = location,
                         selected = page,
@@ -341,7 +360,10 @@ private fun DetailsSheetContent(
                         setSelectedChart = { chart -> detailsViewModel.setSelectedChart(chart) },
                         selectedPollutant = detailsUiState.selectedPollutant,
                         setSelectedPollutant = { pollutant -> detailsViewModel.setSelectedPollutant(pollutant) },
-                        pollenIndexSource = detailsViewModel.getPollenIndexSource(location)
+                        pollenIndexSource = detailsViewModel.getPollenIndexSource(location),
+                        // Each day in its own layer: sliding between days then only moves pages already drawn,
+                        // instead of drawing both pages' content again on every frame of the slide
+                        modifier = Modifier.graphicsLayer()
                     )
                 }
             }

@@ -18,14 +18,27 @@ package org.breezyweather.common.extensions
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import java.util.Locale
 
 val Context.currentLocale: Locale
     get() {
-        return AppCompatDelegate.getApplicationLocales().get(0)
-            ?: resources.configuration.locales[0]
+        val configLocales = resources.configuration.locales
+        // The app's language, from the system (a call to another process on Android 13+, that was made for
+        // every value formatted). Asked again when the configuration's languages change, which changing the
+        // app's language does
+        val cached = cachedAppLocale
+        val appLocale = if (cached != null && cached.first == configLocales) {
+            cached.second
+        } else {
+            AppCompatDelegate.getApplicationLocales().get(0).also { cachedAppLocale = configLocales to it }
+        }
+        return appLocale ?: configLocales[0]
     }
+
+@Volatile
+private var cachedAppLocale: Pair<LocaleList, Locale?>? = null
 
 // TODO: Review this use vs toLanguageTag()
 val Locale.code: String

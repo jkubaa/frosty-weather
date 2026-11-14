@@ -16,71 +16,27 @@
 
 package org.breezyweather.ui.common.charts.compose
 
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import breezyweather.domain.location.model.Location
-import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisGuidelineComponent
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLineComponent
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisTickComponent
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
-import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.compose.cartesian.decoration.HorizontalLine
-import com.patrykandpatrick.vico.compose.cartesian.layer.ColumnCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerController
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
-import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
-import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesianMarker
-import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
-import com.patrykandpatrick.vico.compose.common.Fill
-import com.patrykandpatrick.vico.compose.common.Insets
-import com.patrykandpatrick.vico.compose.common.Position
-import com.patrykandpatrick.vico.compose.common.component.TextComponent
-import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
-import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
-import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
-import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.persistentMapOf
-import org.breezyweather.R
-import org.breezyweather.ui.details.LocalDetailsPalette
-import org.breezyweather.common.extensions.getFormattedTime
-import org.breezyweather.common.extensions.getThemeColor
-import org.breezyweather.common.extensions.is12Hour
-import org.breezyweather.common.extensions.toCalendarWithTimeZone
-import org.breezyweather.common.extensions.toTimezoneSpecificHour
+import kotlinx.collections.immutable.persistentListOf
 import org.breezyweather.common.extensions.windowHeightInDp
-import org.breezyweather.domain.settings.SettingsManager
-import org.breezyweather.ui.theme.ThemeManager
-import java.util.Calendar
 import java.util.Date
 import kotlin.math.max
 
 /**
- * A bar chart with time as X-Axis and a formatted value on Y-Axis
+ * A column chart of a day, with time as X-Axis and a formatted value on Y-Axis (see [DetailsChart]).
  *
  * @param location The location
- * @param modelProducer Model producer containing the data
+ * @param modelProducer Model producer containing the data (column series)
  * @param maxY max Y value for this chart
- * @param endAxisValueFormatter value formatter for the right side
- * @param markerFormatter value formatter for the marker. Leave empty to hide the marker
+ * @param endAxisValueFormatter value formatter for the value axis
+ * @param barColor the columns' colour
+ * @param markerVisibilityListener told which time is picked while pressing and dragging along the chart
  */
 @Composable
 fun BreezyBarChart(
@@ -88,165 +44,35 @@ fun BreezyBarChart(
     modelProducer: CartesianChartModelProducer,
     theDay: Date,
     maxY: Double,
-    endAxisValueFormatter: CartesianValueFormatter,
-    barColorFill: Fill,
+    endAxisValueFormatter: ChartValueFormatter,
+    barColor: Color,
     modifier: Modifier = Modifier,
-    endAxisItemPlacer: VerticalAxis.ItemPlacer = remember {
-        VerticalAxis.ItemPlacer.step()
-    },
-    trendHorizontalLines: ImmutableMap<Double, String> = persistentMapOf(),
-    markerFormatter: DefaultCartesianMarker.ValueFormatter? = null,
+    endAxisItemPlacer: ChartYLabels = ChartYLabels.Auto,
+    trendHorizontalLines: Map<Double, String> = emptyMap(),
     markerVisibilityListener: CartesianMarkerVisibilityListener? = null,
-    highLowLabels: Boolean = false,
 ) {
     val context = LocalContext.current
-
-    val isTrendHorizontalLinesEnabled = SettingsManager.getInstance(context).isTrendHorizontalLinesEnabled
-
-    val startingDate = remember(theDay) {
-        theDay.toTimezoneSpecificHour(location.timeZone, 0)
-    }
-    val cartesianLayerRangeProvider = remember(theDay, maxY) {
-        CartesianLayerRangeProvider.fixed(
-            minX = startingDate.time.toDouble(),
-            maxX = theDay.toCalendarWithTimeZone(location.timeZone).apply {
-                add(Calendar.DAY_OF_MONTH, 1)
-            }.time.toTimezoneSpecificHour(location.timeZone, 0).time.toDouble(),
-            maxY = maxY
-        )
-    }
-
-    val palette = LocalDetailsPalette.current
-    val lineColor = palette.grid
-    val labelColor = palette.secondaryText
-    val nowDecoration = remember(theDay, palette, highLowLabels) {
-        val now = System.currentTimeMillis()
-        NowDecoration(
-            now = now,
-            dimColor = palette.sheet.copy(alpha = 0.5f),
-            lineColor = palette.secondaryText.copy(alpha = 0.6f),
-            dotColor = palette.text,
-            dotRingColor = palette.sheet,
-            labelColor = palette.secondaryText,
-            highLabel = if (highLowLabels) "H" else null,
-            lowLabel = if (highLowLabels) "L" else null
-        )
-    }
-    val marker = rememberDefaultCartesianMarker(
-        label = if (markerFormatter == null) {
-            // TODO: Report upstream to have a way to hide it
-            rememberTextComponent(
-                style = TextStyle(
-                    color = Color.Transparent
-                )
-            )
-        } else {
-            rememberTextComponent(
-                style = TextStyle(
-                    color = Color(
-                        context.getThemeColor(com.google.android.material.R.attr.colorOnPrimary)
-                    ),
-                    textAlign = TextAlign.Center
-                ),
-                background = rememberShapeComponent(
-                    fill = Fill(Color(context.getThemeColor(androidx.appcompat.R.attr.colorPrimary))),
-                    shape = RoundedCornerShape(50),
-                    shadows = listOf(
-                        Shadow(
-                            radius = LABEL_BACKGROUND_SHADOW_RADIUS_DP.dp,
-                            spread = LABEL_BACKGROUND_SHADOW_SPREAD_DP.dp
-                        )
-                    )
-                ),
-                padding = Insets(
-                    dimensionResource(R.dimen.normal_margin),
-                    dimensionResource(R.dimen.small_margin)
-                ),
-                minWidth = TextComponent.MinWidth.fixed(40.dp)
-            )
-        },
-        guideline = rememberLineComponent(fill = Fill(labelColor)),
-        valueFormatter = markerFormatter ?: remember {
-            DefaultCartesianMarker.ValueFormatter.default(colorCode = false)
-        }
-    )
-    // Scrubbing redraws only a guideline over the chart, not the chart itself (see ChartScrubber). The
-    // Vico marker is kept for a marker with a label (none of the detail screens use one)
-    val useScrubber = markerFormatter == null
-    val scrubber = remember(marker, labelColor) { ChartScrubber(marker, labelColor, markerVisibilityListener) }
-    scrubber.listener = markerVisibilityListener
-    val scrubDecoration = scrubber.decoration.takeIf { useScrubber }
-
-    val timeValueFormatter = remember(location) {
-        CartesianValueFormatter { _, value, _ ->
-            Date(value.toLong()).getFormattedTime(location, context, context.is12Hour)
-        }
-    }
-
-    CartesianChartHost(
-        rememberCartesianChart(
-            rememberColumnCartesianLayer(
-                ColumnCartesianLayer.ColumnProvider.series(
-                    rememberLineComponent(
-                        fill = barColorFill,
-                        thickness = BAR_THICKNESS_DP.dp,
-                        shape = remember { RoundedCornerShape(15) }
-                    )
-                ),
-                rangeProvider = cartesianLayerRangeProvider
-            ),
-            endAxis = VerticalAxis.rememberEnd(
-                line = rememberAxisLineComponent(fill = Fill(lineColor)),
-                label = rememberAxisLabelComponent(style = TextStyle(color = labelColor)),
-                valueFormatter = endAxisValueFormatter,
-                tick = rememberAxisTickComponent(fill = Fill(lineColor)),
-                guideline = rememberAxisGuidelineComponent(fill = Fill(lineColor)),
-                itemPlacer = endAxisItemPlacer
-            ),
-            bottomAxis = HorizontalAxis.rememberBottom(
-                line = rememberAxisLineComponent(fill = Fill(lineColor)),
-                label = rememberAxisLabelComponent(style = TextStyle(color = labelColor)),
-                valueFormatter = timeValueFormatter,
-                tick = rememberAxisTickComponent(fill = Fill(lineColor)),
-                guideline = rememberAxisGuidelineComponent(fill = Fill(lineColor)),
-                itemPlacer = remember {
-                    TimeHorizontalAxisItemPlacer(startingDate, location.timeZone)
-                }
-            ),
-            decorations = listOfNotNull(nowDecoration, scrubDecoration) + if (isTrendHorizontalLinesEnabled) {
-                trendHorizontalLines.entries.map { line ->
-                    HorizontalLine(
-                        y = { line.key },
-                        verticalLabelPosition = Position.Vertical.Bottom,
-                        line = rememberLineComponent(fill = Fill(lineColor)),
-                        labelComponent = rememberTextComponent(style = TextStyle(color = labelColor)),
-                        label = { line.value }
-                    )
-                }
-            } else {
-                emptyList()
-            },
-            marker = marker.takeUnless { useScrubber },
-            markerVisibilityListener = markerVisibilityListener.takeUnless { useScrubber },
-            markerController = CartesianMarkerController.rememberShowOnPress(consumeMoveEvents = true)
-        ),
+    DetailsChart(
+        location = location,
         modelProducer = modelProducer,
+        theDay = theDay,
+        minY = null,
+        maxY = maxY,
+        yLabels = endAxisItemPlacer,
+        endAxisValueFormatter = endAxisValueFormatter,
+        lineColors = persistentListOf(),
+        columnColor = barColor,
+        topAxisValueFormatter = null,
+        topAxisValues = persistentListOf(),
+        topIconValues = persistentListOf(),
+        topIconProvider = { null },
+        topIconTint = null,
+        trendHorizontalLines = trendHorizontalLines,
+        markerVisibilityListener = markerVisibilityListener,
+        highLowLabels = false,
+        height = max(BAR_CHART_HEIGHT_MIN_DP.toFloat(), context.windowHeightInDp.div(3)).dp,
         modifier = modifier
-            .then(if (useScrubber) scrubber.modifier else Modifier)
-            // Its own layer: the chart is costly to draw, and without one it was drawn again whenever
-            // anything else on the page changed (e.g. an animated weather icon, every frame)
-            .graphicsLayer()
-            .height(max(BAR_CHART_HEIGHT_MIN_DP.toFloat(), context.windowHeightInDp.div(3)).dp),
-        scrollState = rememberVicoScrollState(scrollEnabled = false),
-        // No grow-in or change animations: Vico draws lines and fills on the CPU (into bitmaps), so every
-        // animation frame cost ~17 ms and the sheet stuttered while opening. Drawn once, the chart is then
-        // kept in its own layer
-        animationSpec = null,
-        animateIn = false
     )
 }
 
 private const val BAR_CHART_HEIGHT_MIN_DP = 100
-private const val BAR_THICKNESS_DP = 500f
-private const val LABEL_BACKGROUND_SHADOW_RADIUS_DP = 4
-private const val LABEL_BACKGROUND_SHADOW_SPREAD_DP = 2
