@@ -393,7 +393,8 @@ class DailyViewHolder(context: Context) : ComposeCardViewHolder(context) {
             34.0 to 0xFFFF5B4A.toInt() // red
         )
 
-        private fun temperatureColor(celsius: Double): Int {
+        /** Also colors the range bars of the home screen widgets. */
+        internal fun temperatureColor(celsius: Double): Int {
             val first = COLOR_SCALE.first()
             val last = COLOR_SCALE.last()
             if (celsius <= first.first) return first.second

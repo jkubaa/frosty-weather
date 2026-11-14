@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Place name. The current location gets the iOS arrow as an end drawable (set at runtime), so a
+     long name ellipsizes before the arrow instead of pushing it out. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_place"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:drawableEnd="@drawable/ic_widget_location_arrow"
+    android:drawablePadding="4dp"
+    android:ellipsize="end"
+    android:fontFamily="sans-serif-medium"
+    android:includeFontPadding="false"
+    android:maxLines="1"
+    android:text="@string/location_current"
+    android:textColor="#FFFFFFFF"
+    android:textSize="15sp" />

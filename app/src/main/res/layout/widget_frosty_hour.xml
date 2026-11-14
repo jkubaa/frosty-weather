@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One hour of the medium and large widgets: time, icon, temperature -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:gravity="center_horizontal"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/widget_hour_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:maxLines="1"
+        android:text="@string/hourly_now"
+        android:textColor="#D9FFFFFF"
+        android:textSize="12sp" />
+
+    <ImageView
+        android:id="@+id/widget_hour_icon"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/frosted_weather_30" />
+
+    <TextView
+        android:id="@+id/widget_hour_temperature"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:maxLines="1"
+        android:text="21°"
+        android:textColor="#FFFFFFFF"
+        android:textSize="14sp" />
+
+</LinearLayout>

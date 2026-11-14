@@ -208,107 +208,6 @@
             android:theme="@style/BreezyWeatherTheme"
             android:exported="true" />
 
-        <!-- widget -->
-
-        <activity
-            android:name=".remoteviews.config.DayWidgetConfigActivity"
-            android:theme="@style/BreezyWeatherTheme"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".remoteviews.config.WeekWidgetConfigActivity"
-            android:theme="@style/BreezyWeatherTheme"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".remoteviews.config.DayWeekWidgetConfigActivity"
-            android:theme="@style/BreezyWeatherTheme"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".remoteviews.config.ClockDayHorizontalWidgetConfigActivity"
-            android:theme="@style/BreezyWeatherTheme"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".remoteviews.config.ClockDayDetailsWidgetConfigActivity"
-            android:theme="@style/BreezyWeatherTheme"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".remoteviews.config.ClockDayVerticalWidgetConfigActivity"
-            android:theme="@style/BreezyWeatherTheme"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".remoteviews.config.ClockDayWeekWidgetConfigActivity"
-            android:theme="@style/BreezyWeatherTheme"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".remoteviews.config.TextWidgetConfigActivity"
-            android:theme="@style/BreezyWeatherTheme"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".remoteviews.config.DailyTrendWidgetConfigActivity"
-            android:theme="@style/BreezyWeatherTheme"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".remoteviews.config.HourlyTrendWidgetConfigActivity"
-            android:theme="@style/BreezyWeatherTheme"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".remoteviews.config.MultiCityWidgetConfigActivity"
-            android:theme="@style/BreezyWeatherTheme"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
-
         <!-- service -->
         <service
             android:name=".background.interfaces.TileService"
@@ -355,173 +254,38 @@
 
         <!-- widget -->
         <receiver
-            android:name=".background.receiver.widget.WidgetMaterialYouForecastProvider"
-            android:label="@string/widget_material_you_forecast"
+            android:name=".remoteviews.widgets.FrostySmallWidgetProvider"
+            android:label="@string/widget_frosty_small"
             android:exported="true">
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_material_you_forecast" />
+                android:resource="@xml/widget_frosty_small" />
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
-            </intent-filter>
-        </receiver>
-        <receiver
-            android:name=".background.receiver.widget.WidgetMaterialYouCurrentProvider"
-            android:label="@string/widget_material_you_current"
-            android:exported="true">
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_material_you_current" />
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_ENABLED" />
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.APPWIDGET_OPTIONS_CHANGED" />
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE_OPTIONS" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
             </intent-filter>
         </receiver>
 
         <receiver
-            android:name=".background.receiver.widget.WidgetDayProvider"
-            android:label="@string/widget_day"
+            android:name=".remoteviews.widgets.FrostyMediumWidgetProvider"
+            android:label="@string/widget_frosty_medium"
             android:exported="true">
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_day" />
+                android:resource="@xml/widget_frosty_medium" />
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
             </intent-filter>
         </receiver>
 
         <receiver
-            android:name=".background.receiver.widget.WidgetWeekProvider"
-            android:label="@string/widget_week"
+            android:name=".remoteviews.widgets.FrostyLargeWidgetProvider"
+            android:label="@string/widget_frosty_large"
             android:exported="true">
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_week" />
+                android:resource="@xml/widget_frosty_large" />
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".background.receiver.widget.WidgetDayWeekProvider"
-            android:label="@string/widget_day_week"
-            android:exported="true">
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_day_week" />
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".background.receiver.widget.WidgetClockDayHorizontalProvider"
-            android:label="@string/widget_clock_day_horizontal"
-            android:exported="true">
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_clock_day_horizontal" />
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".background.receiver.widget.WidgetClockDayDetailsProvider"
-            android:label="@string/widget_clock_day_details"
-            android:exported="true">
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_clock_day_details" />
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".background.receiver.widget.WidgetClockDayVerticalProvider"
-            android:label="@string/widget_clock_day_vertical"
-            android:exported="true">
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_clock_day_vertical" />
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".background.receiver.widget.WidgetClockDayWeekProvider"
-            android:label="@string/widget_clock_day_week"
-            android:exported="true">
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_clock_day_week" />
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".background.receiver.widget.WidgetTextProvider"
-            android:label="@string/widget_text"
-            android:exported="true">
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_text" />
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".background.receiver.widget.WidgetTrendDailyProvider"
-            android:label="@string/widget_trend_daily"
-            android:exported="true">
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_trend_daily" />
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".background.receiver.widget.WidgetTrendHourlyProvider"
-            android:label="@string/widget_trend_hourly"
-            android:exported="true">
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_trend_hourly" />
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
-            android:name=".background.receiver.widget.WidgetMultiCityProvider"
-            android:label="@string/widget_multi_city"
-            android:exported="true">
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_multi_city" />
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.ACTION_APPWIDGET_DISABLED" />
             </intent-filter>
         </receiver>
 

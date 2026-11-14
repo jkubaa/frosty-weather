@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Small (2x2) widget, iOS Weather style: place and temperature at the top; icon, condition and
+     high/low pinned to the bottom, so they stay visible on launchers with short cells -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToOutline="true">
+
+    <ImageView
+        android:id="@+id/widget_sky"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_frosty_sky_preview" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="16dp">
+
+        <include layout="@layout/widget_frosty_place" />
+
+        <TextView
+            android:id="@+id/widget_temperature"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-light"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="21°"
+            android:textColor="#FFFFFFFF"
+            android:textSize="42sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="14dp">
+
+        <ImageView
+            android:id="@+id/widget_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="-2dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/frosted_weather_30" />
+
+        <TextView
+            android:id="@+id/widget_condition"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="@string/weather_kind_partly_cloudy"
+            android:textColor="#FFFFFFFF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/widget_high_low"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:fontFamily="sans-serif-medium"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="H:24°  L:13°"
+            android:textColor="#FFFFFFFF"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+
+</FrameLayout>

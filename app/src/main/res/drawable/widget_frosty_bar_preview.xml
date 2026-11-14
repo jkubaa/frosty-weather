@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget picker preview of a day's temperature range bar -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:height="4dp"
+        android:gravity="center_vertical">
+        <shape android:shape="rectangle">
+            <corners android:radius="2dp" />
+            <solid android:color="#2EFFFFFF" />
+        </shape>
+    </item>
+    <item
+        android:height="4dp"
+        android:gravity="center_vertical"
+        android:left="18dp"
+        android:right="14dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="2dp" />
+            <gradient
+                android:centerColor="#FF8EDB5A"
+                android:endColor="#FFF5D547"
+                android:startColor="#FF4FD6C8" />
+        </shape>
+    </item>
+</layer-list>

@@ -104,4 +104,8 @@
     <dimen name="widget_material_you_current_default_icon_size">75dp</dimen>
     <dimen name="widget_material_you_current_default_icon_margin">25dp</dimen>
 
+
+    <!-- Frosty widgets: corner radius before Android 12 (later ones use the system radius) -->
+    <dimen name="frosty_widget_radius">22dp</dimen>
+
 </resources>

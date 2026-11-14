@@ -62,7 +62,6 @@ import org.breezyweather.common.source.WeatherResult
 import org.breezyweather.domain.location.model.getPlace
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.remoteviews.Notifications
-import org.breezyweather.remoteviews.presenters.MultiCityWidgetIMP
 import org.breezyweather.sources.RefreshHelper
 import org.breezyweather.sources.SourceManager
 import org.breezyweather.ui.main.utils.RefreshErrorType
@@ -186,7 +185,6 @@ class WeatherUpdateJob @AssistedInject constructor(
                 SettingsManager.getInstance(context).isWidgetNotificationEnabled &&
                     SettingsManager.getInstance(context).widgetNotificationStyle == NotificationStyle.CITIES ->
                     locationRepository.getXLocations(4)
-                MultiCityWidgetIMP.isInUse(context) -> locationRepository.getXLocations(3)
                 else -> locationRepository.getXLocations(1)
             }
 

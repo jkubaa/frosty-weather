@@ -670,6 +670,12 @@
     <string name="widget_multi_city">Multi city</string>
     <string name="widget_material_you_forecast">Material You – Forecast</string>
     <string name="widget_material_you_current">Material You – Current</string>
+    <string name="widget_frosty_small">Conditions</string>
+    <string name="widget_frosty_small_description">Current temperature and conditions, with today\'s high and low.</string>
+    <string name="widget_frosty_medium">Hourly forecast</string>
+    <string name="widget_frosty_medium_description">Current conditions and the next hours.</string>
+    <string name="widget_frosty_large">Forecast</string>
+    <string name="widget_frosty_large_description">Current conditions, the next hours and the next days.</string>
     <string name="widget_refreshing">Refreshing</string>
     <string name="widget_ellipsis">…</string>
     <string name="widget_label_view_style">View style</string>

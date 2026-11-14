@@ -43,28 +43,6 @@ import org.breezyweather.common.source.BroadcastSource
 import org.breezyweather.common.utils.helpers.SnackbarHelper
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.domain.settings.SourceConfigStore
-import org.breezyweather.remoteviews.config.ClockDayDetailsWidgetConfigActivity
-import org.breezyweather.remoteviews.config.ClockDayHorizontalWidgetConfigActivity
-import org.breezyweather.remoteviews.config.ClockDayVerticalWidgetConfigActivity
-import org.breezyweather.remoteviews.config.ClockDayWeekWidgetConfigActivity
-import org.breezyweather.remoteviews.config.DailyTrendWidgetConfigActivity
-import org.breezyweather.remoteviews.config.DayWeekWidgetConfigActivity
-import org.breezyweather.remoteviews.config.DayWidgetConfigActivity
-import org.breezyweather.remoteviews.config.HourlyTrendWidgetConfigActivity
-import org.breezyweather.remoteviews.config.MultiCityWidgetConfigActivity
-import org.breezyweather.remoteviews.config.TextWidgetConfigActivity
-import org.breezyweather.remoteviews.config.WeekWidgetConfigActivity
-import org.breezyweather.remoteviews.presenters.ClockDayDetailsWidgetIMP
-import org.breezyweather.remoteviews.presenters.ClockDayHorizontalWidgetIMP
-import org.breezyweather.remoteviews.presenters.ClockDayVerticalWidgetIMP
-import org.breezyweather.remoteviews.presenters.ClockDayWeekWidgetIMP
-import org.breezyweather.remoteviews.presenters.DailyTrendWidgetIMP
-import org.breezyweather.remoteviews.presenters.DayWeekWidgetIMP
-import org.breezyweather.remoteviews.presenters.DayWidgetIMP
-import org.breezyweather.remoteviews.presenters.HourlyTrendWidgetIMP
-import org.breezyweather.remoteviews.presenters.MultiCityWidgetIMP
-import org.breezyweather.remoteviews.presenters.TextWidgetIMP
-import org.breezyweather.remoteviews.presenters.WeekWidgetIMP
 import org.breezyweather.remoteviews.presenters.notification.WidgetNotificationIMP
 import org.breezyweather.ui.common.composables.AnimatedVisibilitySlideVertically
 import org.breezyweather.ui.common.widgets.Material3Scaffold
@@ -185,62 +163,6 @@ fun ModulesSettingsScreen(
             }
             smallSeparatorItem()
             sectionFooterItem(R.string.settings_modules_section_general)
-
-            val widgetsInUse = buildList {
-                if (DayWidgetIMP.isInUse(context)) {
-                    add(Pair(R.string.widget_day, DayWidgetConfigActivity::class.java))
-                }
-                if (WeekWidgetIMP.isInUse(context)) {
-                    add(Pair(R.string.widget_week, WeekWidgetConfigActivity::class.java))
-                }
-                if (DayWeekWidgetIMP.isInUse(context)) {
-                    add(Pair(R.string.widget_day_week, DayWeekWidgetConfigActivity::class.java))
-                }
-                if (ClockDayHorizontalWidgetIMP.isInUse(context)) {
-                    add(Pair(R.string.widget_clock_day_horizontal, ClockDayHorizontalWidgetConfigActivity::class.java))
-                }
-                if (ClockDayDetailsWidgetIMP.isInUse(context)) {
-                    add(Pair(R.string.widget_clock_day_details, ClockDayDetailsWidgetConfigActivity::class.java))
-                }
-                if (ClockDayVerticalWidgetIMP.isInUse(context)) {
-                    add(Pair(R.string.widget_clock_day_vertical, ClockDayVerticalWidgetConfigActivity::class.java))
-                }
-                if (ClockDayWeekWidgetIMP.isInUse(context)) {
-                    add(Pair(R.string.widget_clock_day_week, ClockDayWeekWidgetConfigActivity::class.java))
-                }
-                if (TextWidgetIMP.isInUse(context)) {
-                    add(Pair(R.string.widget_text, TextWidgetConfigActivity::class.java))
-                }
-                if (DailyTrendWidgetIMP.isInUse(context)) {
-                    add(Pair(R.string.widget_trend_daily, DailyTrendWidgetConfigActivity::class.java))
-                }
-                if (HourlyTrendWidgetIMP.isInUse(context)) {
-                    add(Pair(R.string.widget_trend_hourly, HourlyTrendWidgetConfigActivity::class.java))
-                }
-                if (MultiCityWidgetIMP.isInUse(context)) {
-                    add(Pair(R.string.widget_multi_city, MultiCityWidgetConfigActivity::class.java))
-                }
-            }
-            if (widgetsInUse.isNotEmpty()) {
-                largeSeparatorItem()
-                sectionHeaderItem(R.string.settings_modules_section_widgets_in_use)
-                widgetsInUse.forEachIndexed { index, widget ->
-                    clickablePreferenceItem(widget.first) {
-                        PreferenceViewWithCard(
-                            title = stringResource(it),
-                            summary = stringResource(R.string.settings_modules_configure_widget_summary),
-                            isFirst = index == 0,
-                            isLast = index == widgetsInUse.lastIndex
-                        ) {
-                            context.startActivity(Intent(context, widget.second))
-                        }
-                    }
-                    if (index != widgetsInUse.lastIndex) {
-                        smallSeparatorItem()
-                    }
-                }
-                sectionFooterItem(R.string.settings_modules_section_widgets_in_use)
-            }
 
             largeSeparatorItem()
 

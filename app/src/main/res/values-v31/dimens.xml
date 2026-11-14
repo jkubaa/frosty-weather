@@ -3,4 +3,6 @@
     <dimen name="material3_widget_corner_radius">@android:dimen/system_app_widget_background_radius</dimen>
     <dimen name="material3_widget_inner_radius">@android:dimen/system_app_widget_inner_radius</dimen>
 
+    <dimen name="frosty_widget_radius">@android:dimen/system_app_widget_background_radius</dimen>
+
 </resources>
