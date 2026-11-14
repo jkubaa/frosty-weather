@@ -62,6 +62,16 @@ configure<ApplicationExtension> {
             isCrunchPngs = false // No need to do that, we already optimized them
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
+        // Release speed on the debug app (same id and signing, so it installs over it and keeps its data):
+        // debug builds are far slower in Compose, which hides how smooth the app really is
+        create("fastDebug") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-r${getCommitCount()}"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isProfileable = true
+        }
     }
 
     val localProperties = Properties()

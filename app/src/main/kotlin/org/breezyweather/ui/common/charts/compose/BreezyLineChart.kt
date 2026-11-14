@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.toArgb
@@ -47,7 +48,6 @@ import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvi
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.cartesian.decoration.HorizontalLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerController
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
@@ -141,14 +141,16 @@ fun BreezyLineChart(
     val startingDate = remember(theDay) {
         theDay.toTimezoneSpecificHour(location.timeZone, 0)
     }
-    val cartesianLayerRangeProvider = CartesianLayerRangeProvider.fixed(
-        minX = startingDate.time.toDouble(),
-        maxX = theDay.toCalendarWithTimeZone(location.timeZone).apply {
-            add(Calendar.DAY_OF_MONTH, 1)
-        }.time.toTimezoneSpecificHour(location.timeZone, 0).time.toDouble(),
-        minY = minY,
-        maxY = maxY
-    )
+    val cartesianLayerRangeProvider = remember(theDay, minY, maxY) {
+        CartesianLayerRangeProvider.fixed(
+            minX = startingDate.time.toDouble(),
+            maxX = theDay.toCalendarWithTimeZone(location.timeZone).apply {
+                add(Calendar.DAY_OF_MONTH, 1)
+            }.time.toTimezoneSpecificHour(location.timeZone, 0).time.toDouble(),
+            minY = minY,
+            maxY = maxY
+        )
+    }
     val palette = LocalDetailsPalette.current
     val lineColor = palette.grid
     val labelColor = palette.secondaryText
@@ -201,9 +203,17 @@ fun BreezyLineChart(
             DefaultCartesianMarker.ValueFormatter.default(colorCode = false)
         }
     )
+    // Scrubbing redraws only a guideline over the chart, not the chart itself (see ChartScrubber). The
+    // Vico marker is kept for a marker with a label (none of the detail screens use one)
+    val useScrubber = markerFormatter == null
+    val scrubber = remember(marker, labelColor) { ChartScrubber(marker, labelColor, markerVisibilityListener) }
+    scrubber.listener = markerVisibilityListener
+    val scrubDecoration = scrubber.decoration.takeIf { useScrubber }
 
-    val timeValueFormatter = CartesianValueFormatter { _, value, _ ->
-        Date(value.toLong()).getFormattedTime(location, context, context.is12Hour)
+    val timeValueFormatter = remember(location) {
+        CartesianValueFormatter { _, value, _ ->
+            Date(value.toLong()).getFormattedTime(location, context, context.is12Hour)
+        }
     }
 
     // Reuses the same item placer a top HorizontalAxis would use, so icon spacing matches what
@@ -228,37 +238,31 @@ fun BreezyLineChart(
             rememberLineCartesianLayer(
                 LineCartesianLayer.LineProvider.series(
                     colors.mapIndexed { index, colorList ->
-                        LineCartesianLayer.rememberLine(
-                            fill = LineCartesianLayer.LineFill.colorScale(
-                                if (context.isRtl) {
-                                    Axis.Position.Vertical.Start
-                                } else {
-                                    Axis.Position.Vertical.End
-                                }
-                            ) {
-                                colorList.entries.forEach {
-                                    it.value at it.key
-                                }
-                            },
-                            areaFill = if (index == 0) {
-                                LineCartesianLayer.AreaFill.colorScale(
-                                    if (context.isRtl) {
-                                        Axis.Position.Vertical.Start
-                                    } else {
-                                        Axis.Position.Vertical.End
-                                    }
-                                ) {
-                                    colorList.entries.forEach {
-                                        Color(
-                                            ColorUtils.setAlphaComponent(it.value.toArgb(), (255 * 0.45).roundToInt())
-                                        ) at it.key
-                                    }
-                                }
+                        // Drawn on the canvas rather than in software (see GradientLine): Vico's colour-scale
+                        // line cost ~17 ms per draw, every frame while dragging the marker
+                        remember(colorList, index, context.isRtl) {
+                            val axisPosition = if (context.isRtl) {
+                                Axis.Position.Vertical.Start
                             } else {
-                                null
-                            },
-                            stroke = LineCartesianLayer.LineStroke.Continuous(LINE_THICKNESS_DP.dp)
-                        )
+                                Axis.Position.Vertical.End
+                            }
+                            GradientLine(
+                                colors = colorList,
+                                verticalAxisPosition = axisPosition,
+                                stroke = LineCartesianLayer.LineStroke.Continuous(LINE_THICKNESS_DP.dp),
+                                areaFill = if (index == 0) {
+                                    LineCartesianLayer.AreaFill.colorScale(axisPosition) {
+                                        colorList.entries.forEach {
+                                            Color(
+                                                ColorUtils.setAlphaComponent(it.value.toArgb(), (255 * 0.45).roundToInt())
+                                            ) at it.key
+                                        }
+                                    }
+                                } else {
+                                    null
+                                }
+                            )
+                        }
                     }
                 ),
                 rangeProvider = cartesianLayerRangeProvider
@@ -295,7 +299,7 @@ fun BreezyLineChart(
             persistentMarkers = topIconMarker?.let { iconMarker ->
                 { _ -> topIconValues.forEach { iconMarker at it } }
             },
-            decorations = listOf(nowDecoration) + if (isTrendHorizontalLinesEnabled) {
+            decorations = listOfNotNull(nowDecoration, scrubDecoration) + if (isTrendHorizontalLinesEnabled) {
                 trendHorizontalLines.entries.map { line ->
                     HorizontalLine(
                         y = { line.key },
@@ -308,15 +312,23 @@ fun BreezyLineChart(
             } else {
                 emptyList()
             },
-            marker = marker,
-            markerVisibilityListener = markerVisibilityListener,
+            marker = marker.takeUnless { useScrubber },
+            markerVisibilityListener = markerVisibilityListener.takeUnless { useScrubber },
             markerController = CartesianMarkerController.rememberShowOnPress(consumeMoveEvents = true)
         ),
         modelProducer = modelProducer,
         modifier = modifier
+            .then(if (useScrubber) scrubber.modifier else Modifier)
+            // Its own layer: the chart is costly to draw, and without one it was drawn again whenever
+            // anything else on the page changed (e.g. an animated weather icon, every frame)
+            .graphicsLayer()
             .height(max(LINE_CHART_HEIGHT_MIN_DP.toFloat(), context.windowHeightInDp.div(3)).dp),
         scrollState = rememberVicoScrollState(scrollEnabled = false),
-        animateIn = SettingsManager.getInstance(context).isElementsAnimationEnabled
+        // No grow-in or change animations: Vico draws lines and fills on the CPU (into bitmaps), so every
+        // animation frame cost ~17 ms and the sheet stuttered while opening. Drawn once, the chart is then
+        // kept in its own layer
+        animationSpec = null,
+        animateIn = false
     )
 }
 

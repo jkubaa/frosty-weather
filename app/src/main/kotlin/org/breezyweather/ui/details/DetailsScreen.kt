@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.HorizontalPager
@@ -50,21 +49,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import breezyweather.domain.location.model.Location
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.breezyweather.R
 import org.breezyweather.common.extensions.getCalendarMonth
@@ -92,7 +94,6 @@ import org.breezyweather.ui.details.components.sunHeadline
 import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
 import java.util.Calendar
-import kotlin.math.roundToInt
 
 /**
  * Detail screens, presented as an Apple Weather-style sheet over the home screen: a close button and
@@ -130,6 +131,11 @@ internal fun DailyWeatherScreen(
     }
     BackHandler { dismiss() }
     LaunchedEffect(Unit) {
+        // Slide up only once the content is there and composed: composing the charts in the middle of
+        // the animation (when the data arrived) made it stutter
+        detailsViewModel.uiState.first { it.location != null }
+        withFrameNanos { } // The frame that composes the content
+        withFrameNanos { } // Then animate from a frame that isn't slowed down by it
         sheetPosition.animateTo(0f, spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow))
     }
 
@@ -197,7 +203,9 @@ internal fun DailyWeatherScreen(
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.45f * (1f - sheetPosition.value)))
+                        // Read in draw only: reading the position here recomposed the whole sheet (charts
+                        // included) on every frame of its animation
+                        .drawBehind { drawRect(Color.Black.copy(alpha = 0.45f * (1f - sheetPosition.value))) }
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -209,7 +217,8 @@ internal fun DailyWeatherScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 10.dp)
-                        .offset { IntOffset(0, (sheetPosition.value * heightPx).roundToInt()) }
+                        // Moved as a layer: the sheet isn't laid out or redrawn again while it slides
+                        .graphicsLayer { translationY = sheetPosition.value * heightPx }
                         .clip(RoundedCornerShape(topStart = 34.dp, topEnd = 34.dp))
                         .background(palette.sheet)
                         .clickable(
@@ -310,11 +319,21 @@ private fun DetailsSheetContent(
                     dates = pages,
                     selected = pagerPage,
                     todayIndex = todayIndex,
-                    onSelect = { scope.launch { pagerState.animateScrollToPage(it) } }
+                    onSelect = { day ->
+                        scope.launch {
+                            // A far day: jump next to it first, so the slide doesn't build every day in between
+                            if (kotlin.math.abs(day - pagerState.currentPage) > 1) {
+                                pagerState.scrollToPage(if (day > pagerState.currentPage) day - 1 else day + 1)
+                            }
+                            pagerState.animateScrollToPage(day)
+                        }
+                    }
                 )
             }
             CompositionLocalProvider(LocalDetailsMetricSwitcher provides metricSwitcher) {
-                HorizontalPager(state = pagerState) { page ->
+                // The days on each side are built (and their charts drawn) ahead of time: built as they slid
+                // in, the swipe to the next day stuttered
+                HorizontalPager(state = pagerState, beyondViewportPageCount = 1) { page ->
                     DailyPagerContent(
                         location = location,
                         selected = page,

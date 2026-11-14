@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -105,13 +106,15 @@ fun BreezyBarChart(
     val startingDate = remember(theDay) {
         theDay.toTimezoneSpecificHour(location.timeZone, 0)
     }
-    val cartesianLayerRangeProvider = CartesianLayerRangeProvider.fixed(
-        minX = startingDate.time.toDouble(),
-        maxX = theDay.toCalendarWithTimeZone(location.timeZone).apply {
-            add(Calendar.DAY_OF_MONTH, 1)
-        }.time.toTimezoneSpecificHour(location.timeZone, 0).time.toDouble(),
-        maxY = maxY
-    )
+    val cartesianLayerRangeProvider = remember(theDay, maxY) {
+        CartesianLayerRangeProvider.fixed(
+            minX = startingDate.time.toDouble(),
+            maxX = theDay.toCalendarWithTimeZone(location.timeZone).apply {
+                add(Calendar.DAY_OF_MONTH, 1)
+            }.time.toTimezoneSpecificHour(location.timeZone, 0).time.toDouble(),
+            maxY = maxY
+        )
+    }
 
     val palette = LocalDetailsPalette.current
     val lineColor = palette.grid
@@ -167,9 +170,17 @@ fun BreezyBarChart(
             DefaultCartesianMarker.ValueFormatter.default(colorCode = false)
         }
     )
+    // Scrubbing redraws only a guideline over the chart, not the chart itself (see ChartScrubber). The
+    // Vico marker is kept for a marker with a label (none of the detail screens use one)
+    val useScrubber = markerFormatter == null
+    val scrubber = remember(marker, labelColor) { ChartScrubber(marker, labelColor, markerVisibilityListener) }
+    scrubber.listener = markerVisibilityListener
+    val scrubDecoration = scrubber.decoration.takeIf { useScrubber }
 
-    val timeValueFormatter = CartesianValueFormatter { _, value, _ ->
-        Date(value.toLong()).getFormattedTime(location, context, context.is12Hour)
+    val timeValueFormatter = remember(location) {
+        CartesianValueFormatter { _, value, _ ->
+            Date(value.toLong()).getFormattedTime(location, context, context.is12Hour)
+        }
     }
 
     CartesianChartHost(
@@ -202,7 +213,7 @@ fun BreezyBarChart(
                     TimeHorizontalAxisItemPlacer(startingDate, location.timeZone)
                 }
             ),
-            decorations = listOf(nowDecoration) + if (isTrendHorizontalLinesEnabled) {
+            decorations = listOfNotNull(nowDecoration, scrubDecoration) + if (isTrendHorizontalLinesEnabled) {
                 trendHorizontalLines.entries.map { line ->
                     HorizontalLine(
                         y = { line.key },
@@ -215,15 +226,23 @@ fun BreezyBarChart(
             } else {
                 emptyList()
             },
-            marker = marker,
-            markerVisibilityListener = markerVisibilityListener,
+            marker = marker.takeUnless { useScrubber },
+            markerVisibilityListener = markerVisibilityListener.takeUnless { useScrubber },
             markerController = CartesianMarkerController.rememberShowOnPress(consumeMoveEvents = true)
         ),
         modelProducer = modelProducer,
         modifier = modifier
+            .then(if (useScrubber) scrubber.modifier else Modifier)
+            // Its own layer: the chart is costly to draw, and without one it was drawn again whenever
+            // anything else on the page changed (e.g. an animated weather icon, every frame)
+            .graphicsLayer()
             .height(max(BAR_CHART_HEIGHT_MIN_DP.toFloat(), context.windowHeightInDp.div(3)).dp),
         scrollState = rememberVicoScrollState(scrollEnabled = false),
-        animateIn = SettingsManager.getInstance(context).isElementsAnimationEnabled
+        // No grow-in or change animations: Vico draws lines and fills on the CPU (into bitmaps), so every
+        // animation frame cost ~17 ms and the sheet stuttered while opening. Drawn once, the chart is then
+        // kept in its own layer
+        animationSpec = null,
+        animateIn = false
     )
 }
 

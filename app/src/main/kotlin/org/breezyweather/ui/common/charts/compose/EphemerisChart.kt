@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.TextStyle
@@ -39,7 +40,6 @@ import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProdu
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerController
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
@@ -53,7 +53,6 @@ import org.breezyweather.common.extensions.is12Hour
 import org.breezyweather.common.extensions.isRtl
 import org.breezyweather.common.extensions.toDate
 import org.breezyweather.common.extensions.windowHeightInDp
-import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.ui.theme.ThemeManager
 import java.util.Date
 import kotlin.math.PI
@@ -101,36 +100,36 @@ fun EphemerisChart(
             rememberLineCartesianLayer(
                 LineCartesianLayer.LineProvider.series(
                     lineColors.map { fillColor ->
-                        LineCartesianLayer.rememberLine(
-                            fill = LineCartesianLayer.LineFill.colorScale(
-                                if (context.isRtl) {
+                        // Drawn on the canvas rather than in software (see GradientLine)
+                        remember(fillColor, context.isRtl) {
+                            GradientLine(
+                                colors = mapOf(
+                                    0.1f to Color(fillColor),
+                                    -0.1f to Color(ColorUtils.setAlphaComponent(fillColor, (255 * 0.5).roundToInt()))
+                                ),
+                                verticalAxisPosition = if (context.isRtl) {
                                     Axis.Position.Vertical.Start
                                 } else {
                                     Axis.Position.Vertical.End
-                                }
-                            ) {
-                                Color(fillColor) at 0.1f
-                                Color(
-                                    ColorUtils.setAlphaComponent(fillColor, (255 * 0.5).roundToInt())
-                                ) at -0.1f
-                            },
-                            stroke = LineCartesianLayer.LineStroke.Continuous(LINE_THICKNESS_DP.dp),
-                            areaFill = LineCartesianLayer.AreaFill.colorScale(
-                                if (context.isRtl) {
-                                    Axis.Position.Vertical.Start
-                                } else {
-                                    Axis.Position.Vertical.End
-                                }
-                            ) {
-                                Color(
-                                    ColorUtils.setAlphaComponent(fillColor, (255 * 0.5).roundToInt())
-                                ) at 0.1f
-                                Color.Transparent at -0.1f
-                            },
-                            interpolator = LineCartesianLayer.Interpolator.cubic(
-                                curvature = ((PI - 2.0) / PI).toFloat()
+                                },
+                                stroke = LineCartesianLayer.LineStroke.Continuous(LINE_THICKNESS_DP.dp),
+                                areaFill = LineCartesianLayer.AreaFill.colorScale(
+                                    if (context.isRtl) {
+                                        Axis.Position.Vertical.Start
+                                    } else {
+                                        Axis.Position.Vertical.End
+                                    }
+                                ) {
+                                    Color(
+                                        ColorUtils.setAlphaComponent(fillColor, (255 * 0.5).roundToInt())
+                                    ) at 0.1f
+                                    Color.Transparent at -0.1f
+                                },
+                                interpolator = LineCartesianLayer.Interpolator.cubic(
+                                    curvature = ((PI - 2.0) / PI).toFloat()
+                                )
                             )
-                        )
+                        }
                     }
                 ),
                 rangeProvider = cartesianLayerRangeProvider
@@ -159,9 +158,14 @@ fun EphemerisChart(
         ),
         modelProducer = modelProducer,
         modifier = modifier
+            .graphicsLayer() // Own layer, drawn once (see BreezyLineChart)
             .height(max(LINE_CHART_HEIGHT_MIN_DP.toFloat(), context.windowHeightInDp.div(4)).dp),
         scrollState = rememberVicoScrollState(scrollEnabled = false),
-        animateIn = SettingsManager.getInstance(context).isElementsAnimationEnabled
+        // No grow-in or change animations: Vico draws lines and fills on the CPU (into bitmaps), so every
+        // animation frame cost ~17 ms and the sheet stuttered while opening. Drawn once, the chart is then
+        // kept in its own layer
+        animationSpec = null,
+        animateIn = false
     )
 }
 

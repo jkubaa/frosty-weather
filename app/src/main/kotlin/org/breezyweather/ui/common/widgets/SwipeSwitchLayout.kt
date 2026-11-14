@@ -186,6 +186,13 @@ class SwipeSwitchLayout @JvmOverloads constructor(
     private fun startTouch(ev: MotionEvent) {
         // Grabbing the page mid-animation takes it from where it is
         cancelSettle()
+        // A slide-in still waiting to start: the page is grabbed before it showed, show it in place
+        mPageAnimation?.takeIf { !it.isStarted }?.let {
+            mPageAnimation = null
+            mTarget?.translationX = 0f
+            mTarget?.alpha = 1f
+            onContentMoved?.invoke()
+        }
         mDownX = ev.x
         mDownY = ev.y
         mLastX = ev.x
@@ -227,6 +234,7 @@ class SwipeSwitchLayout @JvmOverloads constructor(
             slideIn(enterDirection)
         } else {
             mPageAnimation?.cancel()
+            mPageAnimation = null
             mSwipeDistance = 0f
             applyDistance()
         }
@@ -334,14 +342,20 @@ class SwipeSwitchLayout @JvmOverloads constructor(
     private fun slideIn(swipeDirection: Int) {
         mPageAnimation?.cancel()
         val start = -swipeDirection * width * ENTER_OFFSET_RATIO
-        mPageAnimation = ValueAnimator.ofFloat(0f, 1f).apply {
+        // Hidden where it starts from while the new location's cards are built: that first frame is a
+        // long one, and an animation already running through it would jump ahead, skipping its start
+        mSwipeDistance = 0f
+        mTarget?.translationX = start
+        mTarget?.alpha = 0f
+        onContentMoved?.invoke()
+        val animation = ValueAnimator.ofFloat(0f, 1f).apply {
             duration = 280
             interpolator = DecelerateInterpolator(1.6f)
             addUpdateListener {
                 val f = it.animatedValue as Float
                 mSwipeDistance = 0f
                 mTarget?.translationX = start * (1f - f)
-                mTarget?.alpha = 0.3f + 0.7f * f
+                mTarget?.alpha = min(1f, 0.15f + 1.1f * f)
                 onContentMoved?.invoke()
             }
             addListener(object : AnimatorListenerAdapter() {
@@ -352,7 +366,14 @@ class SwipeSwitchLayout @JvmOverloads constructor(
                     mSwitchListener?.onSwiped(SWIPE_DIRECTION_LEFT, 0f)
                 }
             })
-        }.also { it.start() }
+        }
+        mPageAnimation = animation
+        // Starts on the frame after the one that builds the new cards (the content is rebuilt after this)
+        postOnAnimation {
+            postOnAnimation {
+                if (mPageAnimation === animation && !animation.isStarted) animation.start()
+            }
+        }
     }
 
     // interface.

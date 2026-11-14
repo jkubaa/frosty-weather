@@ -56,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
@@ -742,7 +743,7 @@ fun WeatherCondition(
         modifier = modifier.fillMaxWidth()
     ) {
         if (weatherCode != null) {
-            val provider = ResourcesProviderFactory.newInstance
+            val provider = remember { ResourcesProviderFactory.newInstance }
             if (animated) {
                 AndroidView(
                     factory = {
@@ -757,12 +758,16 @@ fun WeatherCondition(
                             }
                         }
                     },
+                    // Own layer: its animation then redraws only the icon, not the page around it
                     modifier = Modifier
+                        .graphicsLayer()
                         .size(dimensionResource(R.dimen.small_weather_icon_size))
                 )
             } else {
                 Image(
-                    bitmap = provider.getWeatherIcon(weatherCode, isDaytime).toBitmap().asImageBitmap(),
+                    bitmap = remember(provider, weatherCode, isDaytime) {
+                        provider.getWeatherIcon(weatherCode, isDaytime).toBitmap().asImageBitmap()
+                    },
                     contentDescription = null,
                     modifier = Modifier
                         .size(dimensionResource(R.dimen.small_weather_icon_size))
@@ -790,7 +795,7 @@ private fun TemperatureChart(
 ) {
     val context = LocalContext.current
 
-    val provider = ResourcesProviderFactory.newInstance
+    val provider = remember { ResourcesProviderFactory.newInstance }
     val step = temperatureUnit.chartStep
     val minY = remember(mappedValues, showRealTemp, normals) {
         if (showRealTemp) {

@@ -19,6 +19,7 @@ package org.breezyweather.ui.main.fragments
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -72,6 +73,9 @@ class HomeFragment : MainModuleFragment() {
     private var lastCurrentLocation: Location? = null
     private var toolbarTitleFraction = 0f
 
+    /** Night mode bits of the configuration the views were last composed with. */
+    private var composedNightMode = Configuration.UI_MODE_NIGHT_UNDEFINED
+
     interface Callback {
         fun onEditIconClicked()
         fun onManageIconClicked()
@@ -84,6 +88,7 @@ class HomeFragment : MainModuleFragment() {
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentHomeBinding.inflate(layoutInflater, container, false)
+        composedNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
 
         initModel()
 
@@ -176,6 +181,24 @@ class HomeFragment : MainModuleFragment() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        val nightMode = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        if (nightMode != composedNightMode && isFragmentViewCreated) {
+            composedNightMode = nightMode
+            // Day and night themes now switch in place (MainActivity handles uiMode changes, see the
+            // manifest) instead of restarting the whole activity mid-swipe, between a day and a night
+            // location. These views read theme colours as they compose: compose them again
+            binding.cardsView.disposeComposition()
+            binding.topBar.disposeComposition()
+            binding.bottomBarContent.disposeComposition()
+            listOf(binding.cardsView, binding.topBar, binding.bottomBarContent).forEach { it.requestLayout() }
+            TypedValue().takeIf {
+                requireContext().theme.resolveAttribute(
+                    com.google.android.material.R.attr.textAppearanceTitleLarge,
+                    it,
+                    true
+                )
+            }?.let { binding.emptyText.setTextAppearance(it.resourceId) }
+        }
         updateDayNightColors()
         updateViews()
     }

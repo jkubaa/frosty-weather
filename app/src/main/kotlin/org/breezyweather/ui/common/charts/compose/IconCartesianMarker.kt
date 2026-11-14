@@ -81,6 +81,10 @@ class IconCartesianMarker(
     private val iconProvider: (x: Double) -> ImageBitmap?,
 ) : CartesianMarker {
 
+    // Icons are rasterized once per x value: the provider makes a new bitmap from a drawable, and the
+    // chart draws again on every frame of its animations (and of the sheet's)
+    private val icons = HashMap<Double, ImageBitmap?>()
+
     private val paint = Paint().apply {
         tint?.let { colorFilter = ColorFilter.tint(it, BlendMode.SrcAtop) }
     }
@@ -105,7 +109,7 @@ class IconCartesianMarker(
 
             targets.forEach { target ->
                 if (selectedValues.none { it == target.x }) return@forEach
-                val bitmap = iconProvider(target.x) ?: return@forEach
+                val bitmap = icons.getOrPut(target.x) { iconProvider(target.x) } ?: return@forEach
                 canvas.drawImageRect(
                     image = bitmap,
                     dstOffset = IntOffset((target.canvasX - iconSizePx / 2f).roundToInt(), top),
