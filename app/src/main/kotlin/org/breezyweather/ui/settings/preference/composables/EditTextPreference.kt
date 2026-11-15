@@ -27,12 +27,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
+import org.breezyweather.ui.common.composables.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import org.breezyweather.ui.common.composables.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +44,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import org.breezyweather.R
+import org.breezyweather.ui.common.frosty.FrostyChevron
+import org.breezyweather.ui.common.frosty.FrostyFootnote
+import org.breezyweather.ui.common.frosty.FrostyRow
+import org.breezyweather.ui.common.frosty.FrostyTextField
+import org.breezyweather.ui.common.frosty.frostyColors
 import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
 import org.breezyweather.ui.common.widgets.defaultCardListItemElevation
 import org.breezyweather.ui.theme.compose.themeRipple
@@ -101,99 +106,53 @@ fun EditTextPreferenceView(
     val contentState = remember { mutableStateOf(content) }
     val dialogOpenState = remember { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .alpha(if (enabled) 1f else 0.5f)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = themeRipple(),
-                onClick = { dialogOpenState.value = true },
-                enabled = enabled
-            )
-            .padding(dimensionResource(R.dimen.normal_margin)),
-        verticalArrangement = Arrangement.Center
-    ) {
-        Column {
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleMedium
-            )
-            val currentSummary = summary(LocalContext.current, contentState.value)
-            if (currentSummary?.isNotEmpty() == true) {
-                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.small_margin)))
-                Text(
-                    text = currentSummary,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
-    }
+    val currentSummary = summary(LocalContext.current, contentState.value)
+    FrostyRow(
+        title = title,
+        summary = currentSummary,
+        enabled = enabled,
+        modifier = modifier,
+        onClick = { dialogOpenState.value = true },
+        trailing = { FrostyChevron() }
+    )
 
     if (dialogOpenState.value) {
         val inputState = remember { mutableStateOf(contentState.value) }
+        val invalid = regex != null &&
+            !inputState.value.matches(regex) &&
+            (placeholder.isNullOrEmpty() || inputState.value.isNotEmpty())
         AlertDialog(
             onDismissRequest = { dialogOpenState.value = false },
             title = {
-                Text(
-                    text = title,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.headlineSmall
-                )
+                Text(text = title)
             },
             text = {
-                OutlinedTextField(
-                    value = inputState.value,
-                    onValueChange = { inputState.value = it },
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    keyboardOptions = if (keyboardType != null) {
-                        KeyboardOptions(keyboardType = keyboardType)
-                    } else {
-                        KeyboardOptions.Default
-                    },
-                    readOnly = false,
-                    enabled = true,
-                    singleLine = true,
-                    placeholder = placeholder?.let {
-                        {
-                            Text(placeholder)
-                        }
-                    },
-                    // If placeholder, empty values allowed
-                    isError = regex != null &&
-                        !inputState.value.matches(regex) &&
-                        (placeholder.isNullOrEmpty() || inputState.value.isNotEmpty()),
-                    supportingText = {
-                        if (regex != null &&
-                            !inputState.value.matches(regex) &&
-                            (placeholder.isNullOrEmpty() || inputState.value.isNotEmpty())
-                        ) {
-                            Text(
-                                modifier = Modifier.fillMaxWidth(),
-                                text = if (!regexError.isNullOrEmpty()) {
-                                    regexError
-                                } else {
-                                    stringResource(R.string.settings_invalid_syntax)
-                                },
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        cursorColor = MaterialTheme.colorScheme.primary,
-                        errorCursorColor = MaterialTheme.colorScheme.error,
-                        focusedBorderColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledBorderColor = MaterialTheme.colorScheme.onSurface.copy(
-                            alpha = 0.38f
-                        ),
-                        errorBorderColor = MaterialTheme.colorScheme.error
+                Column {
+                    FrostyTextField(
+                        value = inputState.value,
+                        onValueChange = { inputState.value = it },
+                        placeholder = placeholder,
+                        isError = invalid,
+                        autoFocus = true,
+                        keyboardOptions = if (keyboardType != null) {
+                            KeyboardOptions(keyboardType = keyboardType)
+                        } else {
+                            KeyboardOptions.Default
+                        },
+                        modifier = Modifier.padding(top = 8.dp)
                     )
-                )
+                    if (invalid) {
+                        FrostyFootnote(
+                            text = if (!regexError.isNullOrEmpty()) {
+                                regexError
+                            } else {
+                                stringResource(R.string.settings_invalid_syntax)
+                            },
+                            color = frostyColors.red,
+                            modifier = Modifier.padding(start = 4.dp, top = 6.dp)
+                        )
+                    }
+                }
             },
             confirmButton = {
                 TextButton(
@@ -204,22 +163,14 @@ fun EditTextPreferenceView(
                         onValueChanged(contentState.value)
                     }
                 ) {
-                    Text(
-                        text = stringResource(R.string.action_done),
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                    Text(text = stringResource(R.string.action_done))
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { dialogOpenState.value = false }
                 ) {
-                    Text(
-                        text = stringResource(android.R.string.cancel),
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                    Text(text = stringResource(android.R.string.cancel))
                 }
             }
         )

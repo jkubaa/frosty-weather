@@ -147,6 +147,7 @@ fun rememberGlassPainter(
     refractionStrength: Float = LiquidGlassBlur.REFRACTION_STRENGTH,
     saturation: Float = LiquidGlassBlur.SATURATION,
     rim: Boolean = false,
+    blurScale: Float = 1f,
 ): GlassPainter {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -157,7 +158,7 @@ fun rememberGlassPainter(
     val intensity = SettingsManager.getInstance(context).glassBlurIntensity
     val frosted = backdrop != null && LiquidGlass.isBlurEnabled(context)
     // BlurView blurred a 1/6 scale snapshot: the same look at full resolution needs 6x the radius
-    val blurPx = intensity / 100f * LiquidGlass.MAX_BLUR_RADIUS * BLUR_SCALE
+    val blurPx = intensity / 100f * LiquidGlass.MAX_BLUR_RADIUS * BLUR_SCALE * blurScale
     val edgePx = minOf(radiusPx * 0.6f, with(density) { LiquidGlass.REFRACTION_EDGE_DP.dp.toPx() })
     val layer = rememberGraphicsLayer()
     return remember(backdrop, body, frosted, blurPx, radiusPx, edgePx, isLight, layer, refractionStrength, saturation, rim) {

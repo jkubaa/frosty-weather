@@ -35,14 +35,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material3.AlertDialog
+import org.breezyweather.ui.common.composables.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import org.breezyweather.ui.common.composables.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +74,15 @@ import org.breezyweather.BreezyWeather
 import org.breezyweather.BuildConfig
 import org.breezyweather.Migrations
 import org.breezyweather.R
+import org.breezyweather.ui.common.frosty.FrostyRow
+import org.breezyweather.ui.common.frosty.FrostyFollowingCell
+import org.breezyweather.ui.common.frosty.FrostyGroup
+import org.breezyweather.ui.common.frosty.FrostyFootnote
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import org.breezyweather.ui.common.frosty.frostyColors
+import org.breezyweather.ui.common.frosty.FrostyGlassButton
+import org.breezyweather.ui.common.frosty.FrostySheet
 import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.bus.EventBus
 import org.breezyweather.common.extensions.conditional
@@ -478,59 +487,28 @@ class MainActivity : BreezyActivity(), HomeFragment.Callback, ManagementFragment
         if (dialogPerLocationSettingsOpenState.value) {
             location?.let {
                 val dialogDeleteLocationOpenState = remember { mutableStateOf(false) }
-                AlertDialogNoPadding(
+                FrostySheet(
                     modifier = modifier,
                     onDismissRequest = {
                         _dialogPerLocationSettingsOpen.value = false
                     },
-                    title = {
-                        // "Open in another app" lives here now that the home screen has no top bar menu
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = stringResource(R.string.action_edit_location),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                style = MaterialTheme.typography.headlineSmall,
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(onClick = { onOpenInOtherAppIconClicked() }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_open_in_new),
-                                    contentDescription = stringResource(R.string.action_open_in_other_app_description),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    },
-                    text = {
-                        LocationPreference(
-                            activity = this,
-                            location = it,
-                            onClose = { newLocation: Location? ->
-                                if (newLocation != null) {
-                                    updateLocation(newLocation)
-                                }
-                                _dialogPerLocationSettingsOpen.value = false
-                            },
-                            locationExists = { loc: Location ->
-                                viewModel.locationExists(loc)
-                            }
-                        )
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                _dialogPerLocationSettingsOpen.value = false
-                            }
+                    title = stringResource(R.string.action_edit_location),
+                    // "Open in another app" lives here now that the home screen has no top bar menu
+                    trailingAction = {
+                        FrostyGlassButton(
+                            onClick = { onOpenInOtherAppIconClicked() },
+                            contentDescription = stringResource(R.string.action_open_in_other_app_description)
                         ) {
-                            Text(
-                                text = stringResource(R.string.action_close),
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.labelLarge
+                            Icon(
+                                painter = painterResource(R.drawable.ic_open_in_new),
+                                contentDescription = null,
+                                tint = frostyColors.label,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     },
-                    dismissButton = if (locationListSize() > 1) {
-                        {
+                    buttons = if (locationListSize() > 1) {
+                        listOf {
                             TextButton(
                                 onClick = {
                                     dialogDeleteLocationOpenState.value = true
@@ -538,15 +516,28 @@ class MainActivity : BreezyActivity(), HomeFragment.Callback, ManagementFragment
                             ) {
                                 Text(
                                     text = stringResource(R.string.action_delete),
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.labelLarge
+                                    color = frostyColors.red
                                 )
                             }
                         }
                     } else {
-                        null
+                        emptyList()
                     }
-                )
+                ) {
+                    LocationPreference(
+                        activity = this@MainActivity,
+                        location = it,
+                        onClose = { newLocation: Location? ->
+                            if (newLocation != null) {
+                                updateLocation(newLocation)
+                            }
+                            _dialogPerLocationSettingsOpen.value = false
+                        },
+                        locationExists = { loc: Location ->
+                            viewModel.locationExists(loc)
+                        }
+                    )
+                }
 
                 if (dialogDeleteLocationOpenState.value) {
                     AlertDialog(
@@ -583,8 +574,8 @@ class MainActivity : BreezyActivity(), HomeFragment.Callback, ManagementFragment
                                 }
                             ) {
                                 Text(
-                                    text = stringResource(R.string.action_confirm),
-                                    color = MaterialTheme.colorScheme.primary,
+                                    text = stringResource(R.string.action_delete),
+                                    color = frostyColors.red,
                                     style = MaterialTheme.typography.labelLarge
                                 )
                             }
@@ -615,67 +606,32 @@ class MainActivity : BreezyActivity(), HomeFragment.Callback, ManagementFragment
         val dialogRefreshErrorDetailsOpenState = viewModel.dialogRefreshErrorDetails.collectAsState()
 
         if (dialogRefreshErrorDetailsOpenState.value) {
-            AlertDialogNoPadding(
+            FrostySheet(
                 modifier = modifier,
-                onDismissRequest = { /* do nothing */ },
-                title = {
-                    Column {
-                        Text(stringResource(R.string.dialog_refresh_error_details_title))
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.small_margin)))
-                        Text(
-                            text = stringResource(R.string.dialog_refresh_error_details_content),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = { viewModel.setRefreshErrorDetailsDialogVisible(false) },
-                        content = {
-                            Text(stringResource(R.string.action_close))
-                        }
-                    )
-                },
-                text = {
-                    LazyColumn {
-                        items(viewModel.snackbarError.value!!) {
-                            val source = it.getSourceWithOptionalFeature(this@MainActivity, sourceManager)
-                            val message = this@MainActivity.getString(it.error.shortMessage)
-
-                            ListItem(
-                                colors = ListItemDefaults.colors(
-                                    containerColor = androidx.compose.ui.graphics.Color.Transparent
-                                ),
-                                modifier = Modifier
-                                    .conditional(it.error.showDialogAction != null, {
-                                        clickable { it.error.showDialogAction!!(this@MainActivity) }
-                                    })
-                                    .padding(vertical = dimensionResource(R.dimen.small_margin)),
-                                headlineContent = {
-                                    Text(
-                                        text = source ?: message,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
+                onDismissRequest = { viewModel.setRefreshErrorDetailsDialogVisible(false) },
+                title = stringResource(R.string.dialog_refresh_error_details_title)
+            ) {
+                FrostyFootnote(
+                    text = stringResource(R.string.dialog_refresh_error_details_content),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp)
+                )
+                FrostyGroup {
+                    viewModel.snackbarError.value!!.forEachIndexed { i, error ->
+                        val source = error.getSourceWithOptionalFeature(this@MainActivity, sourceManager)
+                        val message = this@MainActivity.getString(error.error.shortMessage)
+                        FrostyFollowingCell(following = i > 0) {
+                            FrostyRow(
+                                title = source ?: message,
+                                summary = if (source != null) message else null,
+                                onClick = error.error.showDialogAction?.let { action ->
+                                    { action(this@MainActivity) }
                                 },
-                                supportingContent = {
-                                    source?.let {
-                                        Column {
-                                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.small_margin)))
-                                            Text(
-                                                text = message,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                        }
-                                    }
-                                },
-                                trailingContent = {
-                                    it.error.showDialogAction?.let {
+                                trailing = error.error.showDialogAction?.let {
+                                    {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
-                                            contentDescription = stringResource(R.string.action_help)
+                                            contentDescription = stringResource(R.string.action_help),
+                                            tint = frostyColors.tint
                                         )
                                     }
                                 }
@@ -683,7 +639,7 @@ class MainActivity : BreezyActivity(), HomeFragment.Callback, ManagementFragment
                         }
                     }
                 }
-            )
+            }
         }
     }
 

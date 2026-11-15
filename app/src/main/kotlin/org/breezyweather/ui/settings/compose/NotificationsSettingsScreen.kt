@@ -70,7 +70,6 @@ fun NotificationsSettingsScreen(
             FitStatusBarTopAppBar(
                 title = stringResource(R.string.settings_notifications),
                 onBackPressed = onNavigateBack,
-                actions = { AboutActivityIconButton(context) },
                 scrollBehavior = scrollBehavior
             )
         }

@@ -54,6 +54,20 @@
         <item name="colorMainCardBackground">@color/colorMainCardBackground</item>
         <item name="colorPrecipitationProbability">@color/colorPrecipitationProbability</item>
         <item name="actionBarSize">@dimen/action_bar_height</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Frosty.Alert</item>
+    </style>
+
+    <!-- iOS 26-style alerts for the remaining View dialogs: large corners, flat surface -->
+    <style name="ThemeOverlay.Frosty.Alert" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.Frosty.Alert</item>
+        <item name="colorSurfaceContainerHigh">@color/frosty_alert_background</item>
+        <item name="backgroundInsetStart">36dp</item>
+        <item name="backgroundInsetEnd">36dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Frosty.Alert" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">34dp</item>
     </style>
 
     <style name="BreezyWeatherTheme.Main" parent="Theme.SplashScreen">

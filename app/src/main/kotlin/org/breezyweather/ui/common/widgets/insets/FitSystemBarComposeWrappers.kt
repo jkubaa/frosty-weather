@@ -25,28 +25,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import org.breezyweather.R
+import org.breezyweather.ui.common.frosty.FrostyLargeTitleBar
 import kotlin.math.ln
-
-private val topAppBarElevation = 6.dp
 
 internal fun ColorScheme.applyTonalElevation(backgroundColor: Color, elevation: Dp): Color {
     return if (backgroundColor == surface) {
@@ -63,49 +51,15 @@ internal fun ColorScheme.surfaceColorAtElevation(elevation: Dp): Color {
 
 @Composable
 fun FitStatusBarTopAppBar(
-    title: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    navigationIcon: @Composable (() -> Unit) = {},
-    actions: @Composable RowScope.() -> Unit = {},
-    scrollBehavior: TopAppBarScrollBehavior? = null,
-) = LargeTopAppBar(
-    title = title,
-    modifier = modifier,
-    navigationIcon = navigationIcon,
-    actions = actions,
-    colors = TopAppBarDefaults.topAppBarColors(
-        containerColor = MaterialTheme.colorScheme.surface,
-        scrolledContainerColor = MaterialTheme.colorScheme.applyTonalElevation(
-            backgroundColor = MaterialTheme.colorScheme.surface,
-            elevation = topAppBarElevation
-        ),
-        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-        titleContentColor = MaterialTheme.colorScheme.onSurface,
-        actionIconContentColor = MaterialTheme.colorScheme.onSurface
-    ),
-    scrollBehavior = scrollBehavior,
-    windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
-)
-
-@Composable
-fun FitStatusBarTopAppBar(
     title: String,
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier,
     actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior? = null,
-) = FitStatusBarTopAppBar(
-    title = { Text(text = title) },
+) = FrostyLargeTitleBar(
+    title = title,
     modifier = modifier,
-    navigationIcon = {
-        IconButton(onClick = onBackPressed) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.action_back),
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    },
+    onBack = onBackPressed,
     actions = actions,
     scrollBehavior = scrollBehavior
 )
@@ -117,21 +71,12 @@ fun BWCenterAlignedTopAppBar(
     onBackPressed: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     windowInsets: WindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
-) = CenterAlignedTopAppBar(
-    title = { Text(text = title) },
+) = FrostyLargeTitleBar(
+    title = title,
     modifier = modifier,
-    navigationIcon = onBackPressed?.let {
-        {
-            IconButton(onClick = onBackPressed) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.action_back),
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-    } ?: {},
+    onBack = onBackPressed,
     actions = actions,
+    scrollBehavior = null,
     windowInsets = windowInsets
 )
 

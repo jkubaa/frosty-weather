@@ -20,8 +20,10 @@ import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
+import org.breezyweather.ui.common.frosty.FrostyGlassButton
+import org.breezyweather.ui.common.frosty.frostyColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -32,13 +34,15 @@ import org.breezyweather.common.utils.helpers.IntentHelper
 fun AboutActivityIconButton(
     context: Context,
     modifier: Modifier = Modifier,
-) = IconButton(
-    modifier = modifier,
-    onClick = { IntentHelper.startAboutActivity(context) }
+) = FrostyGlassButton(
+    onClick = { IntentHelper.startAboutActivity(context) },
+    contentDescription = stringResource(R.string.action_about),
+    modifier = modifier
 ) {
     Icon(
         imageVector = Icons.Outlined.Info,
-        contentDescription = stringResource(R.string.action_about),
-        tint = MaterialTheme.colorScheme.onSurface
+        contentDescription = null,
+        tint = frostyColors.label,
+        modifier = Modifier.size(22.dp)
     )
 }

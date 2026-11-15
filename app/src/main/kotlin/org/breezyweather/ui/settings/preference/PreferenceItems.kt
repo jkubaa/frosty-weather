@@ -69,7 +69,8 @@ fun LazyListScope.smallSeparatorItem() {
 fun SmallSeparatorItem(
     modifier: Modifier = Modifier,
 ) {
-    Spacer(modifier = modifier.height(dimensionResource(R.dimen.material3_card_settings_small_separator)))
+    // Cells of an iOS group touch; the separator hairline is drawn by the cell itself
+    Spacer(modifier = modifier.height(0.dp))
 }
 
 fun LazyListScope.largeSeparatorItem() {
@@ -82,7 +83,7 @@ fun LazyListScope.largeSeparatorItem() {
 fun LargeSeparatorItem(
     modifier: Modifier = Modifier,
 ) {
-    Spacer(modifier = modifier.height(dimensionResource(R.dimen.material3_card_settings_large_separator)))
+    Spacer(modifier = modifier.height(28.dp))
 }
 
 fun LazyListScope.bottomInsetItem() {

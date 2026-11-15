@@ -18,42 +18,30 @@ package org.breezyweather.ui.settings.preference.composables
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import org.breezyweather.R
+import org.breezyweather.ui.common.frosty.FrostyChevron
+import org.breezyweather.ui.common.frosty.FrostyRow
+import org.breezyweather.ui.common.frosty.FrostyXMark
+import org.breezyweather.ui.common.frosty.frostyColors
+import org.breezyweather.ui.common.frosty.frostyDimClickable
 import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
-import org.breezyweather.ui.common.widgets.defaultCardListItemElevation
-import org.breezyweather.ui.theme.compose.themeRipple
 
 @Composable
 fun PreferenceViewWithCard(
@@ -113,7 +101,6 @@ fun PreferenceViewWithCard(
     onClick: () -> Unit,
 ) {
     Material3ExpressiveCardListItem(
-        elevation = if (enabled) defaultCardListItemElevation else 0.dp,
         surface = surface,
         onSurface = onSurface,
         isFirst = isFirst,
@@ -133,6 +120,10 @@ fun PreferenceViewWithCard(
     }
 }
 
+/**
+ * An iOS list cell that opens something (a screen or a dialog): title, summary and a chevron.
+ * [card] and [colors] are kept for compatibility; the cell is transparent so it sits on its group.
+ */
 @Composable
 fun PreferenceView(
     title: String,
@@ -140,88 +131,35 @@ fun PreferenceView(
     summary: String? = null,
     @DrawableRes iconId: Int? = null,
     enabled: Boolean = true,
-    card: Boolean = false,
-    colors: ListItemColors = ListItemDefaults.colors(),
+    @Suppress("UNUSED_PARAMETER") card: Boolean = false,
+    @Suppress("UNUSED_PARAMETER") colors: ListItemColors = ListItemDefaults.colors(),
     onClose: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
-    val paddingValues = if (onClose == null) {
-        PaddingValues(vertical = 8.dp)
-    } else {
-        PaddingValues(bottom = 8.dp)
-    }
-
-    ListItem(
-        colors = colors,
-        tonalElevation = if (card && enabled) defaultCardListItemElevation else 0.dp,
-        modifier = modifier
-            .fillMaxWidth()
-            .alpha(if (enabled) 1f else 0.5f)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = themeRipple(),
-                onClick = onClick,
-                enabled = enabled
-            )
-            .padding(paddingValues),
-        leadingContent = if (iconId != null) {
-            {
-                Icon(
-                    painter = painterResource(iconId),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        } else {
-            null
-        },
-        headlineContent = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
+    val closeDescription = stringResource(R.string.action_close)
+    FrostyRow(
+        title = title,
+        summary = summary,
+        iconId = iconId,
+        enabled = enabled,
+        modifier = modifier,
+        onClick = onClick,
+        trailing = {
+            if (onClose != null) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(frostyColors.tertiaryFill)
+                        .frostyDimClickable(onClick = onClose)
+                        .semantics { contentDescription = closeDescription }
                 ) {
-                    Text(
-                        text = title,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    FrostyXMark(color = frostyColors.secondaryLabel, size = 10.dp)
                 }
-                if (onClose != null) {
-                    Spacer(modifier = Modifier.width(dimensionResource(R.dimen.small_margin)))
-                    IconButton(
-                        onClick = {
-                            onClose()
-                        },
-                        modifier = Modifier.clip(CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(R.string.action_close),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+            } else {
+                FrostyChevron(modifier = Modifier.padding(start = 2.dp))
             }
-        },
-        supportingContent = if (!summary.isNullOrEmpty()) {
-            {
-                Column {
-                    if (onClose == null) { // We already have spacing from close button
-                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.small_margin)))
-                    }
-                    Text(
-                        text = summary,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-        } else {
-            null
         }
     )
 }

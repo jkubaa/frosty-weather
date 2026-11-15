@@ -34,14 +34,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
+import org.breezyweather.ui.common.composables.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import org.breezyweather.ui.common.composables.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +58,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
 import org.breezyweather.R
+import org.breezyweather.ui.common.frosty.FrostyChevron
+import org.breezyweather.ui.common.frosty.FrostyFollowingCell
+import org.breezyweather.ui.common.frosty.FrostyGroup
+import org.breezyweather.ui.common.frosty.FrostyRow
+import org.breezyweather.ui.common.frosty.FrostySheet
+import org.breezyweather.ui.common.frosty.FrostySwitch
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.toBitmap
 import org.breezyweather.ui.common.composables.AlertDialogNoPadding
@@ -133,81 +139,49 @@ fun MultiListPreferenceView(
             stringResource(R.string.settings_disabled)
         }
 
-    ListItem(
-        colors = colors,
-        tonalElevation = if (card && enabled) defaultCardListItemElevation else 0.dp,
-        modifier = modifier
-            .fillMaxWidth()
-            .alpha(if (enabled) 1f else 0.5f)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = themeRipple(),
-                onClick = { dialogOpenState.value = true },
-                enabled = enabled
-            )
-            .padding(PaddingValues(vertical = 8.dp)),
-        leadingContent = if (iconId != null) {
-            {
-                Icon(
-                    painter = painterResource(iconId),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        } else {
-            null
-        },
-        headlineContent = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = title,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-            }
-        },
-        supportingContent = {
-            Column {
-                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.small_margin)))
-                Text(
-                    text = currentSummary,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
+    FrostyRow(
+        title = title,
+        summary = currentSummary,
+        iconId = iconId,
+        enabled = enabled,
+        modifier = modifier,
+        onClick = { dialogOpenState.value = true },
+        trailing = { FrostyChevron() }
     )
 
     if (dialogOpenState.value) {
         if (itemsArray.isNotEmpty()) {
-            AlertDialogNoPadding(
-                onDismissRequest = {
-                    listSelectedState.apply {
-                        clear()
-                        addAll(selectedKeys)
+            val cancel = {
+                listSelectedState.apply {
+                    clear()
+                    addAll(selectedKeys)
+                }
+                dialogOpenState.value = false
+            }
+            FrostySheet(
+                onDismissRequest = cancel,
+                title = title,
+                buttons = listOf(
+                    {
+                        TextButton(onClick = cancel) {
+                            Text(text = stringResource(android.R.string.cancel))
+                        }
+                    },
+                    {
+                        TextButton(
+                            onClick = {
+                                onValueChanged(listSelectedState)
+                                dialogOpenState.value = false
+                            }
+                        ) {
+                            Text(text = stringResource(R.string.action_save))
+                        }
                     }
-                    dialogOpenState.value = false
-                },
-                title = {
-                    Text(
-                        text = title,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                },
-                text = {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(itemsArray) {
+                )
+            ) {
+                FrostyGroup {
+                    itemsArray.forEachIndexed { i, it ->
+                        FrostyFollowingCell(following = i > 0) {
                             Switch(
                                 icon = it.icon,
                                 selected = listSelectedState.contains(it.value),
@@ -218,65 +192,23 @@ fun MultiListPreferenceView(
                                         listSelectedState.add(it.value)
                                     }
                                 },
-                                colors = ListItemDefaults.colors(
-                                    containerColor = Color.Transparent
-                                ),
                                 text = it.name,
                                 subtext = it.subname
                             )
                         }
                     }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            onValueChanged(listSelectedState)
-                            dialogOpenState.value = false
-                        }
-                    ) {
-                        Text(
-                            text = stringResource(R.string.action_save),
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = {
-                            listSelectedState.apply {
-                                clear()
-                                addAll(selectedKeys)
-                            }
-                            dialogOpenState.value = false
-                        }
-                    ) {
-                        Text(
-                            text = stringResource(android.R.string.cancel),
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
                 }
-            )
+            }
         } else {
             AlertDialog(
                 onDismissRequest = {
                     dialogOpenState.value = false
                 },
                 title = {
-                    Text(
-                        text = title,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
+                    Text(text = title)
                 },
                 text = {
-                    Text(
-                        text = noItemsMessage,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Text(text = noItemsMessage)
                 },
                 confirmButton = {
                     TextButton(
@@ -284,11 +216,7 @@ fun MultiListPreferenceView(
                             dialogOpenState.value = false
                         }
                     ) {
-                        Text(
-                            text = stringResource(R.string.action_close),
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelLarge
-                        )
+                        Text(text = stringResource(R.string.action_close))
                     }
                 }
             )
@@ -296,45 +224,26 @@ fun MultiListPreferenceView(
     }
 }
 
+/**
+ * A row with a toggle, used inside the multi-select sheet.
+ */
 @Composable
 internal fun Switch(
     selected: Boolean,
     onClick: () -> Unit,
     text: String,
-    colors: ListItemColors = ListItemDefaults.colors(),
+    @Suppress("UNUSED_PARAMETER") colors: ListItemColors = ListItemDefaults.colors(),
     icon: Drawable? = null,
     subtext: String? = null,
 ) {
-    ListItem(
-        colors = colors,
-        headlineContent = {
-            Text(text)
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = themeRipple(),
-                onClick = onClick
-            ),
-        leadingContent = {
-            icon?.toBitmap()?.asImageBitmap()?.let { bitmap ->
-                Image(
-                    bitmap,
-                    contentDescription = text,
-                    modifier = Modifier
-                        .height(42.dp)
-                        .width(42.dp)
-                )
-            }
-        },
-        trailingContent = {
-            androidx.compose.material3.Switch(
-                checked = selected,
-                onCheckedChange = {
-                    onClick()
-                }
-            )
+    val bitmap = remember(icon) { icon?.toBitmap()?.asImageBitmap() }
+    FrostyRow(
+        title = text,
+        summary = subtext,
+        iconImage = bitmap,
+        onClick = onClick,
+        trailing = {
+            FrostySwitch(checked = selected, onCheckedChange = { onClick() })
         }
     )
 }

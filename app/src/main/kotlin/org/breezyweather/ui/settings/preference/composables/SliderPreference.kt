@@ -38,6 +38,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import org.breezyweather.R
+import org.breezyweather.ui.common.frosty.FrostySlider
+import org.breezyweather.ui.common.frosty.FrostyType
+import org.breezyweather.ui.common.frosty.frostyColors
+import org.breezyweather.ui.common.frosty.frostySeparator
 import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
 import org.breezyweather.ui.common.widgets.defaultCardListItemElevation
 import kotlin.math.roundToInt
@@ -70,38 +74,39 @@ fun SliderPreferenceView(
     val currentLabel = valueLabel(currentValue)
 
     Material3ExpressiveCardListItem(
-        elevation = if (enabled) defaultCardListItemElevation else 0.dp,
         isFirst = isFirst,
         isLast = isLast
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .alpha(if (enabled) 1f else 0.5f)
-                .padding(dimensionResource(R.dimen.normal_margin))
+                .frostySeparator()
+                .alpha(if (enabled) 1f else 0.4f)
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = stringResource(titleId),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleMedium,
+                    color = frostyColors.label,
+                    style = FrostyType.body,
                     modifier = Modifier.weight(1f)
                 )
                 Text(
                     text = currentLabel,
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.titleMedium
+                    color = frostyColors.secondaryLabel,
+                    style = FrostyType.body
                 )
             }
             if (!summary.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.small_margin)))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = summary,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium
+                    color = frostyColors.secondaryLabel,
+                    style = FrostyType.subheadline
                 )
             }
-            Slider(
+            Spacer(modifier = Modifier.height(4.dp))
+            FrostySlider(
                 value = state.floatValue,
                 onValueChange = { state.floatValue = it },
                 onValueChangeFinished = { onValueChanged(state.floatValue.roundToInt()) },

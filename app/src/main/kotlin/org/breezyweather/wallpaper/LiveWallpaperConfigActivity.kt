@@ -34,8 +34,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import org.breezyweather.ui.common.composables.AlertDialog
+import org.breezyweather.ui.common.composables.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,7 +43,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import org.breezyweather.ui.common.composables.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -64,6 +64,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.toSize
 import kotlinx.coroutines.delay
 import org.breezyweather.R
+import androidx.compose.ui.unit.dp
+import org.breezyweather.common.extensions.plus
+import androidx.compose.foundation.layout.PaddingValues
+import org.breezyweather.ui.settings.preference.composables.ListPreferenceViewWithCard
 import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.ui.common.widgets.Material3Scaffold
@@ -119,14 +123,15 @@ class LiveWallpaperConfigActivity : BreezyActivity() {
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxHeight(),
-                contentPadding = it
+                contentPadding = it.plus(PaddingValues(horizontal = dimensionResource(R.dimen.normal_margin)))
             ) {
                 item {
                     Spinner(
                         currentVal = weatherKindValueNow,
                         names = weatherKinds,
                         values = weatherKindValues,
-                        titleId = R.string.widget_live_wallpaper_weather_kind
+                        titleId = R.string.widget_live_wallpaper_weather_kind,
+                        isFirst = true
                     )
                 }
                 item {
@@ -153,7 +158,8 @@ class LiveWallpaperConfigActivity : BreezyActivity() {
                         },
                         checked = animationsEnabledValue.value,
                         withState = false,
-                        card = false
+                        card = true,
+                        isLast = true
                     ) { newValue ->
                         if (newValue) {
                             dialogOpenState.value = true
@@ -166,7 +172,7 @@ class LiveWallpaperConfigActivity : BreezyActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(dimensionResource(R.dimen.normal_margin)),
+                            .padding(vertical = 28.dp),
                         contentAlignment = Alignment.CenterEnd
                     ) {
                         Button(
@@ -179,17 +185,9 @@ class LiveWallpaperConfigActivity : BreezyActivity() {
                                 )
                                 finish()
                             },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = stringResource(R.string.action_save),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleMedium
-                            )
+                            Text(text = stringResource(R.string.action_save))
                         }
                     }
                 }
@@ -272,78 +270,22 @@ class LiveWallpaperConfigActivity : BreezyActivity() {
         names: Array<String>,
         values: Array<String>,
         @StringRes titleId: Int,
+        isFirst: Boolean = false,
+        isLast: Boolean = false,
     ) {
-        val expanded = remember { mutableStateOf(false) }
-        val textFieldSize = remember { mutableStateOf(Size.Zero) }
-
-        val icon = if (expanded.value) {
-            Icons.Filled.ArrowDropUp
-        } else {
-            Icons.Filled.ArrowDropDown
-        }
-        val label = stringResource(titleId)
-
-        Column(
-            modifier = Modifier.padding(dimensionResource(R.dimen.normal_margin))
+        ListPreferenceViewWithCard(
+            title = stringResource(titleId),
+            summary = { _, value ->
+                names[if (values.indexOf(value) != -1) values.indexOf(value) else 0]
+            },
+            selectedKey = currentVal.value,
+            valueArray = values,
+            nameArray = names,
+            isFirst = isFirst,
+            isLast = isLast,
+            withState = false
         ) {
-            OutlinedTextField(
-                value = names[if (values.indexOf(currentVal.value) != -1) values.indexOf(currentVal.value) else 0],
-                onValueChange = {},
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onGloballyPositioned { coordinates ->
-                        textFieldSize.value = coordinates.size.toSize()
-                    }
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = themeRipple(),
-                        onClick = { expanded.value = !expanded.value }
-                    ),
-                label = {
-                    Text(
-                        text = label,
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                trailingIcon = {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.clickable {
-                            expanded.value = !expanded.value
-                        },
-                        tint = MaterialTheme.colorScheme.secondary
-                    )
-                },
-                readOnly = true,
-                enabled = false,
-                textStyle = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.SemiBold
-                )
-            )
-            DropdownMenu(
-                expanded = expanded.value,
-                onDismissRequest = { expanded.value = false },
-                modifier = Modifier
-                    .width(with(LocalDensity.current) { textFieldSize.value.width.toDp() })
-            ) {
-                names.forEachIndexed { index, item ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = item,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        },
-                        onClick = {
-                            currentVal.value = values[index]
-                            expanded.value = false
-                        }
-                    )
-                }
-            }
+            currentVal.value = it
         }
     }
 }

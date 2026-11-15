@@ -58,6 +58,11 @@ import kotlinx.coroutines.launch
 import org.breezyweather.BreezyWeather
 import org.breezyweather.BuildConfig
 import org.breezyweather.R
+import org.breezyweather.ui.common.frosty.FrostyIconTile
+import org.breezyweather.ui.common.frosty.frostyColors
+import org.breezyweather.ui.common.frosty.FrostySectionHeader
+import org.breezyweather.ui.common.frosty.FrostyRow
+import org.breezyweather.ui.common.frosty.FrostyChevron
 import org.breezyweather.background.updater.interactor.GetApplicationRelease
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.plus
@@ -195,18 +200,13 @@ internal fun AboutScreen(
                                 label = ""
                             ) { loading ->
                                 when (loading) {
-                                    false -> {
-                                        Icon(
-                                            painter = painterResource(R.drawable.ic_sync),
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurface
-                                        )
-                                    }
+                                    false -> FrostyIconTile(R.drawable.ic_sync)
 
                                     true -> {
                                         CircularProgressIndicator(
-                                            modifier = Modifier.size(24.dp),
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            modifier = Modifier.size(30.dp).padding(3.dp),
+                                            color = frostyColors.secondaryLabel,
+                                            strokeWidth = 2.5.dp
                                         )
                                     }
                                 }
@@ -401,14 +401,7 @@ private fun Header() {
 }
 
 @Composable
-private fun SectionTitle(title: String) {
-    Text(
-        text = title,
-        modifier = Modifier.padding(dimensionResource(R.dimen.normal_margin)),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.labelMedium
-    )
-}
+private fun SectionTitle(title: String) = FrostySectionHeader(title)
 
 private val versionFormatted: String
     get() = when {
@@ -425,25 +418,7 @@ private fun AboutAppLink(
     onClick: () -> Unit,
 ) {
     Material3ExpressiveCardListItem(isFirst = isFirst, isLast = isLast) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = themeRipple(),
-                    onClick = onClick
-                )
-                .padding(dimensionResource(R.dimen.normal_margin)),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            icon()
-            Spacer(modifier = Modifier.width(dimensionResource(R.dimen.normal_margin)))
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
+        FrostyRow(title = title, icon = icon, onClick = onClick, trailing = { FrostyChevron() })
     }
 }
 
@@ -455,19 +430,9 @@ private fun AboutAppLink(
     isLast: Boolean = false,
     onClick: () -> Unit,
 ) {
-    AboutAppLink(
-        icon = {
-            Icon(
-                painter = painterResource(iconId),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-        },
-        title = title,
-        isFirst = isFirst,
-        isLast = isLast,
-        onClick = onClick
-    )
+    Material3ExpressiveCardListItem(isFirst = isFirst, isLast = isLast) {
+        FrostyRow(title = title, iconId = iconId, onClick = onClick, trailing = { FrostyChevron() })
+    }
 }
 
 @Composable
@@ -479,31 +444,11 @@ private fun ContributorView(
     onClick: () -> Unit,
 ) {
     Material3ExpressiveCardListItem(isFirst = isFirst, isLast = isLast) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = themeRipple(),
-                    onClick = {
-                        onClick()
-                    }
-                )
-                .padding(dimensionResource(R.dimen.normal_margin))
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = name,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-            if (contribution != null) {
-                Text(
-                    text = stringResource(contribution),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
+        FrostyRow(
+            title = name,
+            summary = contribution?.let { stringResource(it) },
+            onClick = onClick,
+            trailing = { FrostyChevron() }
+        )
     }
 }

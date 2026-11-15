@@ -26,12 +26,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -49,7 +46,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -59,6 +55,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.breezyweather.R
+import org.breezyweather.ui.common.frosty.FrostyCell
+import org.breezyweather.ui.common.frosty.ProvideFrostyTypography
+import org.breezyweather.ui.common.frosty.frostyColors
 import kotlin.math.ln
 
 // helper.
@@ -85,6 +84,9 @@ fun generateCollapsedScrollBehavior(): TopAppBarScrollBehavior {
 }
 
 // scaffold.
+/**
+ * Screen scaffold on the iOS grouped background, with the iOS type scale.
+ */
 @Composable
 fun Material3Scaffold(
     modifier: Modifier = Modifier,
@@ -93,23 +95,25 @@ fun Material3Scaffold(
     snackbarHost: @Composable () -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
     floatingActionButtonPosition: FabPosition = FabPosition.End,
-    containerColor: Color = MaterialTheme.colorScheme.surface,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    containerColor: Color = frostyColors.groupedBackground,
+    contentColor: Color = frostyColors.label,
     contentWindowInsets: WindowInsets = WindowInsets.safeDrawing,
     content: @Composable (PaddingValues) -> Unit,
 ) {
-    Scaffold(
-        modifier = modifier,
-        topBar = topBar,
-        bottomBar = bottomBar,
-        snackbarHost = snackbarHost,
-        floatingActionButton = floatingActionButton,
-        floatingActionButtonPosition = floatingActionButtonPosition,
-        containerColor = containerColor,
-        contentColor = contentColor,
-        contentWindowInsets = contentWindowInsets,
-        content = content
-    )
+    ProvideFrostyTypography {
+        Scaffold(
+            modifier = modifier,
+            topBar = topBar,
+            bottomBar = bottomBar,
+            snackbarHost = snackbarHost,
+            floatingActionButton = floatingActionButton,
+            floatingActionButtonPosition = floatingActionButtonPosition,
+            containerColor = containerColor,
+            contentColor = contentColor,
+            contentWindowInsets = contentWindowInsets,
+            content = content
+        )
+    }
 }
 
 // Search bar (derived from androix.compose.material3:material3:1.1.0)
@@ -190,42 +194,22 @@ fun getCardListItemMarginDp(context: Context) = context
     .resources
     .getDimension(R.dimen.small_margin)
 
+/**
+ * A cell of an iOS inset grouped list (the name is kept from the Material version it replaced).
+ * [elevation], [surface] and [onSurface] are ignored: cells always use the grouped cell colour.
+ */
 @Composable
 fun Material3ExpressiveCardListItem(
     modifier: Modifier = Modifier,
-    elevation: Dp = defaultCardListItemElevation,
-    surface: Color = MaterialTheme.colorScheme.surface,
-    onSurface: Color = MaterialTheme.colorScheme.onSurface,
+    @Suppress("UNUSED_PARAMETER") elevation: Dp = defaultCardListItemElevation,
+    @Suppress("UNUSED_PARAMETER") surface: Color = MaterialTheme.colorScheme.surface,
+    @Suppress("UNUSED_PARAMETER") onSurface: Color = MaterialTheme.colorScheme.onSurface,
     isFirst: Boolean = true,
     isLast: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
-) = Card(
+) = FrostyCell(
     modifier = modifier,
-    shape = RoundedCornerShape(
-        topStart = if (isFirst) {
-            dimensionResource(R.dimen.material3_card_settings_list_item_corner_radius)
-        } else {
-            2.dp
-        },
-        topEnd = if (isFirst) {
-            dimensionResource(R.dimen.material3_card_settings_list_item_corner_radius)
-        } else {
-            2.dp
-        },
-        bottomStart = if (isLast) {
-            dimensionResource(R.dimen.material3_card_settings_list_item_corner_radius)
-        } else {
-            2.dp
-        },
-        bottomEnd = if (isLast) {
-            dimensionResource(R.dimen.material3_card_settings_list_item_corner_radius)
-        } else {
-            2.dp
-        }
-    ),
-    colors = CardDefaults.cardColors(
-        containerColor = getWidgetSurfaceColor(elevation, surface),
-        contentColor = onSurface
-    ),
+    isFirst = isFirst,
+    isLast = isLast,
     content = content
 )

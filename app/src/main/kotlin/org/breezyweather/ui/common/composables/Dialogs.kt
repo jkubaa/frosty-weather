@@ -18,39 +18,37 @@ package org.breezyweather.ui.common.composables
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
-import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastForEach
-import androidx.compose.ui.util.fastForEachIndexed
 import androidx.compose.ui.window.DialogProperties
 import org.breezyweather.R
-import kotlin.math.max
+import org.breezyweather.ui.common.frosty.FrostyAlert
+import org.breezyweather.ui.common.frosty.FrostyButton
+import org.breezyweather.ui.common.frosty.FrostyButtonStyle
+import org.breezyweather.ui.common.frosty.FrostySheet
+import org.breezyweather.ui.common.frosty.FrostyType
+import org.breezyweather.ui.common.frosty.LocalFrostyDialogButtons
+import org.breezyweather.ui.common.frosty.frostyColors
+import org.breezyweather.ui.common.frosty.frostyDimClickable
 
 @Composable
 fun AlertDialogConfirmOnly(
@@ -68,34 +66,26 @@ fun AlertDialogConfirmOnly(
             onDismiss?.invoke()
         },
         confirmButton = {
-            TextButton(
-                onClick = {
-                    onConfirm()
-                }
-            ) {
+            TextButton(onClick = { onConfirm() }) {
                 Text(stringResource(confirmButtonText))
             }
         },
         title = {
-            Text(
-                stringResource(title)
-            )
+            Text(stringResource(title))
         },
         text = {
-            Text(
-                stringResource(content)
-            )
+            Text(stringResource(content))
         },
         icon = iconId?.let {
             {
                 Icon(
                     painter = painterResource(it),
-                    contentDescription = null
+                    contentDescription = null,
+                    tint = frostyColors.tint,
+                    modifier = Modifier.size(32.dp)
                 )
             }
-        },
-        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        iconContentColor = MaterialTheme.colorScheme.onSurface
+        }
     )
 }
 
@@ -107,19 +97,8 @@ fun AlertDialogLink(
     val uriHandler = LocalUriHandler.current
 
     AlertDialog(
-        /*title = {
-            Text(
-                text = stringResource(R.string.about_open_link_title),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },*/
         text = {
-            Text(
-                text = stringResource(R.string.about_open_link_message, linkToOpen),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Text(text = stringResource(R.string.about_open_link_message, linkToOpen))
         },
         onDismissRequest = {
             onClose()
@@ -131,31 +110,50 @@ fun AlertDialogLink(
                     onClose()
                 }
             ) {
-                Text(
-                    text = stringResource(R.string.action_confirm),
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.labelLarge
-                )
+                Text(text = stringResource(R.string.action_confirm))
             }
         },
         dismissButton = {
-            TextButton(
-                onClick = {
-                    onClose()
-                }
-            ) {
-                Text(
-                    text = stringResource(android.R.string.cancel),
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.labelLarge
-                )
+            TextButton(onClick = { onClose() }) {
+                Text(text = stringResource(android.R.string.cancel))
             }
         }
     )
 }
 
 /**
- * Forked from Android Compose Material3 v1.2.0
+ * Drop-in for Material's AlertDialog, drawn as an iOS 26 alert. The colour, shape and elevation
+ * parameters are accepted for compatibility and ignored.
+ */
+@Composable
+fun AlertDialog(
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    dismissButton: @Composable (() -> Unit)? = null,
+    icon: @Composable (() -> Unit)? = null,
+    title: @Composable (() -> Unit)? = null,
+    text: @Composable (() -> Unit)? = null,
+    @Suppress("UNUSED_PARAMETER") shape: Shape? = null,
+    @Suppress("UNUSED_PARAMETER") containerColor: Color = Color.Unspecified,
+    @Suppress("UNUSED_PARAMETER") iconContentColor: Color = Color.Unspecified,
+    @Suppress("UNUSED_PARAMETER") titleContentColor: Color = Color.Unspecified,
+    @Suppress("UNUSED_PARAMETER") textContentColor: Color = Color.Unspecified,
+    @Suppress("UNUSED_PARAMETER") tonalElevation: Dp = 0.dp,
+    properties: DialogProperties = DialogProperties(),
+) = FrostyAlert(
+    onDismissRequest = onDismissRequest,
+    buttons = listOfNotNull(dismissButton, confirmButton),
+    modifier = modifier,
+    icon = icon,
+    title = title,
+    text = text,
+    properties = properties
+)
+
+/**
+ * A dialog with free-form content (lists, preferences): drawn as an iOS sheet that slides up from
+ * the bottom. The colour, shape and elevation parameters are accepted for compatibility and ignored.
  */
 @Composable
 fun AlertDialogNoPadding(
@@ -166,234 +164,86 @@ fun AlertDialogNoPadding(
     icon: @Composable (() -> Unit)? = null,
     title: @Composable (() -> Unit)? = null,
     text: @Composable (() -> Unit)? = null,
-    shape: Shape = AlertDialogDefaults.shape,
-    containerColor: Color = AlertDialogDefaults.containerColor,
-    iconContentColor: Color = AlertDialogDefaults.iconContentColor,
-    titleContentColor: Color = AlertDialogDefaults.titleContentColor,
-    textContentColor: Color = AlertDialogDefaults.textContentColor,
-    tonalElevation: Dp = AlertDialogDefaults.TonalElevation,
-    properties: DialogProperties = DialogProperties(),
-) = BasicAlertDialog(
+    @Suppress("UNUSED_PARAMETER") shape: Shape? = null,
+    @Suppress("UNUSED_PARAMETER") containerColor: Color = Color.Unspecified,
+    @Suppress("UNUSED_PARAMETER") iconContentColor: Color = Color.Unspecified,
+    @Suppress("UNUSED_PARAMETER") titleContentColor: Color = Color.Unspecified,
+    @Suppress("UNUSED_PARAMETER") textContentColor: Color = Color.Unspecified,
+    @Suppress("UNUSED_PARAMETER") tonalElevation: Dp = 0.dp,
+    @Suppress("UNUSED_PARAMETER") properties: DialogProperties = DialogProperties(),
+) = FrostySheet(
     onDismissRequest = onDismissRequest,
     modifier = modifier,
-    properties = properties
+    titleContent = title,
+    buttons = listOfNotNull(dismissButton, confirmButton),
+    scrollable = false
 ) {
-    AlertDialogNoPaddingContent(
-        buttons = {
-            AlertDialogNoPaddingFlowRow(
-                mainAxisSpacing = ButtonsMainAxisSpacing,
-                crossAxisSpacing = ButtonsCrossAxisSpacing
-            ) {
-                dismissButton?.invoke()
-                confirmButton()
-            }
-        },
-        icon = icon,
-        title = title,
-        text = text,
-        shape = shape,
-        containerColor = containerColor,
-        tonalElevation = tonalElevation,
-        // Note that a button content color is provided here from the dialog's token, but in
-        // most cases, TextButtons should be used for dismiss and confirm buttons.
-        // TextButtons will not consume this provided content color value, and will used their
-        // own defined or default colors.
-        buttonContentColor = MaterialTheme.colorScheme.primary,
-        iconContentColor = iconContentColor,
-        titleContentColor = titleContentColor,
-        textContentColor = textContentColor
-    )
-}
-
-@Composable
-internal fun AlertDialogNoPaddingContent(
-    buttons: @Composable () -> Unit,
-    icon: (@Composable () -> Unit)?,
-    title: (@Composable () -> Unit)?,
-    text: @Composable (() -> Unit)?,
-    shape: Shape,
-    containerColor: Color,
-    tonalElevation: Dp,
-    buttonContentColor: Color,
-    iconContentColor: Color,
-    titleContentColor: Color,
-    textContentColor: Color,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier,
-        shape = shape,
-        color = containerColor,
-        tonalElevation = tonalElevation
-    ) {
-        Column(
-            modifier = Modifier.padding(DialogPadding)
-        ) {
-            icon?.let {
-                CompositionLocalProvider(LocalContentColor provides iconContentColor) {
-                    Box(
-                        Modifier
-                            .padding(IconPadding)
-                            .align(Alignment.CenterHorizontally)
-                    ) {
-                        icon()
-                    }
-                }
-            }
-            title?.let {
-                CompositionLocalProvider(
-                    LocalContentColor provides titleContentColor,
-                    LocalTextStyle provides MaterialTheme.typography.headlineSmall
-                ) {
-                    Box(
-                        // Align the title to the center when an icon is present.
-                        Modifier
-                            .padding(TitlePadding)
-                            .align(
-                                if (icon == null) {
-                                    Alignment.Start
-                                } else {
-                                    Alignment.CenterHorizontally
-                                }
-                            )
-                    ) {
-                        title()
-                    }
-                }
-            }
-            text?.let {
-                val textStyle = MaterialTheme.typography.bodyMedium
-                CompositionLocalProvider(
-                    LocalContentColor provides textContentColor,
-                    LocalTextStyle provides textStyle
-                ) {
-                    Box(
-                        Modifier
-                            .weight(weight = 1f, fill = false)
-                            .padding(TextPadding)
-                            .align(Alignment.Start)
-                    ) {
-                        text()
-                    }
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .padding(ButtonsPadding)
-            ) {
-                val textStyle = MaterialTheme.typography.labelLarge
-                CompositionLocalProvider(
-                    LocalContentColor provides buttonContentColor,
-                    LocalTextStyle provides textStyle,
-                    content = buttons
-                )
-            }
+    if (icon != null) {
+        Box(
+            Modifier
+                .padding(bottom = 12.dp)
+                .align(Alignment.CenterHorizontally)
+        ) { icon() }
+    }
+    if (text != null) {
+        CompositionLocalProvider(LocalTextStyle provides FrostyType.subheadline) {
+            Box(Modifier.weight(1f, fill = false)) { text() }
         }
     }
 }
 
 /**
- * Simple clone of FlowRow that arranges its children in a horizontal flow with limited
- * customization.
+ * Drop-in for Material's TextButton. Inside alerts and sheets it is a full-width capsule; elsewhere
+ * a borderless button that dims while pressed. Extra Material parameters are ignored.
  */
 @Composable
-internal fun AlertDialogNoPaddingFlowRow(
-    mainAxisSpacing: Dp,
-    crossAxisSpacing: Dp,
-    content: @Composable () -> Unit,
+fun TextButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    @Suppress("UNUSED_PARAMETER") shape: Shape? = null,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+    content: @Composable RowScope.() -> Unit,
 ) {
-    Layout(content) { measurables, constraints ->
-        val sequences = mutableListOf<List<Placeable>>()
-        val crossAxisSizes = mutableListOf<Int>()
-        val crossAxisPositions = mutableListOf<Int>()
-
-        var mainAxisSpace = 0
-        var crossAxisSpace = 0
-
-        val currentSequence = mutableListOf<Placeable>()
-        var currentMainAxisSize = 0
-        var currentCrossAxisSize = 0
-
-        // Return whether the placeable can be added to the current sequence.
-        fun canAddToCurrentSequence(placeable: Placeable) =
-            currentSequence.isEmpty() ||
-                currentMainAxisSize + mainAxisSpacing.roundToPx() + placeable.width <= constraints.maxWidth
-
-        // Store current sequence information and start a new sequence.
-        fun startNewSequence() {
-            if (sequences.isNotEmpty()) {
-                crossAxisSpace += crossAxisSpacing.roundToPx()
-            }
-            // Ensures that confirming actions appear above dismissive actions.
-            @Suppress("ListIterator")
-            sequences.add(0, currentSequence.toList())
-            crossAxisSizes += currentCrossAxisSize
-            crossAxisPositions += crossAxisSpace
-
-            crossAxisSpace += currentCrossAxisSize
-            mainAxisSpace = max(mainAxisSpace, currentMainAxisSize)
-
-            currentSequence.clear()
-            currentMainAxisSize = 0
-            currentCrossAxisSize = 0
-        }
-
-        measurables.fastForEach { measurable ->
-            // Ask the child for its preferred size.
-            val placeable = measurable.measure(constraints)
-
-            // Start a new sequence if there is not enough space.
-            if (!canAddToCurrentSequence(placeable)) startNewSequence()
-
-            // Add the child to the current sequence.
-            if (currentSequence.isNotEmpty()) {
-                currentMainAxisSize += mainAxisSpacing.roundToPx()
-            }
-            currentSequence.add(placeable)
-            currentMainAxisSize += placeable.width
-            currentCrossAxisSize = max(currentCrossAxisSize, placeable.height)
-        }
-
-        if (currentSequence.isNotEmpty()) startNewSequence()
-
-        val mainAxisLayoutSize = max(mainAxisSpace, constraints.minWidth)
-
-        val crossAxisLayoutSize = max(crossAxisSpace, constraints.minHeight)
-
-        val layoutWidth = mainAxisLayoutSize
-
-        val layoutHeight = crossAxisLayoutSize
-
-        layout(layoutWidth, layoutHeight) {
-            sequences.fastForEachIndexed { i, placeables ->
-                val childrenMainAxisSizes = IntArray(placeables.size) { j ->
-                    placeables[j].width +
-                        if (j < placeables.lastIndex) mainAxisSpacing.roundToPx() else 0
-                }
-                val arrangement = Arrangement.End
-                val mainAxisPositions = IntArray(childrenMainAxisSizes.size) { 0 }
-                with(arrangement) {
-                    arrange(mainAxisLayoutSize, childrenMainAxisSizes, layoutDirection, mainAxisPositions)
-                }
-                placeables.fastForEachIndexed { j, placeable ->
-                    placeable.place(
-                        x = mainAxisPositions[j],
-                        y = crossAxisPositions[i]
-                    )
-                }
-            }
+    if (LocalFrostyDialogButtons.current) {
+        FrostyButton(
+            onClick = onClick,
+            enabled = enabled,
+            style = FrostyButtonStyle.Gray,
+            modifier = modifier.fillMaxWidth(),
+            content = content
+        )
+    } else {
+        CompositionLocalProvider(
+            LocalTextStyle provides FrostyType.body.copy(color = frostyColors.tint)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = modifier
+                    .frostyDimClickable(enabled = enabled, onClick = onClick)
+                    .padding(contentPadding),
+                content = content
+            )
         }
     }
 }
 
-// Paddings for each of the dialog's parts.
-// Tweaked to fit Breezy Weather needs
-private val DialogPadding = PaddingValues(top = 24.dp, bottom = 24.dp)
-private val IconPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 16.dp)
-private val TitlePadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 16.dp)
-private val TextPadding = PaddingValues(start = 8.dp, end = 8.dp, bottom = 24.dp)
-private val ButtonsPadding = PaddingValues(start = 24.dp, end = 24.dp)
-
-private val ButtonsMainAxisSpacing = 8.dp
-private val ButtonsCrossAxisSpacing = 12.dp
+/**
+ * Drop-in for Material's filled Button: an iOS filled capsule.
+ */
+@Composable
+fun Button(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    @Suppress("UNUSED_PARAMETER") shape: Shape? = null,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp),
+    content: @Composable RowScope.() -> Unit,
+) = FrostyButton(
+    onClick = onClick,
+    modifier = modifier,
+    enabled = enabled,
+    style = FrostyButtonStyle.Filled,
+    contentPadding = contentPadding,
+    content = content
+)

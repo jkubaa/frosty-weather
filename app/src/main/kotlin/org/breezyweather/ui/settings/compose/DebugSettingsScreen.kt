@@ -70,7 +70,6 @@ fun DebugSettingsScreen(
             FitStatusBarTopAppBar(
                 title = stringResource(R.string.settings_debug),
                 onBackPressed = onNavigateBack,
-                actions = { AboutActivityIconButton(context) },
                 scrollBehavior = scrollBehavior
             )
         }

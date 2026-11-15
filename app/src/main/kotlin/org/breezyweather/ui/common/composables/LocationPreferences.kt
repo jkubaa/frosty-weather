@@ -24,14 +24,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
+import org.breezyweather.ui.common.composables.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import org.breezyweather.ui.common.composables.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +55,10 @@ import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.BreezyWeather
 import org.breezyweather.BuildConfig
 import org.breezyweather.R
+import org.breezyweather.ui.common.frosty.FrostyAutoGroup
+import androidx.compose.ui.unit.dp
+import org.breezyweather.ui.common.frosty.FrostyFollowingCell
+import org.breezyweather.ui.common.frosty.FrostyGroup
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.source.ConfigurableSource
 import org.breezyweather.common.source.HttpSource
@@ -92,64 +96,62 @@ fun LocationPreference(
     val dialogAdditionalLocationPreferencesOpenState = remember { mutableStateOf(false) }
     val sourcesWithPreferencesScreen = remember { activity.sourceManager.sourcesWithPreferencesScreen(location) }
 
-    Column(
-        modifier = modifier.verticalScroll(rememberScrollState())
-    ) {
-        if (location.isCurrentPosition) {
-            val locationSources = activity.sourceManager.getLocationSources()
-            SourceView(
-                title = stringResource(R.string.settings_location_service),
-                iconId = R.drawable.ic_location,
-                selectedKey = SettingsManager.getInstance(activity).locationSource,
-                sourceList = locationSources.map {
-                    Triple(
-                        it.id,
-                        it.getName(context),
-                        it !is RemovedSource &&
-                            (it !is ConfigurableSource || it.isConfigured) &&
-                            (BuildConfig.FLAVOR != "freenet" || it !is NonFreeNetSource)
+    Column(modifier = modifier) {
+        FrostyGroup {
+            if (location.isCurrentPosition) {
+                val locationSources = activity.sourceManager.getLocationSources()
+                SourceView(
+                    title = stringResource(R.string.settings_location_service),
+                    iconId = R.drawable.ic_location,
+                    selectedKey = SettingsManager.getInstance(activity).locationSource,
+                    sourceList = locationSources.map {
+                        Triple(
+                            it.id,
+                            it.getName(context),
+                            it !is RemovedSource &&
+                                (it !is ConfigurableSource || it.isConfigured) &&
+                                (BuildConfig.FLAVOR != "freenet" || it !is NonFreeNetSource)
+                        )
+                    }.toImmutableList(),
+                    colors = ListItemDefaults.colors(
+                        containerColor = Color.Transparent
                     )
-                }.toImmutableList(),
-                colors = ListItemDefaults.colors(
-                    containerColor = Color.Transparent
-                )
-            ) { sourceId ->
-                SettingsManager.getInstance(activity).locationSource = sourceId
+                ) { sourceId ->
+                    SettingsManager.getInstance(activity).locationSource = sourceId
+                    onClose(null)
+                }
+            }
+            FrostyFollowingCell(following = location.isCurrentPosition) {
+                PreferenceView(
+                    titleId = R.string.settings_weather_sources,
+                    iconId = R.drawable.ic_factory,
+                    summaryId = R.string.settings_weather_sources_per_location_summary
+                ) {
+                    dialogWeatherSourcesOpenState.value = true
+                }
+            }
+            if (!location.isCurrentPosition || sourcesWithPreferencesScreen.isNotEmpty()) {
+                FrostyFollowingCell {
+                    PreferenceView(
+                        titleId = R.string.settings_per_location,
+                        iconId = R.drawable.ic_settings,
+                        summaryId = R.string.settings_per_location_summary
+                    ) {
+                        dialogAdditionalLocationPreferencesOpenState.value = true
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+        FrostyGroup {
+            PreferenceView(
+                titleId = R.string.settings_global,
+                iconId = R.drawable.ic_home,
+                summaryId = R.string.settings_main_summary
+            ) {
+                IntentHelper.startMainScreenSettingsActivity(activity)
                 onClose(null)
             }
-        }
-        PreferenceView(
-            titleId = R.string.settings_weather_sources,
-            iconId = R.drawable.ic_factory,
-            summaryId = R.string.settings_weather_sources_per_location_summary,
-            colors = ListItemDefaults.colors(
-                containerColor = Color.Transparent
-            )
-        ) {
-            dialogWeatherSourcesOpenState.value = true
-        }
-        if (!location.isCurrentPosition || sourcesWithPreferencesScreen.isNotEmpty()) {
-            PreferenceView(
-                titleId = R.string.settings_per_location,
-                iconId = R.drawable.ic_settings,
-                summaryId = R.string.settings_per_location_summary,
-                colors = ListItemDefaults.colors(
-                    containerColor = Color.Transparent
-                )
-            ) {
-                dialogAdditionalLocationPreferencesOpenState.value = true
-            }
-        }
-        PreferenceView(
-            titleId = R.string.settings_global,
-            iconId = R.drawable.ic_home,
-            summaryId = R.string.settings_main_summary,
-            colors = ListItemDefaults.colors(
-                containerColor = Color.Transparent
-            )
-        ) {
-            IntentHelper.startMainScreenSettingsActivity(activity)
-            onClose(null)
         }
 
         if (dialogWeatherSourcesOpenState.value) {
@@ -202,6 +204,7 @@ fun LocationPreference(
                     ) {
                         if (!location.isCurrentPosition) {
                             SectionHeader(title = stringResource(R.string.settings_section_general))
+                            FrostyGroup {
                             EditTextPreferenceView(
                                 title = stringResource(R.string.location_custom_name),
                                 summary = { _, value ->
@@ -222,11 +225,13 @@ fun LocationPreference(
                                     }
                                 }
                             )
-                            SectionFooter()
+                            }
+                            Spacer(Modifier.height(24.dp))
                         }
 
                         sourcesWithPreferencesScreen.forEach { preferenceSource ->
                             SectionHeader(title = preferenceSource.name)
+                            FrostyAutoGroup {
                             preferenceSource.PerLocationPreferences(
                                 context = activity,
                                 location = location,
@@ -263,7 +268,8 @@ fun LocationPreference(
                                     )
                                 )
                             }
-                            SectionFooter()
+                            }
+                            Spacer(Modifier.height(24.dp))
                         }
                     }
                 },
@@ -520,6 +526,7 @@ fun SecondarySourcesPreference(
                         )
                     }
                 }
+                FrostyAutoGroup {
                 SourceViewWithContinents(
                     title = stringResource(SourceFeature.FORECAST.resourceName),
                     selectedKey = forecastSource.value,
@@ -861,6 +868,7 @@ fun SecondarySourcesPreference(
                         reverseGeocodingSource.value = sourceId
                         hasChangedReverseGeocodingSource.value = true
                     }
+                }
                 }
             }
         },

@@ -58,7 +58,6 @@ fun UnitSettingsScreen(
             FitStatusBarTopAppBar(
                 title = stringResource(R.string.settings_units),
                 onBackPressed = onNavigateBack,
-                actions = { AboutActivityIconButton(context) },
                 scrollBehavior = scrollBehavior
             )
         }

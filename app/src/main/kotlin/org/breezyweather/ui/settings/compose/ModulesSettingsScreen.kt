@@ -85,7 +85,6 @@ fun ModulesSettingsScreen(
             FitStatusBarTopAppBar(
                 title = stringResource(R.string.settings_modules),
                 onBackPressed = onNavigateBack,
-                actions = { AboutActivityIconButton(context) },
                 scrollBehavior = scrollBehavior
             )
         }

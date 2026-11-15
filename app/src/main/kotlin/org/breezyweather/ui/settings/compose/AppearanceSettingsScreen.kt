@@ -36,7 +36,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import org.breezyweather.ui.common.composables.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -101,7 +101,6 @@ fun AppearanceSettingsScreen(
             FitStatusBarTopAppBar(
                 title = stringResource(R.string.settings_appearance),
                 onBackPressed = onNavigateBack,
-                actions = { AboutActivityIconButton(context) },
                 scrollBehavior = scrollBehavior
             )
         }

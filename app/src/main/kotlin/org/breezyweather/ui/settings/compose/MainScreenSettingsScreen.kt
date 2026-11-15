@@ -72,7 +72,6 @@ fun MainScreenSettingsScreen(
             FitStatusBarTopAppBar(
                 title = stringResource(R.string.settings_main),
                 onBackPressed = onNavigateBack,
-                actions = { AboutActivityIconButton(context) },
                 scrollBehavior = scrollBehavior
             )
         }

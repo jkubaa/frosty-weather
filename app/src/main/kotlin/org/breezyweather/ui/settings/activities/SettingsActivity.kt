@@ -28,6 +28,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import breezyweather.domain.location.model.Location
@@ -207,7 +213,12 @@ class SettingsActivity : BreezyActivity() {
 
         NavHost(
             navController = navController,
-            startDestination = startDestination
+            startDestination = startDestination,
+            // iOS push: the new screen slides in from the end, the old one shifts a third and dims
+            enterTransition = { slideInHorizontally(iosPush()) { it } },
+            exitTransition = { slideOutHorizontally(iosPush()) { -it / 3 } + fadeOut(iosPush(), 0.6f) },
+            popEnterTransition = { slideInHorizontally(iosPush()) { -it / 3 } + fadeIn(iosPush(), 0.6f) },
+            popExitTransition = { slideOutHorizontally(iosPush()) { it } }
         ) {
             composable(SettingsScreenRouter.Root.route) {
                 RootSettingsView(
@@ -349,3 +360,6 @@ class SettingsActivity : BreezyActivity() {
         }
     }*/
 }
+
+private val iosPushEasing = CubicBezierEasing(0.2f, 0.9f, 0.25f, 1f)
+private fun <T> iosPush() = tween<T>(durationMillis = 420, easing = iosPushEasing)
