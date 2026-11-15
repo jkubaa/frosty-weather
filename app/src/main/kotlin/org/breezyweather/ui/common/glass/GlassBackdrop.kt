@@ -14,7 +14,7 @@
  * along with Frosty Weather. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.breezyweather.ui.main.cards
+package org.breezyweather.ui.common.glass
 
 import android.graphics.Canvas
 import android.graphics.RenderNode
@@ -103,6 +103,47 @@ class ViewBackdrop(private val view: View) : GlassBackdrop {
         canvas.save()
         canvas.translate(location[0] - at.x, location[1] - at.y)
         canvas.drawRenderNode(recording)
+        canvas.restore()
+    }
+}
+
+/**
+ * A backdrop drawn on demand, for glass over a small control (a toggle's track, a slider) rather
+ * than over the sky: [draw] paints what is under the glass in the control's own coordinates.
+ *
+ * Used as a lens: the glass element is drawn swollen ([lensScale] = its current scale), so the
+ * backdrop is scaled back by that much and then magnified by [magnification] around the element's
+ * centre. Below 1 the lens takes in more than its own footprint (like a fisheye), so the edges of
+ * what is under it curve visibly through the glass.
+ *
+ * Call [place] from the glass element's draw, before drawing the glass, with where its centre is
+ * on the control; then pass that same point as the glass position.
+ */
+class LensBackdrop(
+    private val magnification: Float = 1f,
+    private val draw: (Canvas) -> Unit,
+) : GlassBackdrop {
+    private var lensCenter = Offset.Zero
+    private var lensScale = 1f
+
+    override val isReady: Boolean get() = true
+
+    /**
+     * @param elementCenter the glass element's centre in its own (unscaled) coordinates
+     * @param elementScale how much the element is currently scaled up (1 when at rest)
+     */
+    fun place(elementCenter: Offset, elementScale: Float) {
+        lensCenter = elementCenter
+        lensScale = elementScale / magnification
+    }
+
+    override fun drawBackdrop(canvas: Canvas, at: Offset) {
+        // [at] is the element's centre on the control: map the lens's own space onto the control
+        canvas.save()
+        canvas.translate(lensCenter.x, lensCenter.y)
+        canvas.scale(1f / lensScale, 1f / lensScale)
+        canvas.translate(-at.x, -at.y)
+        draw(canvas)
         canvas.restore()
     }
 }

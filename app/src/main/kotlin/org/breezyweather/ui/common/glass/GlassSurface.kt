@@ -14,7 +14,7 @@
  * along with Frosty Weather. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.breezyweather.ui.main.cards
+package org.breezyweather.ui.common.glass
 
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
@@ -59,9 +59,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.domain.settings.SettingsManager
-import org.breezyweather.ui.common.glass.LiquidGlass
-import org.breezyweather.ui.common.glass.LiquidGlassBlur
-import org.breezyweather.ui.common.glass.LiquidGlassDrawable
 import kotlin.math.roundToInt
 
 /** Corner radius of the glass cards (glass_corner_radius). */
@@ -97,16 +94,19 @@ val GlassCardRimBrush = Brush.verticalGradient(
  * plain translucent tint, like the View version.
  *
  * @param tint body color over the blur; null for the theme's default glass body
+ *
+ * Use the public [liquidGlass] with a [GlassStyle] preset instead of calling this directly.
  */
-fun Modifier.liquidGlass(
+internal fun Modifier.liquidGlassMaterial(
     backdrop: GlassBackdrop?,
     tint: Color? = null,
     cornerRadius: Dp = GlassCornerRadius,
     refractionStrength: Float = LiquidGlassBlur.REFRACTION_STRENGTH,
     saturation: Float = LiquidGlassBlur.SATURATION,
     rim: Boolean = false,
+    blurScale: Float = 1f,
 ): Modifier = composed {
-    val glass = rememberGlassPainter(backdrop, tint, cornerRadius, refractionStrength, saturation, rim)
+    val glass = rememberGlassPainter(backdrop, tint, cornerRadius, refractionStrength, saturation, rim, blurScale)
     val hidden = LocalGlassHidden.current
     var origin by remember { mutableStateOf(Offset.Zero) }
     val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }

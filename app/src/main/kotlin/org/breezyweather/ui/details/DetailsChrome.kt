@@ -26,8 +26,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
-import org.breezyweather.ui.main.cards.GlassCardRimBrush
-import org.breezyweather.ui.main.cards.rememberGlassPainter
+import org.breezyweather.ui.common.glass.GlassCardRimBrush
+import org.breezyweather.ui.common.glass.GlassStyle
+import org.breezyweather.ui.common.glass.liquidGlass
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -638,8 +639,8 @@ fun smallSuffix(raw: String): AnnotatedString = buildAnnotatedString {
 }
 
 /**
- * Liquid glass for the sheet's buttons: the home screen's glass material (tinted body, rims and
- * sheen of light), which swells slightly and brightens while pressed, like iOS glass controls.
+ * Liquid glass for the sheet's buttons: [GlassStyle.Button] (tinted body, rims, shadow), which
+ * swells slightly and brightens while pressed, like iOS glass controls.
  */
 fun Modifier.detailsGlass(
     cornerRadius: Dp,
@@ -647,28 +648,10 @@ fun Modifier.detailsGlass(
     tint: Color? = null,
 ): Modifier = composed {
     val palette = LocalDetailsPalette.current
-    val pressed = interactionSource?.collectIsPressedAsState()?.value == true
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 1.12f else 1f,
-        animationSpec = spring(dampingRatio = 0.55f, stiffness = 600f),
-        label = "glassPress"
+    val body = tint ?: if (palette.isDark) Color(0xFF48484C) else Color.White
+    liquidGlass(
+        style = GlassStyle.Button.copy(cornerRadius = cornerRadius, tint = body),
+        backdrop = null,
+        interactionSource = interactionSource
     )
-    val body = (tint ?: if (palette.isDark) Color(0xFF48484C) else Color.White)
-        .copy(alpha = if (pressed) 0.95f else 0.78f)
-    val glass = rememberGlassPainter(backdrop = null, tint = body, cornerRadius = cornerRadius, rim = true)
-    this
-        .graphicsLayer {
-            scaleX = scale
-            scaleY = scale
-            shadowElevation = 6.dp.toPx()
-            shape = RoundedCornerShape(cornerRadius)
-            clip = true
-            ambientShadowColor = Color.Black.copy(alpha = 0.3f)
-            spotShadowColor = Color.Black.copy(alpha = 0.3f)
-        }
-        .drawWithContent {
-            with(glass) {
-                drawGlass(Rect(Offset.Zero, size), Offset.Zero) { this@drawWithContent.drawContent() }
-            }
-        }
 }

@@ -26,7 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import org.breezyweather.ui.main.cards.GlassBackdrop
+import org.breezyweather.ui.common.glass.GlassBackdrop
 
 /**
  * The sky, drawable from elsewhere: liquid glass cards draw the part of the sky that is behind

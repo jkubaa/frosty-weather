@@ -61,14 +61,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.ColorUtils
 import org.breezyweather.R
+import org.breezyweather.ui.common.glass.GlassStyle
 import org.breezyweather.common.extensions.getThemeColor
 import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.common.widgets.SwipeSwitchLayout
-import org.breezyweather.ui.main.cards.GlassBackdrop
-import org.breezyweather.ui.main.cards.GlassEdgeRefraction
-import org.breezyweather.ui.main.cards.GlassRimBrush
-import org.breezyweather.ui.main.cards.GlassBarSaturation
-import org.breezyweather.ui.main.cards.liquidGlass
+import org.breezyweather.ui.common.glass.GlassBackdrop
+import org.breezyweather.ui.common.glass.GlassRimBrush
+import org.breezyweather.ui.common.glass.liquidGlass
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.min
@@ -219,7 +218,7 @@ class HomeBottomBarView @JvmOverloads constructor(
                         .padding(horizontal = 56.dp)
                         .fillMaxHeight()
                         .widthIn(min = 96.dp)
-                        .liquidGlass(backdrop, tint, cornerRadius = BAR_HEIGHT / 2, refractionStrength = GlassEdgeRefraction, saturation = GlassBarSaturation)
+                        .liquidGlass(GlassStyle.Bar.copy(cornerRadius = BAR_HEIGHT / 2, tint = tint), backdrop)
                         .border(BorderStroke(1.dp, GlassRimBrush), RoundedCornerShape(BAR_HEIGHT / 2))
                         .padding(horizontal = 20.dp),
                     contentAlignment = Alignment.Center
@@ -245,7 +244,7 @@ class HomeBottomBarView @JvmOverloads constructor(
         Box(
             modifier = modifier
                 .size(BAR_HEIGHT)
-                .liquidGlass(backdrop, tint, cornerRadius = BAR_HEIGHT / 2, refractionStrength = GlassEdgeRefraction, saturation = GlassBarSaturation)
+                .liquidGlass(GlassStyle.Bar.copy(cornerRadius = BAR_HEIGHT / 2, tint = tint), backdrop)
                 .clip(CircleShape)
                 .border(BorderStroke(1.dp, GlassRimBrush), CircleShape)
                 .clickable(onClickLabel = description, onClick = onClick),

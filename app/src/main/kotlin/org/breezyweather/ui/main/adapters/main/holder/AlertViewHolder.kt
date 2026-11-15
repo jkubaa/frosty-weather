@@ -50,6 +50,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
+import org.breezyweather.ui.common.glass.GlassStyle
 import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.domain.weather.model.getFormattedDates
@@ -66,8 +67,10 @@ class AlertViewHolder(
     private val bound = mutableStateOf<Pair<BreezyActivity, Location>?>(null)
 
     // Warm-tinted liquid glass for alerts
-    override val glassTint = androidx.compose.ui.graphics.Color(
-        ColorUtils.setAlphaComponent(ContextCompat.getColor(context, R.color.alert_background), (0.62f * 255).toInt())
+    override val glassStyle = GlassStyle.Card.copy(
+        tint = androidx.compose.ui.graphics.Color(
+            ColorUtils.setAlphaComponent(ContextCompat.getColor(context, R.color.alert_background), (0.62f * 255).toInt())
+        )
     )
 
     @SuppressLint("DefaultLocale")

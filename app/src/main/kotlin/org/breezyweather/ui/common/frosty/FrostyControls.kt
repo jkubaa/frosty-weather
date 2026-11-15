@@ -96,9 +96,9 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
-import org.breezyweather.ui.main.cards.rememberGlassPainter
-import org.breezyweather.ui.main.cards.GlassBackdrop
-import org.breezyweather.ui.common.glass.LiquidGlassBlur
+import org.breezyweather.ui.common.glass.GlassStyle
+import org.breezyweather.ui.common.glass.LensBackdrop
+import org.breezyweather.ui.common.glass.rememberGlassPainter
 import androidx.compose.ui.graphics.toArgb
 import kotlin.math.abs
 
@@ -383,15 +383,14 @@ fun FrostySwitch(
     // The glass bends and blurs what is under it, like the home bottom bar: here the track and
     // the cell around it, drawn again into the lens
     val cellColor = frostyCellColor()
-    val backdrop = remember { ToggleBackdrop() }
+    val under = remember { ToggleUnderLens() }
+    val backdrop = remember { LensBackdrop(magnification = LensMagnification) { under.draw(it) } }
     val glassPainter = rememberGlassPainter(
-        backdrop = backdrop,
-        tint = Color.White.copy(alpha = if (colors.isDark) 0.06f else 0.12f),
-        cornerRadius = ThumbHeight / 2,
-        refractionStrength = LiquidGlassBlur.REFRACTION_STRENGTH,
-        saturation = 1.05f,
-        rim = true,
-        blurScale = 0.12f
+        GlassStyle.Lens.copy(
+            cornerRadius = ThumbHeight / 2,
+            tint = Color.White.copy(alpha = if (colors.isDark) 0.06f else 0.12f)
+        ),
+        backdrop
     )
 
     val interactive = enabled && onCheckedChange != null
@@ -481,10 +480,10 @@ fun FrostySwitch(
                     spotShadowColor = Color.Black.copy(alpha = 0.25f)
                 }
                 .drawWithContent {
-                    backdrop.track = track
-                    backdrop.cell = cellColor
-                    backdrop.width = ToggleWidth.toPx()
-                    backdrop.height = ToggleHeight.toPx()
+                    under.track = track
+                    under.cell = cellColor
+                    under.width = ToggleWidth.toPx()
+                    under.height = ToggleHeight.toPx()
                     // Glass lens fading in over the solid pill as it lifts
                     if (glass < 1f) drawRect(Color.White, alpha = 1f - glass)
                     if (glass > 0f) {
@@ -495,8 +494,10 @@ fun FrostySwitch(
                         )
                         // The lens sees the toggle around the thumb's centre, scaled back to its real
                         // size (the thumb is drawn swollen) and slightly magnified
-                        backdrop.lensCenter = Offset(size.width / 2f, size.height / 2f)
-                        backdrop.lensScale = (1f + (GlassThumbScale - 1f) * glass) / LensMagnification
+                        backdrop.place(
+                            elementCenter = Offset(size.width / 2f, size.height / 2f),
+                            elementScale = 1f + (GlassThumbScale - 1f) * glass
+                        )
                         val at = Offset(
                             (ThumbInset + travel * fraction).toPx() + size.width / 2f,
                             ThumbInset.toPx() + size.height / 2f
@@ -513,28 +514,18 @@ fun FrostySwitch(
  * What a toggle's glass thumb sees under it: the cell colour around the track and the track
  * itself, in the toggle's own coordinates.
  */
-private class ToggleBackdrop : GlassBackdrop {
+private class ToggleUnderLens {
     var track: Color = Color.Gray
     var cell: Color = Color.Black
     var width = 0f
     var height = 0f
-    var lensCenter = Offset.Zero
-    var lensScale = 1f
     private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
 
-    override val isReady: Boolean get() = true
-
-    override fun drawBackdrop(canvas: android.graphics.Canvas, at: Offset) {
-        // [at] is the thumb's centre on the toggle; map the lens's own space onto the toggle
-        canvas.save()
-        canvas.translate(lensCenter.x, lensCenter.y)
-        canvas.scale(1f / lensScale, 1f / lensScale)
-        canvas.translate(-at.x, -at.y)
+    fun draw(canvas: android.graphics.Canvas) {
         paint.color = cell.toArgb()
         canvas.drawRect(-height * 2, -height * 2, width + height * 2, height * 3, paint)
         paint.color = track.toArgb()
         canvas.drawRoundRect(0f, 0f, width, height, height / 2, height / 2, paint)
-        canvas.restore()
     }
 }
 

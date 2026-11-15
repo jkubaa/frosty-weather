@@ -37,7 +37,6 @@ import androidx.annotation.ColorInt
 import androidx.annotation.RequiresApi
 import androidx.core.graphics.ColorUtils
 import androidx.core.view.doOnAttach
-import com.google.android.material.card.MaterialCardView
 import eightbitlab.com.blurview.BlurView
 import org.breezyweather.R
 import org.breezyweather.common.extensions.dpToPx
@@ -78,12 +77,6 @@ class LiquidGlassDrawable(
         style = Paint.Style.FILL
     }
 
-    fun setCornerRadius(radius: Float) {
-        if (radius != cornerRadius) {
-            cornerRadius = radius
-            invalidateSelf()
-        }
-    }
 
     override fun onBoundsChange(bounds: Rect) {
         super.onBoundsChange(bounds)
@@ -165,16 +158,6 @@ object LiquidGlass {
     }
 
     /**
-     * Tinted, translucent body color for a glass panel.
-     * Uses the current theme surface so text contrast keeps following the light/dark weather theme.
-     */
-    fun bodyColor(view: View): Int {
-        val surface = view.context.getThemeColor(com.google.android.material.R.attr.colorSurface)
-        val alpha = if (isLightSurface(view)) BODY_ALPHA_LIGHT else BODY_ALPHA_DARK
-        return ColorUtils.setAlphaComponent(surface, (alpha * 255).toInt())
-    }
-
-    /**
      * Real backdrop blur needs RenderEffect (Android 12+). Older versions keep the tinted
      * translucent body, which still reads as glass, just not frosted.
      */
@@ -187,62 +170,6 @@ object LiquidGlass {
 
     private fun blurRadius(context: Context): Float =
         SettingsManager.getInstance(context).glassBlurIntensity / 100f * MAX_BLUR_RADIUS
-
-    /**
-     * Turns a [MaterialCardView] into a liquid glass panel:
-     * translucent tinted body (frosted when enabled), no shadow, specular sheen.
-     * Safe to call several times on the same card (e.g. when a ViewHolder is rebound, or after the
-     * blur intensity changed).
-     */
-    fun applyTo(card: MaterialCardView) {
-        val isLight = isLightSurface(card)
-        if (isBlurEnabled(card.context)) {
-            // Blur the weather background only: cards never overlap each other, and blurring
-            // the whole screen for every card would mean redrawing all cards once per card.
-            attachBlur(card, card.context.resources.getDimension(R.dimen.glass_corner_radius)) {
-                it.rootView.findViewById(R.id.glass_backdrop)
-            }
-        } else {
-            hideBlur(card)
-        }
-        // Keep everything inside the rounded corners (blur layer, tile accent glows...)
-        card.clipToOutline = true
-        setTint(card, bodyColor(card))
-        card.cardElevation = 0f
-        card.elevation = 0f
-        card.strokeWidth = 0
-        card.radius = card.context.resources.getDimension(R.dimen.glass_corner_radius)
-
-        val previous = card.getTag(R.id.tag_liquid_glass_overlay) as? Pair<*, *>
-        if (previous != null) {
-            card.overlay.remove(previous.first as Drawable)
-            card.removeOnLayoutChangeListener(previous.second as View.OnLayoutChangeListener)
-        }
-
-        val overlay = LiquidGlassDrawable(cornerRadius = card.radius, isLight = isLight)
-        overlay.setBounds(0, 0, card.width, card.height)
-        val listener = View.OnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
-            overlay.setBounds(0, 0, v.width, v.height)
-        }
-        card.overlay.add(overlay)
-        card.addOnLayoutChangeListener(listener)
-        card.setTag(R.id.tag_liquid_glass_overlay, overlay to listener)
-    }
-
-    /**
-     * Sets the tint of a glass card body. When the card is frosted, the tint is painted on top of
-     * the blur (the card background itself sits underneath the blur layer, so it stays clear).
-     */
-    fun setTint(card: MaterialCardView, @ColorInt tint: Int) {
-        card.setTag(R.id.tag_liquid_glass_tint, tint)
-        val blurView = (card.getTag(R.id.tag_liquid_glass_blur) as? BlurView)?.takeIf { it.visibility == View.VISIBLE }
-        if (blurView != null) {
-            card.setCardBackgroundColor(ColorStateList.valueOf(Color.TRANSPARENT))
-            blurView.setOverlayColor(tint)
-        } else {
-            card.setCardBackgroundColor(ColorStateList.valueOf(tint))
-        }
-    }
 
     /**
      * Glass for a floating element that passes over the cards (e.g. the bottom bar buttons):
@@ -338,23 +265,4 @@ object LiquidGlass {
         }
     }
 
-    /**
-     * Standalone glass background (e.g. for pills and capsules).
-     *
-     * @param bodyAlpha opacity of the tinted body; floating elements that pass over content
-     * (like the page dots capsule) need a denser body than chips sitting on the background.
-     */
-    fun background(view: View, cornerRadius: Float, bodyAlpha: Float? = null): Drawable {
-        val fill = bodyAlpha?.let {
-            ColorUtils.setAlphaComponent(
-                view.context.getThemeColor(com.google.android.material.R.attr.colorSurface),
-                (it * 255).toInt()
-            )
-        } ?: bodyColor(view)
-        return LiquidGlassDrawable(
-            cornerRadius = cornerRadius,
-            fillColor = fill,
-            isLight = isLightSurface(view)
-        )
-    }
 }

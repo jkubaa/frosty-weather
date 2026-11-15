@@ -30,9 +30,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import breezyweather.domain.location.model.Location
 import org.breezyweather.common.activities.BreezyActivity
-import org.breezyweather.ui.main.cards.GlassEdgeRefraction
-import org.breezyweather.ui.main.cards.GlassVividSaturation
-import org.breezyweather.ui.main.cards.liquidGlass
+import org.breezyweather.ui.common.glass.GlassStyle
+import org.breezyweather.ui.common.glass.liquidGlass
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.ui.theme.weatherView.sky.SkyBackdrop
 
@@ -53,15 +52,8 @@ abstract class AbstractMainCardViewHolder(
      */
     var widthFactor: Float = 1f
 
-    /** Glass body color; null for the theme's default glass. */
-    open val glassTint: Color? = null
-
-    /** Edge refraction and backdrop saturation of the glass (see [liquidGlass]). */
-    open val glassRefraction: Float = GlassEdgeRefraction
-    open val glassSaturation: Float = GlassVividSaturation
-
-    /** A thin rim of light around the glass, like the bottom bar. */
-    open val glassRim: Boolean = true
+    /** The card's liquid glass (see [GlassStyle.Card]); override for a tinted card. */
+    open val glassStyle: GlassStyle get() = GlassStyle.Card
 
     @CallSuper
     open fun onBindView(
@@ -105,13 +97,7 @@ abstract class AbstractMainCardViewHolder(
         val click = itemView.onClick
         Box(
             modifier
-                .liquidGlass(
-                    LocalSkyBackdrop.current,
-                    glassTint,
-                    refractionStrength = glassRefraction,
-                    saturation = glassSaturation,
-                    rim = glassRim,
-                )
+                .liquidGlass(glassStyle, LocalSkyBackdrop.current)
                 .then(if (click != null) Modifier.clickable { click() } else Modifier)
                 .then(
                     if (description != null) {

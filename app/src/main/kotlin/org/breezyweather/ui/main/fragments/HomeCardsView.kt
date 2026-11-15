@@ -67,12 +67,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
-import org.breezyweather.ui.main.cards.GlassCornerRadius
-import org.breezyweather.ui.main.cards.GlassEdgeRefraction
-import org.breezyweather.ui.main.cards.GlassPainter
-import org.breezyweather.ui.main.cards.GlassVividSaturation
-import org.breezyweather.ui.main.cards.LocalGlassHidden
-import org.breezyweather.ui.main.cards.rememberGlassPainter
+import org.breezyweather.ui.common.glass.GlassCornerRadius
+import org.breezyweather.ui.common.glass.GlassPainter
+import org.breezyweather.ui.common.glass.LocalGlassHidden
+import org.breezyweather.ui.common.glass.rememberGlassPainter
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -91,10 +89,11 @@ import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
+import org.breezyweather.ui.common.glass.GlassStyle
 import org.breezyweather.common.extensions.density
 import org.breezyweather.common.extensions.getThemeColor
-import org.breezyweather.ui.main.cards.ViewBackdrop
-import org.breezyweather.ui.main.cards.liquidGlass
+import org.breezyweather.ui.common.glass.ViewBackdrop
+import org.breezyweather.ui.common.glass.liquidGlass
 import org.breezyweather.common.extensions.getBlocksPerRow
 import org.breezyweather.ui.main.adapters.main.MainCards
 import org.breezyweather.ui.main.adapters.main.ViewType
@@ -231,7 +230,7 @@ class HomeCardsView @JvmOverloads constructor(
                     scaleY = scale
                 }
                 .size(44.dp)
-                .liquidGlass(LocalSkyBackdrop.current, cornerRadius = 22.dp),
+                .liquidGlass(GlassStyle.Bubble, LocalSkyBackdrop.current),
             contentAlignment = Alignment.Center
         ) {
             if (refreshing) {
@@ -358,11 +357,8 @@ class HomeCardsView @JvmOverloads constructor(
                     // Same glass as the card itself, so the header doesn't change look while collapsing
                     val cardGlass = holder as? AbstractMainCardViewHolder
                     val glass = rememberGlassPainter(
-                        LocalSkyBackdrop.current,
-                        cardGlass?.glassTint,
-                        refractionStrength = cardGlass?.glassRefraction ?: GlassEdgeRefraction,
-                        saturation = cardGlass?.glassSaturation ?: GlassVividSaturation,
-                        rim = cardGlass?.glassRim ?: false,
+                        cardGlass?.glassStyle ?: GlassStyle.Card.copy(rim = false),
+                        LocalSkyBackdrop.current
                     )
                     // Observable state: when the card stops collapsing, the glass that reads this redraws
                     // (a plain read at draw time didn't, so the card's background stayed missing)
