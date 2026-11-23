@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+            Debug only: fake rain countdown for testing the Live Update. Trigger it from adb with
+            am broadcast, component .../org.breezyweather.debug.RainLiveTestReceiver and an int
+            extras "minutes", "duration" and "rate". See RainLiveTestReceiver.kt.
+        -->
+        <receiver
+            android:name="org.breezyweather.debug.RainLiveTestReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+    </application>
+
+</manifest>

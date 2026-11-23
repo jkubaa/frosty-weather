@@ -121,6 +121,11 @@ object Notifications {
                     setName(context.getString(R.string.notification_channel_alerts))
                     setGroup(GROUP_BREEZY_WEATHER)
                 },
+                buildNotificationChannel(RainLiveUpdate.CHANNEL_RAIN_LIVE, IMPORTANCE_HIGH) {
+                    setName(context.getString(R.string.notification_channel_rain_live))
+                    setGroup(GROUP_BREEZY_WEATHER)
+                    setShowBadge(false)
+                },
                 buildNotificationChannel(CHANNEL_FORECAST, IMPORTANCE_DEFAULT) {
                     setName(context.getString(R.string.notification_channel_forecast))
                     setGroup(GROUP_BREEZY_WEATHER)
@@ -319,8 +324,16 @@ object Notifications {
             location.weather?.minutelyForecast.isNullOrEmpty()
         ) {
             context.cancelNotification(ID_PRECIPITATION)
+            RainLiveUpdate.cancel(context)
             return
         }
+
+        // Rain within the next minutes gets the live countdown instead of the plain notification
+        if (RainLiveUpdate.update(context, location)) {
+            context.cancelNotification(ID_PRECIPITATION)
+            return
+        }
+
         // val config = ConfigStore(context, PREFERENCE_SHORT_TERM_PRECIPITATION_ALERT)
         // val timestamp = config.getLong(KEY_PRECIPITATION_DATE, 0)
 

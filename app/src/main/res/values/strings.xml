@@ -1017,6 +1017,21 @@
     <string name="notification_updating_weather_data">Updating weather data (%1$d/%2$d)</string>
     <string name="notification_precipitation_starting">Precipitation soon</string>
     <!-- Example: Expected to start at 09:00 AM -->
+    <string name="notification_rain_live_title_soon">%s starting soon</string>
+    <string name="notification_rain_live_title_now">%s now</string>
+    <string name="notification_rain_live_desc_until">Around %1$s · about %2$d min, until %3$s</string>
+    <string name="notification_rain_live_desc_long">Around %1$s · lasting at least %2$d min</string>
+    <string name="notification_rain_live_desc_stops">Should stop around %s</string>
+    <string name="notification_rain_live_action_details">Rain details</string>
+    <string name="notification_rain_live_light_rain">Light rain</string>
+    <string name="notification_rain_live_rain">Rain</string>
+    <string name="notification_rain_live_heavy_rain">Heavy rain</string>
+    <string name="notification_rain_live_light_snow">Light snow</string>
+    <string name="notification_rain_live_snow">Snow</string>
+    <string name="notification_rain_live_heavy_snow">Heavy snow</string>
+    <string name="notification_rain_live_sleet">Sleet</string>
+    <string name="notification_rain_live_hail">Hail</string>
+    <string name="notification_channel_rain_live">Rain countdown</string>
     <string name="notification_precipitation_starting_desc">Expected to start at %s</string>
     <string name="notification_precipitation_continuing">Precipitation</string>
     <!-- Example: Expected to continue until at least 09:00 AM -->

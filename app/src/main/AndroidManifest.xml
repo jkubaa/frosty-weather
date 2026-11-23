@@ -33,6 +33,8 @@
 
     <!-- notification. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Live Updates (Android 16+): rain countdown -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
     <!-- weather update in background -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
@@ -250,6 +252,10 @@
 
         <receiver
             android:name=".background.receiver.NotificationReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".background.receiver.RainLiveUpdateReceiver"
             android:exported="false" />
 
         <!-- widget -->
