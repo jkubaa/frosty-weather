@@ -20,12 +20,17 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Build
+import androidx.annotation.DrawableRes
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.drawable.IconCompat
 import breezyweather.domain.location.model.Location
+import breezyweather.domain.weather.model.Hourly
 import breezyweather.domain.weather.model.Minutely
 import breezyweather.domain.weather.model.Weather
 import breezyweather.domain.weather.reference.WeatherCode
@@ -43,8 +48,11 @@ import org.breezyweather.domain.settings.ConfigStore
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.ui.details.DetailsActivity
 import org.breezyweather.unit.precipitation.Precipitation.Companion.millimeters
+import java.util.Calendar
 import java.util.Date
 import kotlin.math.roundToInt
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 /**
@@ -66,6 +74,7 @@ object RainLiveUpdate {
     const val CHANNEL_RAIN_LIVE = "rain_live"
     private const val ID_RAIN_LIVE = 3001
 
+    // Default lead time; the user can pick another in settings
     private val WINDOW = 15.minutes
     private val SHORT_SHOWER = 30.minutes
     // Moves the bar along while showing
@@ -81,8 +90,9 @@ object RainLiveUpdate {
     private const val KEY_TEST_START = "test_start"
     private const val KEY_TEST_DURATION = "test_duration"
     private const val KEY_TEST_RATE = "test_rate"
+    private const val KEY_TEST_KIND = "test_kind"
 
-    private enum class Kind { RAIN, SNOW, SLEET, HAIL }
+    private enum class Kind { RAIN, SNOW, SLEET, HAIL, THUNDER }
     private enum class Level { LIGHT, MODERATE, HEAVY }
 
     sealed interface State {
@@ -106,36 +116,57 @@ object RainLiveUpdate {
         val maxIntensityMm: Double get() = slots.maxOf { it.precipitationIntensity?.inMillimeters ?: 0.0 }
     }
 
-    private fun Minutely.isRainy() = (dbz ?: 0) > 0
+    /**
+     * @param minMm rain rate (mm/h) a slot needs to count; above 0 skips drizzle
+     */
+    private fun Minutely.isRainy(minMm: Double) =
+        (dbz ?: 0) > 0 && (minMm <= 0 || (precipitationIntensity?.inMillimeters ?: 0.0) >= minMm)
 
-    private fun runFrom(minutely: List<Minutely>, index: Int): RainRun {
+    private fun runFrom(minutely: List<Minutely>, index: Int, minMm: Double): RainRun {
         var last = index
-        while (last + 1 < minutely.size && minutely[last + 1].isRainy()) last++
+        while (last + 1 < minutely.size && minutely[last + 1].isRainy(minMm)) last++
         return RainRun(minutely.subList(index, last + 1), reachesDataEnd = last == minutely.lastIndex)
     }
 
-    fun evaluate(weather: Weather, now: Date = Date()): State {
+    /**
+     * @param window how long before rain the countdown starts
+     * @param skipLight ignore light rain (drizzle)
+     */
+    fun evaluate(
+        weather: Weather,
+        now: Date = Date(),
+        window: Duration = WINDOW,
+        skipLight: Boolean = false,
+    ): State {
+        val minMm = if (skipLight) LIGHT_MAX else 0.0
         val minutely = weather.minutelyForecast.sortedBy { it.date }
         val currentIndex = minutely.indexOfFirst { !now.before(it.date) && now.before(it.endingDate) }
 
-        if (currentIndex >= 0 && minutely[currentIndex].isRainy()) {
+        if (currentIndex >= 0 && minutely[currentIndex].isRainy(minMm)) {
             // Walk back to the start of this run, so intensity covers the whole shower
             var first = currentIndex
-            while (first > 0 && minutely[first - 1].isRainy()) first--
-            val run = runFrom(minutely, first)
+            while (first > 0 && minutely[first - 1].isRainy(minMm)) first--
+            val run = runFrom(minutely, first, minMm)
             val isShort = !run.reachesDataEnd && run.end.time - now.time <= SHORT_SHOWER.inWholeMilliseconds
             return if (isShort) State.Raining(run) else State.Idle(null)
         }
 
-        val nextIndex = minutely.indexOfFirst { it.isRainy() && it.date.after(now) }
+        val nextIndex = minutely.indexOfFirst { it.isRainy(minMm) && it.date.after(now) }
         if (nextIndex < 0) return State.Idle(null)
-        val run = runFrom(minutely, nextIndex)
-        return if (run.start.time - now.time <= WINDOW.inWholeMilliseconds) {
+        val run = runFrom(minutely, nextIndex, minMm)
+        return if (run.start.time - now.time <= window.inWholeMilliseconds) {
             State.Upcoming(run.start, run)
         } else {
             State.Idle(run.start)
         }
     }
+
+    /**
+     * The location rain is tracked for: where the user is (the current-position location) when they
+     * have one, otherwise their first location.
+     */
+    fun pickLocation(locations: List<Location>): Location? =
+        locations.firstOrNull { it.isCurrentPosition } ?: locations.firstOrNull()
 
     /**
      * Shows, refreshes or removes the notification for [location] and schedules the next check.
@@ -155,17 +186,25 @@ object RainLiveUpdate {
     }
 
     private fun updateWith(context: Context, location: Location?, weather: Weather): Boolean {
+        val settings = SettingsManager.getInstance(context)
+        val window = settings.rainLiveLeadMinutes.minutes
         val now = Date()
-        val state = evaluate(weather, now)
-        val dismissedUntil = prefs(context).getLong(KEY_DISMISSED_UNTIL, 0)
+        var state = evaluate(weather, now, window, settings.rainLiveSkipLight)
 
+        // Types the user turned off are treated as no rain
+        val run = (state as? State.Upcoming)?.run ?: (state as? State.Raining)?.run
+        if (run != null && kindAt(weather, run.start).typeKey !in settings.rainLiveTypes) {
+            state = State.Idle(null)
+        }
+
+        val dismissedUntil = prefs(context).getLong(KEY_DISMISSED_UNTIL, 0)
         val showing = when (state) {
             is State.Upcoming, is State.Raining -> {
                 if (now.time < dismissedUntil) {
                     cancel(context)
                     false
                 } else {
-                    show(context, location, weather, state, now)
+                    show(context, location, weather, state, now, window, inQuietHours(settings, now))
                     true
                 }
             }
@@ -175,19 +214,39 @@ object RainLiveUpdate {
             }
         }
 
-        scheduleNext(context, state, now)
+        scheduleNext(context, state, now, window)
         return showing
+    }
+
+    private val Kind.typeKey: String
+        get() = when (this) {
+            Kind.RAIN -> "rain"
+            Kind.SNOW -> "snow"
+            Kind.SLEET, Kind.HAIL -> "sleet_hail"
+            Kind.THUNDER -> "thunderstorm"
+        }
+
+    /** Quiet hours may cross midnight (e.g. 22:00 to 07:00) */
+    private fun inQuietHours(settings: SettingsManager, now: Date): Boolean {
+        if (!settings.rainLiveQuietHours) return false
+        fun minutesOf(hhmm: String) = hhmm.split(":").let { it[0].toInt() * 60 + it[1].toInt() }
+        val start = minutesOf(settings.rainLiveQuietStart)
+        val end = minutesOf(settings.rainLiveQuietEnd)
+        val cal = Calendar.getInstance().apply { time = now }
+        val current = cal[Calendar.HOUR_OF_DAY] * 60 + cal[Calendar.MINUTE]
+        return if (start <= end) current in start until end else current >= start || current < end
     }
 
     /**
      * Debug helper: fakes rain from [start] for [durationMinutes] at a [mmPerHour] rate. It is kept
      * until that rain is over, so the minute ticks keep moving it like real rain.
      */
-    fun startTest(context: Context, start: Date, durationMinutes: Int, mmPerHour: Double) {
+    fun startTest(context: Context, start: Date, durationMinutes: Int, mmPerHour: Double, kind: String? = null) {
         prefs(context).edit()
             .putLong(KEY_TEST_START, start.time)
             .putInt(KEY_TEST_DURATION, durationMinutes)
             .putFloat(KEY_TEST_RATE, mmPerHour.toFloat())
+            .putString(KEY_TEST_KIND, kind)
             .remove(KEY_DISMISSED_UNTIL)
             .apply()
         updateWith(context, null, testWeather(context) ?: return)
@@ -211,7 +270,12 @@ object RainLiveUpdate {
         val rate = prefs.getFloat(KEY_TEST_RATE, 3f).toDouble()
         // Dry before and after, like a real nowcast
         val first = start - 30.minutes.inWholeMilliseconds
+        // Optional weather type (a WeatherCode id such as "snow" or "thunderstorm") for the icons
+        val code = WeatherCode.getInstance(prefs.getString(KEY_TEST_KIND, null))
         return Weather(
+            hourlyForecast = (0 until 3).map {
+                Hourly(Date(first + it.hours.inWholeMilliseconds), weatherCode = code)
+            },
             minutelyForecast = (0 until duration + 60 step 5).map {
                 val t = first + it.minutes.inWholeMilliseconds
                 val rainy = t >= start && t < start + duration.minutes.inWholeMilliseconds
@@ -220,13 +284,24 @@ object RainLiveUpdate {
         )
     }
 
-    private fun show(context: Context, location: Location?, weather: Weather?, state: State, now: Date) {
+    private fun show(
+        context: Context,
+        location: Location?,
+        weather: Weather?,
+        state: State,
+        now: Date,
+        window: Duration,
+        quiet: Boolean,
+    ) {
         val run = when (state) {
             is State.Upcoming -> state.run
             is State.Raining -> state.run
             is State.Idle -> return
         }
-        val kindLevel = kindLevelText(context, kindAt(weather, run.start), levelOf(run.maxIntensityMm))
+        val kind = kindAt(weather, run.start)
+        val level = levelOf(run.maxIntensityMm)
+        val kindLevel = kindLevelText(context, kind, level)
+        val iconRes = weatherIcon(kind, level)
         fun time(date: Date) = location?.let { date.getFormattedTime(it, context, context.is12Hour) }
             ?: android.text.format.DateFormat.getTimeFormat(context).format(date)
         val durationMin = ((run.end.time - run.start.time) / 60_000.0).roundToInt()
@@ -257,17 +332,36 @@ object RainLiveUpdate {
         }
 
         val notification = context.notificationBuilder(CHANNEL_RAIN_LIVE) {
-            setSmallIcon(R.drawable.ic_precipitation)
+            // The small icon is all the collapsed capsule / status bar chip shows next to the
+            // countdown: the weather before it starts, the crossed-out drop / flake while counting
+            // down to the end. The coloured weather icon is the large icon in the expanded view.
+            setSmallIcon(
+                when {
+                    state is State.Upcoming -> iconRes
+                    kind == Kind.SNOW -> R.drawable.ic_live_flake_off
+                    else -> R.drawable.ic_live_drop_off
+                }
+            )
+            iconBitmap(context, iconRes)?.let { setLargeIcon(it) }
             setContentTitle(title)
             setContentText(text)
             location?.let { setSubText(it.getPlace(context)) }
-            setStyle(fillUpStyle(context, run, now, upcoming = state is State.Upcoming))
+            setStyle(
+                fillUpStyle(
+                    context,
+                    run,
+                    now,
+                    window,
+                    upcoming = state is State.Upcoming,
+                    snow = kind == Kind.SNOW
+                )
+            )
             setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             setCategory(NotificationCompat.CATEGORY_STATUS)
             setOngoing(true)
             setOnlyAlertOnce(true)
-            // Only the "starting soon" stage may alert; the rest just updates quietly
-            setSilent(state is State.Raining)
+            // Only the "starting soon" stage may alert, and not during quiet hours
+            setSilent(state is State.Raining || quiet)
             setShowWhen(true)
             setWhen(countdownTo.time)
             setUsesChronometer(true)
@@ -282,8 +376,9 @@ object RainLiveUpdate {
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
             )
+            // Text-only button: the weather icon is already shown once
             addAction(
-                R.drawable.ic_precipitation,
+                0,
                 context.getString(R.string.notification_rain_live_action_details),
                 PendingIntent.getActivity(
                     context,
@@ -306,17 +401,19 @@ object RainLiveUpdate {
     }
 
     /**
-     * A bar that fills up as the moment approaches: towards the rain while upcoming (rain icon at
-     * the end), towards the rain stopping while raining (sun icon at the end). The countdown starts
-     * at most [WINDOW] before the rain, so an upcoming bar always spans that window.
+     * A bar that fills up as the moment approaches: towards the rain while upcoming (drop / flake at
+     * the end), towards it stopping while raining (crossed-out drop / flake at the end). An upcoming
+     * bar always spans the lead-time [window].
      */
     private fun fillUpStyle(
         context: Context,
         run: RainRun,
         now: Date,
+        window: Duration,
         upcoming: Boolean,
+        snow: Boolean,
     ): NotificationCompat.ProgressStyle {
-        val from = if (upcoming) run.start.time - WINDOW.inWholeMilliseconds else run.start.time
+        val from = if (upcoming) run.start.time - window.inWholeMilliseconds else run.start.time
         val to = if (upcoming) run.start.time else run.end.time
         val total = ((to - from) / 1000L).toInt().coerceAtLeast(1)
         val elapsed = ((now.time - from) / 1000L).toInt().coerceIn(0, total)
@@ -328,7 +425,12 @@ object RainLiveUpdate {
             .setProgressEndIcon(
                 IconCompat.createWithResource(
                     context,
-                    if (upcoming) R.drawable.ic_precipitation else R.drawable.ic_sunshine_duration
+                    when {
+                        snow && upcoming -> R.drawable.ic_live_flake
+                        snow -> R.drawable.ic_live_flake_off
+                        upcoming -> R.drawable.ic_live_drop
+                        else -> R.drawable.ic_live_drop_off
+                    }
                 )
             )
     }
@@ -357,8 +459,31 @@ object RainLiveUpdate {
             WeatherCode.SNOW -> Kind.SNOW
             WeatherCode.SLEET -> Kind.SLEET
             WeatherCode.HAIL -> Kind.HAIL
+            WeatherCode.THUNDER, WeatherCode.THUNDERSTORM -> Kind.THUNDER
             else -> Kind.RAIN
         }
+    }
+
+    private fun weatherIcon(kind: Kind, level: Level): Int = when (kind) {
+        Kind.RAIN -> when (level) {
+            Level.LIGHT -> R.drawable.ic_live_rain_light
+            Level.MODERATE -> R.drawable.ic_live_rain
+            Level.HEAVY -> R.drawable.ic_live_rain_heavy
+        }
+        Kind.SNOW -> when (level) {
+            Level.LIGHT -> R.drawable.ic_live_snow_light
+            Level.MODERATE -> R.drawable.ic_live_snow
+            Level.HEAVY -> R.drawable.ic_live_snow_heavy
+        }
+        Kind.SLEET -> R.drawable.ic_live_sleet
+        Kind.HAIL -> R.drawable.ic_live_hail
+        Kind.THUNDER -> R.drawable.ic_live_thunder
+    }
+
+    private fun iconBitmap(context: Context, @DrawableRes res: Int): Bitmap? {
+        val drawable = ContextCompat.getDrawable(context, res) ?: return null
+        val size = (48 * context.resources.displayMetrics.density).toInt()
+        return drawable.toBitmap(size, size)
     }
 
     private fun kindLevelText(context: Context, kind: Kind, level: Level): String = context.getString(
@@ -375,12 +500,13 @@ object RainLiveUpdate {
             }
             Kind.SLEET -> R.string.notification_rain_live_sleet
             Kind.HAIL -> R.string.notification_rain_live_hail
+            Kind.THUNDER -> R.string.notification_rain_live_thunderstorm
         }
     )
 
     // Alarms
 
-    private fun scheduleNext(context: Context, state: State, now: Date) {
+    private fun scheduleNext(context: Context, state: State, now: Date, window: Duration) {
         val nowMs = now.time
         val tick = nowMs + TICK.inWholeMilliseconds
         val (at, refresh) = when (state) {
@@ -392,7 +518,7 @@ object RainLiveUpdate {
                     return
                 }
                 // Wake up as the rain enters the window, and get a fresh forecast to confirm it
-                maxOf(start.time - WINDOW.inWholeMilliseconds, nowMs + 1.minutes.inWholeMilliseconds) to true
+                maxOf(start.time - window.inWholeMilliseconds, nowMs + 1.minutes.inWholeMilliseconds) to true
             }
         }
         val alarmManager = context.getSystemService<AlarmManager>() ?: return

@@ -26,6 +26,7 @@ import java.util.Date
  * Debug builds only (callable from adb, which holds DUMP): fakes rain for the Live Update.
  * Int extras: `minutes` until it starts (default 5, 0 = raining now, negative = dismiss),
  * `duration` in minutes (default 20), `rate` in tenths of mm/h (default 30 = 3 mm/h, moderate).
+ * String extra `kind`: snow, sleet, hail or thunderstorm (default rain).
  */
 class RainLiveTestReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -41,7 +42,8 @@ class RainLiveTestReceiver : BroadcastReceiver() {
             context,
             Date(start),
             durationMinutes = intent.getIntExtra("duration", 20),
-            mmPerHour = intent.getIntExtra("rate", 30) / 10.0
+            mmPerHour = intent.getIntExtra("rate", 30) / 10.0,
+            kind = intent.getStringExtra("kind")
         )
     }
 }

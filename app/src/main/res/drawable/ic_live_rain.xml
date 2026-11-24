@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rain. Coloured so it can also be the large icon; as a small icon only its shape is used. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:fillColor="#FFA3B1C2" android:pathData="M3,10.5a3.5,3.5 0 1,0 7,0a3.5,3.5 0 1,0 -7,0ZM7,8a5,5 0 1,0 10,0a5,5 0 1,0 -10,0ZM14,10.5a3.5,3.5 0 1,0 7,0a3.5,3.5 0 1,0 -7,0ZM6.5,10.5L6.5,14L17.5,14L17.5,10.5Z" />
+    <path android:strokeColor="#FF4DA3FF" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M8,16.75L6.9,20.25M12.5,16.75L11.4,20.25M17,16.75L15.9,20.25" />
+</vector>

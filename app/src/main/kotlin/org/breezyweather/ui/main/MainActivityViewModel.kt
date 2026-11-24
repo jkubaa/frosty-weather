@@ -265,10 +265,10 @@ class MainActivityViewModel @Inject constructor(
                 // If it's null, it's not coming from an update, so no need to broadcast anything
                 if (updatedLocationIds != null) {
                     refreshHelper.broadcastDataIfNecessary(getApplication(), locationList, updatedLocationIds)
-                    // Refresh the rain countdown when the first location was just updated in the app
-                    if (locationList[0].formattedId in updatedLocationIds) {
-                        RainLiveUpdate.update(getApplication(), locationList[0])
-                    }
+                    // Refresh the rain countdown when its location was just updated in the app
+                    RainLiveUpdate.pickLocation(locationList)
+                        ?.takeIf { it.formattedId in updatedLocationIds }
+                        ?.let { RainLiveUpdate.update(getApplication(), it) }
                 }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {

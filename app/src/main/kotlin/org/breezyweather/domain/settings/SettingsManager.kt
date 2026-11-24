@@ -94,6 +94,7 @@ class SettingsManager private constructor(
             "&visibility"
 
         const val DEFAULT_TODAY_FORECAST_TIME = "07:00"
+        val RAIN_LIVE_TYPES_ALL = setOf("rain", "snow", "sleet_hail", "thunderstorm")
         const val DEFAULT_TOMORROW_FORECAST_TIME = "21:00"
     }
 
@@ -157,6 +158,54 @@ class SettingsManager private constructor(
             notifySettingsChanged()
         }
         get() = config.getBoolean("precipitation_notification_switch", false)
+
+    // Rain countdown (Live Update)
+
+    /** How long before rain the countdown starts */
+    var rainLiveLeadMinutes: Int
+        set(value) {
+            config.edit().putInt("rain_live_lead_minutes", value).apply()
+            notifySettingsChanged()
+        }
+        get() = config.getInt("rain_live_lead_minutes", 15)
+
+    /** Ignore light rain (drizzle) */
+    var rainLiveSkipLight: Boolean
+        set(value) {
+            config.edit().putBoolean("rain_live_skip_light", value).apply()
+            notifySettingsChanged()
+        }
+        get() = config.getBoolean("rain_live_skip_light", false)
+
+    /** During quiet hours the countdown still shows, but without sound or pop-up */
+    var rainLiveQuietHours: Boolean
+        set(value) {
+            config.edit().putBoolean("rain_live_quiet_hours", value).apply()
+            notifySettingsChanged()
+        }
+        get() = config.getBoolean("rain_live_quiet_hours", false)
+
+    var rainLiveQuietStart: String
+        set(value) {
+            config.edit().putString("rain_live_quiet_start", value).apply()
+            notifySettingsChanged()
+        }
+        get() = config.getString("rain_live_quiet_start", "22:00") ?: "22:00"
+
+    var rainLiveQuietEnd: String
+        set(value) {
+            config.edit().putString("rain_live_quiet_end", value).apply()
+            notifySettingsChanged()
+        }
+        get() = config.getString("rain_live_quiet_end", "07:00") ?: "07:00"
+
+    /** Weather types to count down for: rain, snow, sleet_hail, thunderstorm */
+    var rainLiveTypes: Set<String>
+        set(value) {
+            config.edit().putStringSet("rain_live_types", value).apply()
+            notifySettingsChanged()
+        }
+        get() = config.getStringSet("rain_live_types", null)?.toSet() ?: RAIN_LIVE_TYPES_ALL
 
     var updateInterval: UpdateInterval
         set(value) {

@@ -53,7 +53,7 @@ class RainLiveUpdateReceiver : BroadcastReceiver() {
                 val pending = goAsync()
                 GlobalScope.launch(Dispatchers.IO) {
                     try {
-                        val location = locationRepository.getFirstLocation()?.let {
+                        val location = RainLiveUpdate.pickLocation(locationRepository.getAllLocations())?.let {
                             it.copy(weather = weatherRepository.getWeatherByLocationId(it.formattedId))
                         }
                         if (location != null) {

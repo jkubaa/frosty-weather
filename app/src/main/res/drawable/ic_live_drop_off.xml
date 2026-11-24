@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rain stops here (end of the bar while raining). Coloured so it can also be the large icon; as a small icon only its shape is used. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group>
+        <clip-path android:pathData="M2.6,0L24,0L24,21.4ZM0,2.6L0,24L21.4,24Z" />
+        <path android:fillColor="#FF4DA3FF" android:pathData="M12,2.75C12,2.75 5.75,9.75 5.75,14.5A6.25,6.25 0 0,0 18.25,14.5C18.25,9.75 12,2.75 12,2.75Z" />
+    </group>
+    <path android:strokeColor="#FF4DA3FF" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M4.5,4.5L19.5,19.5" />
+</vector>
