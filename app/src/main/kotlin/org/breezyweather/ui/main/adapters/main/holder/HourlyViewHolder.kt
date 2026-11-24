@@ -34,8 +34,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -69,8 +69,8 @@ import org.breezyweather.common.extensions.getHour
 import org.breezyweather.common.extensions.is12Hour
 import org.breezyweather.common.options.appearance.DetailScreen
 import org.breezyweather.common.utils.helpers.IntentHelper
-import org.breezyweather.ui.main.cards.fadeHorizontalEdges
 import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.ui.main.cards.fadeHorizontalEdges
 import org.breezyweather.ui.main.utils.ForecastMetric
 import org.breezyweather.ui.main.utils.ForecastMetrics
 import org.breezyweather.ui.main.utils.MetricCell
@@ -193,7 +193,9 @@ class HourlyViewHolder(context: Context) : ComposeCardViewHolder(context) {
             weather.dailyForecast.drop(weather.todayIndex ?: 0).take(3).flatMap { daily ->
                 val sun = daily.sun
                 // Polar day / night have no real sunrise or sunset
-                if (sun?.isValid != true || sun.setDate!!.time - sun.riseDate!!.time >= 1.days.inWholeMilliseconds - 1) {
+                if (sun?.isValid != true ||
+                    sun.setDate!!.time - sun.riseDate!!.time >= 1.days.inWholeMilliseconds - 1
+                ) {
                     emptyList()
                 } else {
                     listOf(Entry.SunEvent(sun.riseDate!!, true), Entry.SunEvent(sun.setDate!!, false))
@@ -217,10 +219,22 @@ class HourlyViewHolder(context: Context) : ComposeCardViewHolder(context) {
     private fun HourItem(b: Bound, metric: ForecastMetric, entry: Entry.Hour) {
         val activity = b.activity
         val hourly = entry.hourly
-        val hourLabel = if (entry.isNow) activity.getString(R.string.hourly_now) else hourly.date.getHour(b.location, activity)
+        val hourLabel = if (entry.isNow) {
+            activity.getString(
+                R.string.hourly_now
+            )
+        } else {
+            hourly.date.getHour(b.location, activity)
+        }
         val temperatureUnit = remember { SettingsManager.getInstance(activity).getTemperatureUnit(activity) }
 
-        val cell = if (metric == ForecastMetric.CONDITIONS) null else ForecastMetrics.hourlyCell(activity, metric, hourly)
+        val cell = if (metric ==
+            ForecastMetric.CONDITIONS
+        ) {
+            null
+        } else {
+            ForecastMetrics.hourlyCell(activity, metric, hourly)
+        }
         // "Now" shows the observed temperature when there is one, like the hero
         val temperature = if (entry.isNow) {
             b.location.weather?.current?.temperature?.temperature ?: hourly.temperature?.temperature
@@ -263,7 +277,12 @@ class HourlyViewHolder(context: Context) : ComposeCardViewHolder(context) {
                     val dailyIndex = b.location.weather!!.dailyForecast.indexOfFirst {
                         it.date.time > hourly.date.time - 1.days.inWholeMilliseconds
                     }.takeIf { it != -1 }
-                    IntentHelper.startDailyWeatherActivity(activity, b.location.formattedId, dailyIndex, DetailScreen.TAG_CONDITIONS)
+                    IntentHelper.startDailyWeatherActivity(
+                        activity,
+                        b.location.formattedId,
+                        dailyIndex,
+                        DetailScreen.TAG_CONDITIONS
+                    )
                 }
             }
         ) {
@@ -290,7 +309,9 @@ class HourlyViewHolder(context: Context) : ComposeCardViewHolder(context) {
     private fun SunEventItem(b: Bound, entry: Entry.SunEvent) {
         val activity = b.activity
         val time = entry.date.getFormattedTime(b.location, activity, activity.is12Hour)
-        val name = activity.getString(if (entry.isSunrise) R.string.highlight_label_sunrise else R.string.highlight_label_sunset)
+        val name = activity.getString(
+            if (entry.isSunrise) R.string.highlight_label_sunrise else R.string.highlight_label_sunset
+        )
         StripColumn(
             label = time,
             labelSize = 13,
@@ -366,7 +387,12 @@ class HourlyViewHolder(context: Context) : ComposeCardViewHolder(context) {
                     cell.fraction?.coerceIn(0f, 1f)?.takeIf { it > 0f }?.let { f ->
                         // At least a round cap, so small values still show
                         val h = (size.height * f).coerceAtLeast(size.width)
-                        drawRoundRect(fill, topLeft = Offset(0f, size.height - h), size = Size(size.width, h), cornerRadius = radius)
+                        drawRoundRect(
+                            fill,
+                            topLeft = Offset(0f, size.height - h),
+                            size = Size(size.width, h),
+                            cornerRadius = radius
+                        )
                     }
                 }
             }

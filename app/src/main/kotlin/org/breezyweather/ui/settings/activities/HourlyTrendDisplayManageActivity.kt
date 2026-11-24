@@ -22,11 +22,11 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.res.stringResource
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
+import org.breezyweather.common.options.appearance.HourlyTrendDisplay
 import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.domain.settings.SettingsManager.Companion.DEFAULT_HOURLY_TREND_DISPLAY
 import org.breezyweather.ui.settings.compose.DisplayOrderScreen
 import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
-import org.breezyweather.common.options.appearance.HourlyTrendDisplay
-import org.breezyweather.domain.settings.SettingsManager.Companion.DEFAULT_HOURLY_TREND_DISPLAY
 
 /**
  * Choose and order the tabs of the hourly forecast card (iOS edit-mode list).

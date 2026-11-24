@@ -327,7 +327,14 @@ private fun SunPathChart(
             size = Size(size.width, horizonY + corner),
             cornerRadius = CornerRadius(corner, corner)
         )
-        drawRect(color = palette.sheet, topLeft = Offset(0f, horizonY), size = Size(size.width, plotBottom - horizonY + 1f))
+        drawRect(
+            color = palette.sheet,
+            topLeft = Offset(0f, horizonY),
+            size = Size(
+                size.width,
+                plotBottom - horizonY + 1f
+            )
+        )
 
         // Grid
         val rows = 8
@@ -562,7 +569,9 @@ private fun MoonTimeline(
                     scope.launch { offset.snapTo(offset.value - delta / pxPerHour) }
                 },
                 onDragStopped = { velocity ->
-                    scope.launch { offset.animateDecay(-velocity / pxPerHour, exponentialDecay(frictionMultiplier = 2f)) }
+                    scope.launch {
+                        offset.animateDecay(-velocity / pxPerHour, exponentialDecay(frictionMultiplier = 2f))
+                    }
                 }
             )
             .clearAndSetSemantics {}

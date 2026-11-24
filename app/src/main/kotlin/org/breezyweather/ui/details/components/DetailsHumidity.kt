@@ -41,9 +41,6 @@ import androidx.compose.ui.semantics.contentDescription
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
-import org.breezyweather.ui.common.charts.compose.ChartYLabels
-import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
-import org.breezyweather.ui.common.charts.compose.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
 import kotlinx.collections.immutable.ImmutableList
@@ -53,7 +50,6 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.R
-import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.formatMeasure
 import org.breezyweather.common.extensions.formatPercent
 import org.breezyweather.common.extensions.getFormattedTime
@@ -67,6 +63,10 @@ import org.breezyweather.domain.weather.model.getFullLabel
 import org.breezyweather.domain.weather.model.getRangeContentDescriptionSummary
 import org.breezyweather.domain.weather.model.getRangeSummary
 import org.breezyweather.ui.common.charts.compose.BreezyLineChart
+import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
+import org.breezyweather.ui.common.charts.compose.ChartYLabels
+import org.breezyweather.ui.common.charts.compose.lineModel
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.unit.formatting.UnitWidth
 import org.breezyweather.unit.ratio.Ratio
 import org.breezyweather.unit.ratio.Ratio.Companion.percent

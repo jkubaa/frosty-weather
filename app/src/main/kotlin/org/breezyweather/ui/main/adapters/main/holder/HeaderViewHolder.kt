@@ -136,8 +136,20 @@ private data class HeroState(
             val highLow = if (todayTemperatures.isNotEmpty()) {
                 context.getString(
                     R.string.hero_high_low,
-                    GlassForecastFormat.degrees(context, todayTemperatures.maxBy { it.toDouble(TemperatureUnit.CELSIUS) }, unit),
-                    GlassForecastFormat.degrees(context, todayTemperatures.minBy { it.toDouble(TemperatureUnit.CELSIUS) }, unit)
+                    GlassForecastFormat.degrees(
+                        context,
+                        todayTemperatures.maxBy {
+                            it.toDouble(TemperatureUnit.CELSIUS)
+                        },
+                        unit
+                    ),
+                    GlassForecastFormat.degrees(
+                        context,
+                        todayTemperatures.minBy {
+                            it.toDouble(TemperatureUnit.CELSIUS)
+                        },
+                        unit
+                    )
                 )
             } else {
                 null

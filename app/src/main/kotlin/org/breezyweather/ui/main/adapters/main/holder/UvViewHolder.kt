@@ -26,19 +26,18 @@ import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.getFormattedTime
 import org.breezyweather.common.extensions.is12Hour
-import java.util.Date
-import kotlin.time.Duration.Companion.hours
 import org.breezyweather.common.options.appearance.DetailScreen
 import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.domain.weather.model.getContentDescription
 import org.breezyweather.domain.weather.model.getLevel
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.format
+import java.util.Date
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.hours
 
 /** UV index tile: index, level, and where it sits on the low (green) to extreme (purple) scale. */
-class UvViewHolder(context: Context) : GlassTileViewHolder(
-    context, R.drawable.ic_uv, R.string.uv_index_short) {
+class UvViewHolder(context: Context) : GlassTileViewHolder(context, R.drawable.ic_uv, R.string.uv_index_short) {
 
     override fun onBindView(
         activity: BreezyActivity,

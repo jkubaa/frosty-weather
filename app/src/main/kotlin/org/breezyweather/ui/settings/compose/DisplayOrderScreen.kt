@@ -204,7 +204,9 @@ private fun <T : Any> ReorderableGroup(
                                     modifier = Modifier.pointerInput(item) {
                                         detectDragGestures(
                                             onDragStart = {
-                                                haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                                haptics.performHapticFeedback(
+                                                    HapticFeedbackType.GestureThresholdActivate
+                                                )
                                                 dragged = item
                                                 dragOffset = 0f
                                             },

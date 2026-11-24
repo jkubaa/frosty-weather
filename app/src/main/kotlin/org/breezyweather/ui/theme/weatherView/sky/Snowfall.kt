@@ -96,8 +96,12 @@ private object FlakeSprites {
             val half = size / 2f
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 shader = RadialGradient(
-                    half, half, half,
-                    IntArray(alphas.size) { i -> android.graphics.Color.argb((alphas[i] * 255f).roundToInt(), 255, 255, 255) },
+                    half,
+                    half,
+                    half,
+                    IntArray(alphas.size) { i ->
+                        android.graphics.Color.argb((alphas[i] * 255f).roundToInt(), 255, 255, 255)
+                    },
                     stops,
                     Shader.TileMode.CLAMP
                 )

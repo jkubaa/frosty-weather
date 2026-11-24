@@ -31,8 +31,7 @@ import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.UnitWidth
 
 /** Visibility tile: distance, and how good that is. */
-class VisibilityViewHolder(context: Context) : GlassTileViewHolder(
-    context, R.drawable.ic_eye, R.string.visibility) {
+class VisibilityViewHolder(context: Context) : GlassTileViewHolder(context, R.drawable.ic_eye, R.string.visibility) {
 
     override fun onBindView(
         activity: BreezyActivity,

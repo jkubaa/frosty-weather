@@ -32,7 +32,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import org.breezyweather.ui.common.composables.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -54,8 +53,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.source.SourceFeature
-import org.breezyweather.R
 import kotlinx.coroutines.delay
+import org.breezyweather.R
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.getRelativeTime
 import org.breezyweather.common.extensions.splitKeeping
@@ -64,6 +63,7 @@ import org.breezyweather.common.source.HttpSource
 import org.breezyweather.domain.source.resourceName
 import org.breezyweather.ui.common.composables.AlertDialogLink
 import org.breezyweather.ui.common.composables.AlertDialogNoPadding
+import org.breezyweather.ui.common.composables.TextButton
 import org.breezyweather.ui.main.MainActivity
 import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
@@ -139,72 +139,72 @@ class FooterViewHolder(
             modifier = modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-        Row(
-            modifier = Modifier
-                .padding(dimensionResource(R.dimen.normal_margin).div(2))
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = buildAnnotatedString {
-                    forecastSource?.supportedFeatures?.getOrElse(SourceFeature.FORECAST) { null }?.let {
-                        if (forecastSource is HttpSource && forecastSource.attributionLinks.isNotEmpty()) {
-                            val splits = it.splitKeeping(*forecastSource.attributionLinks.keys.toTypedArray())
-                            splits.forEach { split ->
-                                forecastSource.attributionLinks.getOrElse(split) { null }?.let { link ->
-                                    withLink(
-                                        LinkAnnotation.Clickable(
-                                            tag = split,
-                                            styles = TextLinkStyles(
-                                                style = SpanStyle(textDecoration = TextDecoration.Underline)
-                                            ),
-                                            linkInteractionListener = {
-                                                linkToOpen.value = link
-                                                dialogLinkOpenState.value = true
-                                            }
-                                        )
-                                    ) {
-                                        append(split)
-                                    }
-                                } ?: append(split)
+            Row(
+                modifier = Modifier
+                    .padding(dimensionResource(R.dimen.normal_margin).div(2))
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = buildAnnotatedString {
+                        forecastSource?.supportedFeatures?.getOrElse(SourceFeature.FORECAST) { null }?.let {
+                            if (forecastSource is HttpSource && forecastSource.attributionLinks.isNotEmpty()) {
+                                val splits = it.splitKeeping(*forecastSource.attributionLinks.keys.toTypedArray())
+                                splits.forEach { split ->
+                                    forecastSource.attributionLinks.getOrElse(split) { null }?.let { link ->
+                                        withLink(
+                                            LinkAnnotation.Clickable(
+                                                tag = split,
+                                                styles = TextLinkStyles(
+                                                    style = SpanStyle(textDecoration = TextDecoration.Underline)
+                                                ),
+                                                linkInteractionListener = {
+                                                    linkToOpen.value = link
+                                                    dialogLinkOpenState.value = true
+                                                }
+                                            )
+                                        ) {
+                                            append(split)
+                                        }
+                                    } ?: append(split)
+                                }
+                            } else {
+                                append(it)
                             }
-                        } else {
-                            append(it)
-                        }
-                        append(stringResource(R.string.dot_separator))
-                        withLink(moreClickableLinkAnnotation) { append(stringResource(R.string.action_more)) }
-                    } ?: withLink(moreClickableLinkAnnotation) { append(stringResource(R.string.data_sources)) }
-                },
-                color = Color(
-                    delegate.getOnBackgroundColor(
-                        context,
-                        WeatherViewController.getWeatherKind(location),
-                        WeatherViewController.isDaylight(location)
-                    )
-                ),
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        // Last refresh: tucked away at the very bottom (it used to be a chip in the hero)
-        location.weather?.base?.refreshTime?.let { refreshTime ->
-            val updatedText = remember(refreshTime) { mutableStateOf(lastUpdatedText(refreshTime)) }
-            LaunchedEffect(refreshTime) {
-                while (true) {
-                    updatedText.value = lastUpdatedText(refreshTime)
-                    delay(1.minutes)
-                }
+                            append(stringResource(R.string.dot_separator))
+                            withLink(moreClickableLinkAnnotation) { append(stringResource(R.string.action_more)) }
+                        } ?: withLink(moreClickableLinkAnnotation) { append(stringResource(R.string.data_sources)) }
+                    },
+                    color = Color(
+                        delegate.getOnBackgroundColor(
+                            context,
+                            WeatherViewController.getWeatherKind(location),
+                            WeatherViewController.isDaylight(location)
+                        )
+                    ),
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold
+                )
             }
-            Text(
-                text = updatedText.value,
-                color = footerColor.copy(alpha = 0.6f),
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = dimensionResource(R.dimen.normal_margin).div(2))
-            )
-        }
+
+            // Last refresh: tucked away at the very bottom (it used to be a chip in the hero)
+            location.weather?.base?.refreshTime?.let { refreshTime ->
+                val updatedText = remember(refreshTime) { mutableStateOf(lastUpdatedText(refreshTime)) }
+                LaunchedEffect(refreshTime) {
+                    while (true) {
+                        updatedText.value = lastUpdatedText(refreshTime)
+                        delay(1.minutes)
+                    }
+                }
+                Text(
+                    text = updatedText.value,
+                    color = footerColor.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.normal_margin).div(2))
+                )
+            }
         }
 
         if (dialogOpenState.value) {

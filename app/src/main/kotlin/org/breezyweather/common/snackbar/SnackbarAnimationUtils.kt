@@ -74,7 +74,12 @@ object SnackbarAnimationUtils : AnimationUtils() {
         return AnimatorSet().apply {
             playTogether(
                 ObjectAnimator.ofFloat(view, View.ALPHA, view.alpha, 0f),
-                ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, view.translationY, view.context.dpToPx(GLASS_TRAVEL_DP)),
+                ObjectAnimator.ofFloat(
+                    view,
+                    View.TRANSLATION_Y,
+                    view.translationY,
+                    view.context.dpToPx(GLASS_TRAVEL_DP)
+                ),
                 ObjectAnimator.ofFloat(view, View.SCALE_X, view.scaleX, GLASS_EXIT_SCALE),
                 ObjectAnimator.ofFloat(view, View.SCALE_Y, view.scaleY, GLASS_EXIT_SCALE)
             )

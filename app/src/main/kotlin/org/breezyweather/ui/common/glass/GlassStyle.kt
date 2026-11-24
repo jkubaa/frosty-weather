@@ -60,16 +60,16 @@ data class GlassStyle(
         /** Home cards and tiles, over the sky. */
         val Card = GlassStyle(
             cornerRadius = GlassCornerRadius,
-            refraction = GlassEdgeRefraction,
-            saturation = GlassVividSaturation,
+            refraction = GLASS_EDGE_REFRACTION,
+            saturation = GLASS_VIVID_SATURATION,
             rim = true
         )
 
         /** The home bottom bar and its buttons: clear and vivid. Set [cornerRadius] to half the bar height. */
         val Bar = GlassStyle(
             cornerRadius = 24.dp,
-            refraction = GlassEdgeRefraction,
-            saturation = GlassBarSaturation
+            refraction = GLASS_EDGE_REFRACTION,
+            saturation = GLASS_BAR_SATURATION
         )
 
         /** The pull-to-refresh bubble. */

@@ -95,24 +95,33 @@ object ForecastMetrics {
             SettingsManager.getInstance(context).hourlyTrendDisplayList.mapNotNull {
                 when (it) {
                     HourlyTrendDisplay.TAG_TEMPERATURE -> null // conditions, always first
-                    HourlyTrendDisplay.TAG_AIR_QUALITY -> ForecastMetric.AIR_QUALITY
-                        .takeIf { hours.any { h -> h.airQuality?.getIndex() != null } }
-                    HourlyTrendDisplay.TAG_WIND -> ForecastMetric.WIND
-                        .takeIf { hours.any { h -> h.wind?.speed != null } }
-                    HourlyTrendDisplay.TAG_UV_INDEX -> ForecastMetric.UV_INDEX
-                        .takeIf { hours.any { h -> h.uV?.index != null } }
-                    HourlyTrendDisplay.TAG_PRECIPITATION -> ForecastMetric.PRECIPITATION
-                        .takeIf { hours.any { h -> h.precipitationProbability?.total != null } }
-                    HourlyTrendDisplay.TAG_FEELS_LIKE -> ForecastMetric.FEELS_LIKE
-                        .takeIf { hours.any { h -> h.temperature?.feelsLikeTemperature != null } }
-                    HourlyTrendDisplay.TAG_HUMIDITY -> ForecastMetric.HUMIDITY
-                        .takeIf { hours.any { h -> h.relativeHumidity != null } }
-                    HourlyTrendDisplay.TAG_PRESSURE -> ForecastMetric.PRESSURE
-                        .takeIf { hours.any { h -> h.pressure != null } }
-                    HourlyTrendDisplay.TAG_CLOUD_COVER -> ForecastMetric.CLOUD_COVER
-                        .takeIf { hours.any { h -> h.cloudCover != null } }
-                    HourlyTrendDisplay.TAG_VISIBILITY -> ForecastMetric.VISIBILITY
-                        .takeIf { hours.any { h -> h.visibility != null } }
+                    HourlyTrendDisplay.TAG_AIR_QUALITY ->
+                        ForecastMetric.AIR_QUALITY
+                            .takeIf { hours.any { h -> h.airQuality?.getIndex() != null } }
+                    HourlyTrendDisplay.TAG_WIND ->
+                        ForecastMetric.WIND
+                            .takeIf { hours.any { h -> h.wind?.speed != null } }
+                    HourlyTrendDisplay.TAG_UV_INDEX ->
+                        ForecastMetric.UV_INDEX
+                            .takeIf { hours.any { h -> h.uV?.index != null } }
+                    HourlyTrendDisplay.TAG_PRECIPITATION ->
+                        ForecastMetric.PRECIPITATION
+                            .takeIf { hours.any { h -> h.precipitationProbability?.total != null } }
+                    HourlyTrendDisplay.TAG_FEELS_LIKE ->
+                        ForecastMetric.FEELS_LIKE
+                            .takeIf { hours.any { h -> h.temperature?.feelsLikeTemperature != null } }
+                    HourlyTrendDisplay.TAG_HUMIDITY ->
+                        ForecastMetric.HUMIDITY
+                            .takeIf { hours.any { h -> h.relativeHumidity != null } }
+                    HourlyTrendDisplay.TAG_PRESSURE ->
+                        ForecastMetric.PRESSURE
+                            .takeIf { hours.any { h -> h.pressure != null } }
+                    HourlyTrendDisplay.TAG_CLOUD_COVER ->
+                        ForecastMetric.CLOUD_COVER
+                            .takeIf { hours.any { h -> h.cloudCover != null } }
+                    HourlyTrendDisplay.TAG_VISIBILITY ->
+                        ForecastMetric.VISIBILITY
+                            .takeIf { hours.any { h -> h.visibility != null } }
                 }
             }.distinct()
     }
@@ -122,18 +131,24 @@ object ForecastMetrics {
             SettingsManager.getInstance(context).dailyTrendDisplayList.mapNotNull {
                 when (it) {
                     DailyTrendDisplay.TAG_TEMPERATURE -> null // conditions, always first
-                    DailyTrendDisplay.TAG_AIR_QUALITY -> ForecastMetric.AIR_QUALITY
-                        .takeIf { days.any { d -> d.airQuality?.getIndex() != null } }
-                    DailyTrendDisplay.TAG_WIND -> ForecastMetric.WIND
-                        .takeIf { days.any { d -> d.strongestWind()?.speed != null } }
-                    DailyTrendDisplay.TAG_UV_INDEX -> ForecastMetric.UV_INDEX
-                        .takeIf { days.any { d -> d.uV?.index != null } }
-                    DailyTrendDisplay.TAG_PRECIPITATION -> ForecastMetric.PRECIPITATION
-                        .takeIf { days.any { d -> d.precipitationChance() != null } }
-                    DailyTrendDisplay.TAG_SUNSHINE -> ForecastMetric.SUNSHINE
-                        .takeIf { days.any { d -> d.sunshineDuration != null } }
-                    DailyTrendDisplay.TAG_FEELS_LIKE -> ForecastMetric.FEELS_LIKE
-                        .takeIf { days.any { d -> d.feelsLikeHigh() != null } }
+                    DailyTrendDisplay.TAG_AIR_QUALITY ->
+                        ForecastMetric.AIR_QUALITY
+                            .takeIf { days.any { d -> d.airQuality?.getIndex() != null } }
+                    DailyTrendDisplay.TAG_WIND ->
+                        ForecastMetric.WIND
+                            .takeIf { days.any { d -> d.strongestWind()?.speed != null } }
+                    DailyTrendDisplay.TAG_UV_INDEX ->
+                        ForecastMetric.UV_INDEX
+                            .takeIf { days.any { d -> d.uV?.index != null } }
+                    DailyTrendDisplay.TAG_PRECIPITATION ->
+                        ForecastMetric.PRECIPITATION
+                            .takeIf { days.any { d -> d.precipitationChance() != null } }
+                    DailyTrendDisplay.TAG_SUNSHINE ->
+                        ForecastMetric.SUNSHINE
+                            .takeIf { days.any { d -> d.sunshineDuration != null } }
+                    DailyTrendDisplay.TAG_FEELS_LIKE ->
+                        ForecastMetric.FEELS_LIKE
+                            .takeIf { days.any { d -> d.feelsLikeHigh() != null } }
                 }
             }.distinct()
 
@@ -145,13 +160,28 @@ object ForecastMetrics {
                 MetricCell.Graphic.NONE
             )
             ForecastMetric.PRECIPITATION -> hourly.precipitationProbability?.total.let {
-                MetricCell(it?.formatPercent(context, UnitWidth.NARROW), MetricCell.Graphic.BAR, it?.inPercent?.div(100)?.toFloat(), WATER)
+                MetricCell(
+                    it?.formatPercent(context, UnitWidth.NARROW),
+                    MetricCell.Graphic.BAR,
+                    it?.inPercent?.div(100)?.toFloat(),
+                    WATER
+                )
             }
             ForecastMetric.HUMIDITY -> hourly.relativeHumidity.let {
-                MetricCell(it?.formatPercent(context, UnitWidth.NARROW), MetricCell.Graphic.BAR, it?.inPercent?.div(100)?.toFloat(), WATER)
+                MetricCell(
+                    it?.formatPercent(context, UnitWidth.NARROW),
+                    MetricCell.Graphic.BAR,
+                    it?.inPercent?.div(100)?.toFloat(),
+                    WATER
+                )
             }
             ForecastMetric.CLOUD_COVER -> hourly.cloudCover.let {
-                MetricCell(it?.formatPercent(context, UnitWidth.NARROW), MetricCell.Graphic.BAR, it?.inPercent?.div(100)?.toFloat(), CLOUD)
+                MetricCell(
+                    it?.formatPercent(context, UnitWidth.NARROW),
+                    MetricCell.Graphic.BAR,
+                    it?.inPercent?.div(100)?.toFloat(),
+                    CLOUD
+                )
             }
             ForecastMetric.WIND -> windCell(context, hourly.wind)
             ForecastMetric.UV_INDEX -> hourly.uV.let {
@@ -196,7 +226,9 @@ object ForecastMetrics {
                 MetricCell(
                     listOfNotNull(
                         // Traces would round to "0 in": only show amounts of at least 1 mm
-                        total?.takeIf { it.inMillimeters >= 1.0 }?.formatMeasure(context, valueWidth = UnitWidth.NARROW),
+                        total?.takeIf {
+                            it.inMillimeters >= 1.0
+                        }?.formatMeasure(context, valueWidth = UnitWidth.NARROW),
                         chance?.formatPercent(context, UnitWidth.NARROW)
                     ).joinToString("  ").takeIf { it.isNotEmpty() },
                     MetricCell.Graphic.BAR,

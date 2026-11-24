@@ -37,6 +37,7 @@ class LocationModel(
     var weatherCode: WeatherCode? = null
     var weatherText: String? = null
     val currentPosition: Boolean = location.isCurrentPosition
+
     // The current location is marked with an arrow by the card (no more "⊙" prefix)
     val title: String = location.getPlace(context)
     var alerts: Int = 0

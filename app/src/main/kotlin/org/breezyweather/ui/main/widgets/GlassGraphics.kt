@@ -98,7 +98,12 @@ fun MiniBars(values: List<Float?>, color: Color, content: Color, modifier: Modif
             drawRoundRect(track, Offset(left, 0f), Size(barWidth, size.height), CornerRadius(radius))
             v?.coerceIn(0f, 1f)?.takeIf { it > 0f }?.let {
                 val h = (size.height * it).coerceAtLeast(radius * 2)
-                drawRoundRect(fill, Offset(left, size.height - h), Size(barWidth, h), cornerRadius = CornerRadius(radius))
+                drawRoundRect(
+                    fill,
+                    Offset(left, size.height - h),
+                    Size(barWidth, h),
+                    cornerRadius = CornerRadius(radius)
+                )
             }
         }
     }
@@ -130,7 +135,9 @@ private fun DrawScope.drawCompass(degree: Float?, content: Color, measurer: Text
     val letterSize = radius * 0.28f
     val letterStyle = TextStyle(
         color = content.copy(alpha = 200 / 255f),
-        fontSize = (letterSize / density / fontScale).let { androidx.compose.ui.unit.TextUnit(it, androidx.compose.ui.unit.TextUnitType.Sp) },
+        fontSize = (letterSize / density / fontScale).let {
+            androidx.compose.ui.unit.TextUnit(it, androidx.compose.ui.unit.TextUnitType.Sp)
+        },
         fontWeight = FontWeight.Bold
     )
     val letterRadius = radius - letterSize * 0.55f

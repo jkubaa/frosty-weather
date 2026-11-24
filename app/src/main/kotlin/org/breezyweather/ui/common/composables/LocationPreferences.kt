@@ -24,14 +24,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import org.breezyweather.ui.common.composables.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import org.breezyweather.ui.common.composables.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +42,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.source.SourceContinent
 import breezyweather.domain.source.SourceFeature
@@ -55,10 +54,6 @@ import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.BreezyWeather
 import org.breezyweather.BuildConfig
 import org.breezyweather.R
-import org.breezyweather.ui.common.frosty.FrostyAutoGroup
-import androidx.compose.ui.unit.dp
-import org.breezyweather.ui.common.frosty.FrostyFollowingCell
-import org.breezyweather.ui.common.frosty.FrostyGroup
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.source.ConfigurableSource
 import org.breezyweather.common.source.HttpSource
@@ -72,6 +67,11 @@ import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.domain.source.SelectableSource
 import org.breezyweather.domain.source.resourceName
 import org.breezyweather.sources.SourceManager
+import org.breezyweather.ui.common.composables.AlertDialog
+import org.breezyweather.ui.common.composables.TextButton
+import org.breezyweather.ui.common.frosty.FrostyAutoGroup
+import org.breezyweather.ui.common.frosty.FrostyFollowingCell
+import org.breezyweather.ui.common.frosty.FrostyGroup
 import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
 import org.breezyweather.ui.main.MainActivity
 import org.breezyweather.ui.settings.preference.composables.EditTextPreferenceView
@@ -205,26 +205,26 @@ fun LocationPreference(
                         if (!location.isCurrentPosition) {
                             SectionHeader(title = stringResource(R.string.settings_section_general))
                             FrostyGroup {
-                            EditTextPreferenceView(
-                                title = stringResource(R.string.location_custom_name),
-                                summary = { _, value ->
-                                    value.ifEmpty { location.cityAndDistrict }
-                                },
-                                content = location.customName.let {
-                                    if (it.isNullOrEmpty()) location.cityAndDistrict else it
-                                },
-                                onValueChanged = {
-                                    if (it != location.cityAndDistrict && it != location.customName) {
-                                        customName.value = it
-                                        hasChangedPreferences.value = true
-                                    } else if ((it == location.cityAndDistrict || it.isEmpty()) &&
-                                        !location.customName.isNullOrEmpty()
-                                    ) {
-                                        customName.value = ""
-                                        hasChangedPreferences.value = true
+                                EditTextPreferenceView(
+                                    title = stringResource(R.string.location_custom_name),
+                                    summary = { _, value ->
+                                        value.ifEmpty { location.cityAndDistrict }
+                                    },
+                                    content = location.customName.let {
+                                        if (it.isNullOrEmpty()) location.cityAndDistrict else it
+                                    },
+                                    onValueChanged = {
+                                        if (it != location.cityAndDistrict && it != location.customName) {
+                                            customName.value = it
+                                            hasChangedPreferences.value = true
+                                        } else if ((it == location.cityAndDistrict || it.isEmpty()) &&
+                                            !location.customName.isNullOrEmpty()
+                                        ) {
+                                            customName.value = ""
+                                            hasChangedPreferences.value = true
+                                        }
                                     }
-                                }
-                            )
+                                )
                             }
                             Spacer(Modifier.height(24.dp))
                         }
@@ -232,42 +232,42 @@ fun LocationPreference(
                         sourcesWithPreferencesScreen.forEach { preferenceSource ->
                             SectionHeader(title = preferenceSource.name)
                             FrostyAutoGroup {
-                            preferenceSource.PerLocationPreferences(
-                                context = activity,
-                                location = location,
-                                features = persistentListOf() // TODO
-                            ) {
-                                val newParameters = location.parameters.toMutableMap()
-                                newParameters[preferenceSource.id] = buildMap {
-                                    if (newParameters.getOrElse(preferenceSource.id) { null } != null) {
-                                        putAll(newParameters[preferenceSource.id]!!)
-                                    }
-                                    putAll(it)
-                                }
-                                dialogAdditionalLocationPreferencesOpenState.value = false
-                                dialogWeatherSourcesOpenState.value = false
-                                onClose(
-                                    location.copy(
-                                        parameters = newParameters,
-                                        // TODO: Will trigger a full refresh which we should avoid
-                                        // if we only change a secondary weather source
-                                        weather = location.weather?.let { weather ->
-                                            weather.copy(
-                                                base = weather.base.copy(
-                                                    refreshTime = null,
-                                                    forecastUpdateTime = null,
-                                                    currentUpdateTime = null,
-                                                    airQualityUpdateTime = null,
-                                                    pollenUpdateTime = null,
-                                                    minutelyUpdateTime = null,
-                                                    alertsUpdateTime = null,
-                                                    normalsUpdateTime = null
-                                                )
-                                            )
+                                preferenceSource.PerLocationPreferences(
+                                    context = activity,
+                                    location = location,
+                                    features = persistentListOf() // TODO
+                                ) {
+                                    val newParameters = location.parameters.toMutableMap()
+                                    newParameters[preferenceSource.id] = buildMap {
+                                        if (newParameters.getOrElse(preferenceSource.id) { null } != null) {
+                                            putAll(newParameters[preferenceSource.id]!!)
                                         }
+                                        putAll(it)
+                                    }
+                                    dialogAdditionalLocationPreferencesOpenState.value = false
+                                    dialogWeatherSourcesOpenState.value = false
+                                    onClose(
+                                        location.copy(
+                                            parameters = newParameters,
+                                            // TODO: Will trigger a full refresh which we should avoid
+                                            // if we only change a secondary weather source
+                                            weather = location.weather?.let { weather ->
+                                                weather.copy(
+                                                    base = weather.base.copy(
+                                                        refreshTime = null,
+                                                        forecastUpdateTime = null,
+                                                        currentUpdateTime = null,
+                                                        airQualityUpdateTime = null,
+                                                        pollenUpdateTime = null,
+                                                        minutelyUpdateTime = null,
+                                                        alertsUpdateTime = null,
+                                                        normalsUpdateTime = null
+                                                    )
+                                                )
+                                            }
+                                        )
                                     )
-                                )
-                            }
+                                }
                             }
                             Spacer(Modifier.height(24.dp))
                         }
@@ -527,324 +527,118 @@ fun SecondarySourcesPreference(
                     }
                 }
                 FrostyAutoGroup {
-                SourceViewWithContinents(
-                    title = stringResource(SourceFeature.FORECAST.resourceName),
-                    selectedKey = forecastSource.value,
-                    sourceList = buildMap {
-                        if (
-                            forecastSource.value.isNotEmpty() &&
-                            !compatibleForecastSources.values.any { l ->
-                                l.any { it.id == forecastSource.value }
+                    SourceViewWithContinents(
+                        title = stringResource(SourceFeature.FORECAST.resourceName),
+                        selectedKey = forecastSource.value,
+                        sourceList = buildMap {
+                            if (
+                                forecastSource.value.isNotEmpty() &&
+                                !compatibleForecastSources.values.any { l ->
+                                    l.any { it.id == forecastSource.value }
+                                }
+                            ) {
+                                put(
+                                    null,
+                                    buildList {
+                                        add(
+                                            SelectableSource(
+                                                forecastSource.value,
+                                                stringResource(
+                                                    R.string.settings_weather_source_unavailable,
+                                                    forecastSource.value
+                                                ),
+                                                false,
+                                                null
+                                            )
+                                        )
+                                    }.toImmutableList()
+                                )
                             }
-                        ) {
+                            putAll(compatibleForecastSources)
+                        }.toImmutableMap(),
+                        withState = false
+                    ) { sourceId ->
+                        if (locationExists != null) {
+                            if (sourceId != location.forecastSource) {
+                                isLocationDuplicate.value = locationExists(
+                                    location.copy(
+                                        forecastSource = sourceId
+                                    )
+                                )
+                            } else {
+                                isLocationDuplicate.value = false
+                            }
+                        }
+                        forecastSource.value = sourceId
+                        hasChangedASource.value = true
+                    }
+                    if (isLocationDuplicate.value) {
+                        Text(
+                            text = stringResource(R.string.location_message_already_exists),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.normal_margin))
+                        )
+                    }
+                    SourceViewWithContinents(
+                        title = stringResource(SourceFeature.CURRENT.resourceName),
+                        selectedKey = currentSource.value,
+                        sourceList = buildMap {
                             put(
                                 null,
                                 buildList {
+                                    if (currentSource.value.isNotEmpty() &&
+                                        !compatibleCurrentSources.values.any { l ->
+                                            l.any { it.id == currentSource.value }
+                                        }
+                                    ) {
+                                        add(
+                                            SelectableSource(
+                                                currentSource.value,
+                                                stringResource(
+                                                    R.string.settings_weather_source_unavailable,
+                                                    currentSource.value
+                                                ),
+                                                false,
+                                                null
+                                            )
+                                        )
+                                    }
                                     add(
                                         SelectableSource(
-                                            forecastSource.value,
-                                            stringResource(
-                                                R.string.settings_weather_source_unavailable,
-                                                forecastSource.value
-                                            ),
-                                            false,
+                                            "",
+                                            stringResource(R.string.forecast),
+                                            true,
                                             null
                                         )
                                     )
                                 }.toImmutableList()
                             )
-                        }
-                        putAll(compatibleForecastSources)
-                    }.toImmutableMap(),
-                    withState = false
-                ) { sourceId ->
-                    if (locationExists != null) {
-                        if (sourceId != location.forecastSource) {
-                            isLocationDuplicate.value = locationExists(
-                                location.copy(
-                                    forecastSource = sourceId
-                                )
-                            )
-                        } else {
-                            isLocationDuplicate.value = false
-                        }
+                            putAll(compatibleCurrentSources)
+                        }.toImmutableMap(),
+                        withState = false
+                    ) { sourceId ->
+                        currentSource.value = sourceId
+                        hasChangedASource.value = true
                     }
-                    forecastSource.value = sourceId
-                    hasChangedASource.value = true
-                }
-                if (isLocationDuplicate.value) {
-                    Text(
-                        text = stringResource(R.string.location_message_already_exists),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.normal_margin))
-                    )
-                }
-                SourceViewWithContinents(
-                    title = stringResource(SourceFeature.CURRENT.resourceName),
-                    selectedKey = currentSource.value,
-                    sourceList = buildMap {
-                        put(
-                            null,
-                            buildList {
-                                if (currentSource.value.isNotEmpty() &&
-                                    !compatibleCurrentSources.values.any { l ->
-                                        l.any { it.id == currentSource.value }
-                                    }
-                                ) {
-                                    add(
-                                        SelectableSource(
-                                            currentSource.value,
-                                            stringResource(
-                                                R.string.settings_weather_source_unavailable,
-                                                currentSource.value
-                                            ),
-                                            false,
-                                            null
-                                        )
-                                    )
-                                }
-                                add(
-                                    SelectableSource(
-                                        "",
-                                        stringResource(R.string.forecast),
-                                        true,
-                                        null
-                                    )
-                                )
-                            }.toImmutableList()
-                        )
-                        putAll(compatibleCurrentSources)
-                    }.toImmutableMap(),
-                    withState = false
-                ) { sourceId ->
-                    currentSource.value = sourceId
-                    hasChangedASource.value = true
-                }
-                SourceViewWithContinents(
-                    title = stringResource(SourceFeature.AIR_QUALITY.resourceName),
-                    selectedKey = airQualitySource.value,
-                    sourceList = buildMap {
-                        put(
-                            null,
-                            buildList {
-                                if (airQualitySource.value.isNotEmpty() &&
-                                    !compatibleAirQualitySources.values.any { l ->
-                                        l.any { it.id == airQualitySource.value }
-                                    }
-                                ) {
-                                    add(
-                                        SelectableSource(
-                                            airQualitySource.value,
-                                            stringResource(
-                                                R.string.settings_weather_source_unavailable,
-                                                airQualitySource.value
-                                            ),
-                                            false,
-                                            null
-                                        )
-                                    )
-                                }
-                                add(
-                                    SelectableSource(
-                                        "",
-                                        stringResource(R.string.settings_weather_source_none),
-                                        true,
-                                        null
-                                    )
-                                )
-                            }.toImmutableList()
-                        )
-                        putAll(compatibleAirQualitySources)
-                    }.toImmutableMap(),
-                    withState = false
-                ) { sourceId ->
-                    airQualitySource.value = sourceId
-                    hasChangedASource.value = true
-                }
-                SourceViewWithContinents(
-                    title = stringResource(SourceFeature.POLLEN.resourceName),
-                    selectedKey = pollenSource.value,
-                    sourceList = buildMap {
-                        put(
-                            null,
-                            buildList {
-                                if (pollenSource.value.isNotEmpty() &&
-                                    !compatiblePollenSources.values.any { l ->
-                                        l.any { it.id == pollenSource.value }
-                                    }
-                                ) {
-                                    add(
-                                        SelectableSource(
-                                            pollenSource.value,
-                                            stringResource(
-                                                R.string.settings_weather_source_unavailable,
-                                                pollenSource.value
-                                            ),
-                                            false,
-                                            null
-                                        )
-                                    )
-                                }
-                                add(
-                                    SelectableSource(
-                                        "",
-                                        stringResource(R.string.settings_weather_source_none),
-                                        true,
-                                        null
-                                    )
-                                )
-                            }.toImmutableList()
-                        )
-                        putAll(compatiblePollenSources)
-                    }.toImmutableMap(),
-                    withState = false
-                ) { sourceId ->
-                    pollenSource.value = sourceId
-                    hasChangedASource.value = true
-                }
-                SourceViewWithContinents(
-                    title = stringResource(SourceFeature.MINUTELY.resourceName),
-                    selectedKey = minutelySource.value,
-                    sourceList = buildMap {
-                        put(
-                            null,
-                            buildList {
-                                if (minutelySource.value.isNotEmpty() &&
-                                    !compatibleMinutelySources.values.any { l ->
-                                        l.any { it.id == minutelySource.value }
-                                    }
-                                ) {
-                                    add(
-                                        SelectableSource(
-                                            minutelySource.value,
-                                            stringResource(
-                                                R.string.settings_weather_source_unavailable,
-                                                minutelySource.value
-                                            ),
-                                            false,
-                                            null
-                                        )
-                                    )
-                                }
-                                add(
-                                    SelectableSource(
-                                        "",
-                                        stringResource(R.string.settings_weather_source_none),
-                                        true,
-                                        null
-                                    )
-                                )
-                            }.toImmutableList()
-                        )
-                        putAll(compatibleMinutelySources)
-                    }.toImmutableMap(),
-                    withState = false
-                ) { sourceId ->
-                    minutelySource.value = sourceId
-                    hasChangedASource.value = true
-                }
-                SourceViewWithContinents(
-                    title = stringResource(SourceFeature.ALERT.resourceName),
-                    selectedKey = alertSource.value,
-                    sourceList = buildMap {
-                        put(
-                            null,
-                            buildList {
-                                if (alertSource.value.isNotEmpty() &&
-                                    !compatibleAlertSources.values.any { l ->
-                                        l.any { it.id == alertSource.value }
-                                    }
-                                ) {
-                                    add(
-                                        SelectableSource(
-                                            alertSource.value,
-                                            stringResource(
-                                                R.string.settings_weather_source_unavailable,
-                                                alertSource.value
-                                            ),
-                                            false,
-                                            null
-                                        )
-                                    )
-                                }
-                                add(
-                                    SelectableSource(
-                                        "",
-                                        stringResource(R.string.settings_weather_source_none),
-                                        true,
-                                        null
-                                    )
-                                )
-                            }.toImmutableList()
-                        )
-                        putAll(compatibleAlertSources)
-                    }.toImmutableMap(),
-                    withState = false
-                ) { sourceId ->
-                    alertSource.value = sourceId
-                    hasChangedASource.value = true
-                }
-                SourceViewWithContinents(
-                    title = stringResource(SourceFeature.NORMALS.resourceName),
-                    selectedKey = normalsSource.value,
-                    sourceList = buildMap {
-                        put(
-                            null,
-                            buildList {
-                                if (normalsSource.value.isNotEmpty() &&
-                                    !compatibleNormalsSources.values.any { l ->
-                                        l.any { it.id == normalsSource.value }
-                                    }
-                                ) {
-                                    add(
-                                        SelectableSource(
-                                            normalsSource.value,
-                                            stringResource(
-                                                R.string.settings_weather_source_unavailable,
-                                                normalsSource.value
-                                            ),
-                                            false,
-                                            null
-                                        )
-                                    )
-                                }
-                                add(
-                                    SelectableSource(
-                                        "",
-                                        stringResource(R.string.settings_weather_source_none),
-                                        true,
-                                        null
-                                    )
-                                )
-                            }.toImmutableList()
-                        )
-                        putAll(compatibleNormalsSources)
-                    }.toImmutableMap(),
-                    withState = false
-                ) { sourceId ->
-                    normalsSource.value = sourceId
-                    hasChangedASource.value = true
-                }
-                if (location.isCurrentPosition || location.needsGeocodeRefresh) {
                     SourceViewWithContinents(
-                        title = stringResource(SourceFeature.REVERSE_GEOCODING.resourceName),
-                        selectedKey = reverseGeocodingSource.value,
+                        title = stringResource(SourceFeature.AIR_QUALITY.resourceName),
+                        selectedKey = airQualitySource.value,
                         sourceList = buildMap {
                             put(
                                 null,
                                 buildList {
-                                    if (reverseGeocodingSource.value.isNotEmpty() &&
-                                        !compatibleReverseGeocodingSources.values.any { l ->
-                                            l.any { it.id == reverseGeocodingSource.value }
+                                    if (airQualitySource.value.isNotEmpty() &&
+                                        !compatibleAirQualitySources.values.any { l ->
+                                            l.any { it.id == airQualitySource.value }
                                         }
                                     ) {
                                         add(
                                             SelectableSource(
-                                                reverseGeocodingSource.value,
+                                                airQualitySource.value,
                                                 stringResource(
                                                     R.string.settings_weather_source_unavailable,
-                                                    reverseGeocodingSource.value
+                                                    airQualitySource.value
                                                 ),
                                                 false,
                                                 null
@@ -861,14 +655,220 @@ fun SecondarySourcesPreference(
                                     )
                                 }.toImmutableList()
                             )
-                            putAll(compatibleReverseGeocodingSources)
+                            putAll(compatibleAirQualitySources)
                         }.toImmutableMap(),
                         withState = false
                     ) { sourceId ->
-                        reverseGeocodingSource.value = sourceId
-                        hasChangedReverseGeocodingSource.value = true
+                        airQualitySource.value = sourceId
+                        hasChangedASource.value = true
                     }
-                }
+                    SourceViewWithContinents(
+                        title = stringResource(SourceFeature.POLLEN.resourceName),
+                        selectedKey = pollenSource.value,
+                        sourceList = buildMap {
+                            put(
+                                null,
+                                buildList {
+                                    if (pollenSource.value.isNotEmpty() &&
+                                        !compatiblePollenSources.values.any { l ->
+                                            l.any { it.id == pollenSource.value }
+                                        }
+                                    ) {
+                                        add(
+                                            SelectableSource(
+                                                pollenSource.value,
+                                                stringResource(
+                                                    R.string.settings_weather_source_unavailable,
+                                                    pollenSource.value
+                                                ),
+                                                false,
+                                                null
+                                            )
+                                        )
+                                    }
+                                    add(
+                                        SelectableSource(
+                                            "",
+                                            stringResource(R.string.settings_weather_source_none),
+                                            true,
+                                            null
+                                        )
+                                    )
+                                }.toImmutableList()
+                            )
+                            putAll(compatiblePollenSources)
+                        }.toImmutableMap(),
+                        withState = false
+                    ) { sourceId ->
+                        pollenSource.value = sourceId
+                        hasChangedASource.value = true
+                    }
+                    SourceViewWithContinents(
+                        title = stringResource(SourceFeature.MINUTELY.resourceName),
+                        selectedKey = minutelySource.value,
+                        sourceList = buildMap {
+                            put(
+                                null,
+                                buildList {
+                                    if (minutelySource.value.isNotEmpty() &&
+                                        !compatibleMinutelySources.values.any { l ->
+                                            l.any { it.id == minutelySource.value }
+                                        }
+                                    ) {
+                                        add(
+                                            SelectableSource(
+                                                minutelySource.value,
+                                                stringResource(
+                                                    R.string.settings_weather_source_unavailable,
+                                                    minutelySource.value
+                                                ),
+                                                false,
+                                                null
+                                            )
+                                        )
+                                    }
+                                    add(
+                                        SelectableSource(
+                                            "",
+                                            stringResource(R.string.settings_weather_source_none),
+                                            true,
+                                            null
+                                        )
+                                    )
+                                }.toImmutableList()
+                            )
+                            putAll(compatibleMinutelySources)
+                        }.toImmutableMap(),
+                        withState = false
+                    ) { sourceId ->
+                        minutelySource.value = sourceId
+                        hasChangedASource.value = true
+                    }
+                    SourceViewWithContinents(
+                        title = stringResource(SourceFeature.ALERT.resourceName),
+                        selectedKey = alertSource.value,
+                        sourceList = buildMap {
+                            put(
+                                null,
+                                buildList {
+                                    if (alertSource.value.isNotEmpty() &&
+                                        !compatibleAlertSources.values.any { l ->
+                                            l.any { it.id == alertSource.value }
+                                        }
+                                    ) {
+                                        add(
+                                            SelectableSource(
+                                                alertSource.value,
+                                                stringResource(
+                                                    R.string.settings_weather_source_unavailable,
+                                                    alertSource.value
+                                                ),
+                                                false,
+                                                null
+                                            )
+                                        )
+                                    }
+                                    add(
+                                        SelectableSource(
+                                            "",
+                                            stringResource(R.string.settings_weather_source_none),
+                                            true,
+                                            null
+                                        )
+                                    )
+                                }.toImmutableList()
+                            )
+                            putAll(compatibleAlertSources)
+                        }.toImmutableMap(),
+                        withState = false
+                    ) { sourceId ->
+                        alertSource.value = sourceId
+                        hasChangedASource.value = true
+                    }
+                    SourceViewWithContinents(
+                        title = stringResource(SourceFeature.NORMALS.resourceName),
+                        selectedKey = normalsSource.value,
+                        sourceList = buildMap {
+                            put(
+                                null,
+                                buildList {
+                                    if (normalsSource.value.isNotEmpty() &&
+                                        !compatibleNormalsSources.values.any { l ->
+                                            l.any { it.id == normalsSource.value }
+                                        }
+                                    ) {
+                                        add(
+                                            SelectableSource(
+                                                normalsSource.value,
+                                                stringResource(
+                                                    R.string.settings_weather_source_unavailable,
+                                                    normalsSource.value
+                                                ),
+                                                false,
+                                                null
+                                            )
+                                        )
+                                    }
+                                    add(
+                                        SelectableSource(
+                                            "",
+                                            stringResource(R.string.settings_weather_source_none),
+                                            true,
+                                            null
+                                        )
+                                    )
+                                }.toImmutableList()
+                            )
+                            putAll(compatibleNormalsSources)
+                        }.toImmutableMap(),
+                        withState = false
+                    ) { sourceId ->
+                        normalsSource.value = sourceId
+                        hasChangedASource.value = true
+                    }
+                    if (location.isCurrentPosition || location.needsGeocodeRefresh) {
+                        SourceViewWithContinents(
+                            title = stringResource(SourceFeature.REVERSE_GEOCODING.resourceName),
+                            selectedKey = reverseGeocodingSource.value,
+                            sourceList = buildMap {
+                                put(
+                                    null,
+                                    buildList {
+                                        if (reverseGeocodingSource.value.isNotEmpty() &&
+                                            !compatibleReverseGeocodingSources.values.any { l ->
+                                                l.any { it.id == reverseGeocodingSource.value }
+                                            }
+                                        ) {
+                                            add(
+                                                SelectableSource(
+                                                    reverseGeocodingSource.value,
+                                                    stringResource(
+                                                        R.string.settings_weather_source_unavailable,
+                                                        reverseGeocodingSource.value
+                                                    ),
+                                                    false,
+                                                    null
+                                                )
+                                            )
+                                        }
+                                        add(
+                                            SelectableSource(
+                                                "",
+                                                stringResource(R.string.settings_weather_source_none),
+                                                true,
+                                                null
+                                            )
+                                        )
+                                    }.toImmutableList()
+                                )
+                                putAll(compatibleReverseGeocodingSources)
+                            }.toImmutableMap(),
+                            withState = false
+                        ) { sourceId ->
+                            reverseGeocodingSource.value = sourceId
+                            hasChangedReverseGeocodingSource.value = true
+                        }
+                    }
                 }
             }
         },

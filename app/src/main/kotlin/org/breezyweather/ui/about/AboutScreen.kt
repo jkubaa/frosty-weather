@@ -58,11 +58,6 @@ import kotlinx.coroutines.launch
 import org.breezyweather.BreezyWeather
 import org.breezyweather.BuildConfig
 import org.breezyweather.R
-import org.breezyweather.ui.common.frosty.FrostyIconTile
-import org.breezyweather.ui.common.frosty.frostyColors
-import org.breezyweather.ui.common.frosty.FrostySectionHeader
-import org.breezyweather.ui.common.frosty.FrostyRow
-import org.breezyweather.ui.common.frosty.FrostyChevron
 import org.breezyweather.background.updater.interactor.GetApplicationRelease
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.plus
@@ -72,6 +67,11 @@ import org.breezyweather.common.utils.helpers.SnackbarHelper
 import org.breezyweather.data.appContributors
 import org.breezyweather.data.appTranslators
 import org.breezyweather.ui.common.composables.AlertDialogLink
+import org.breezyweather.ui.common.frosty.FrostyChevron
+import org.breezyweather.ui.common.frosty.FrostyIconTile
+import org.breezyweather.ui.common.frosty.FrostyRow
+import org.breezyweather.ui.common.frosty.FrostySectionHeader
+import org.breezyweather.ui.common.frosty.frostyColors
 import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
 import org.breezyweather.ui.common.widgets.Material3Scaffold
 import org.breezyweather.ui.common.widgets.generateCollapsedScrollBehavior

@@ -46,10 +46,10 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import breezyweather.domain.location.model.Location
@@ -123,13 +123,18 @@ class PrecipitationNowcastViewHolder(context: Context) : ComposeCardViewHolder(c
             val amount = when {
                 onlyThresholds -> when (values[i] / 1000.0) {
                     0.0 -> activity.getString(R.string.precipitation_none)
-                    Precipitation.PRECIPITATION_HOURLY_LIGHT -> activity.getString(R.string.precipitation_intensity_light)
-                    Precipitation.PRECIPITATION_HOURLY_MEDIUM -> activity.getString(R.string.precipitation_intensity_medium)
+                    Precipitation.PRECIPITATION_HOURLY_LIGHT -> activity.getString(
+                        R.string.precipitation_intensity_light
+                    )
+                    Precipitation.PRECIPITATION_HOURLY_MEDIUM -> activity.getString(
+                        R.string.precipitation_intensity_medium
+                    )
                     else -> activity.getString(R.string.precipitation_intensity_heavy)
                 }
                 // "No precipitation" reads better than "0 in"
                 values[i] <= 0.0 -> activity.getString(R.string.precipitation_none)
-                else -> it.precipitationIntensity?.formatMeasureIntensity(activity) ?: activity.getString(R.string.precipitation_none)
+                else -> it.precipitationIntensity?.formatMeasureIntensity(activity)
+                    ?: activity.getString(R.string.precipitation_none)
             }
             Bar(
                 start = it.date.time,
@@ -142,7 +147,9 @@ class PrecipitationNowcastViewHolder(context: Context) : ComposeCardViewHolder(c
         val guides = if (SettingsManager.getInstance(activity).isTrendHorizontalLinesEnabled) {
             listOf(
                 Precipitation.PRECIPITATION_HOURLY_LIGHT to activity.getString(R.string.precipitation_intensity_light),
-                Precipitation.PRECIPITATION_HOURLY_MEDIUM to activity.getString(R.string.precipitation_intensity_medium),
+                Precipitation.PRECIPITATION_HOURLY_MEDIUM to activity.getString(
+                    R.string.precipitation_intensity_medium
+                ),
                 Precipitation.PRECIPITATION_HOURLY_HEAVY to activity.getString(R.string.precipitation_intensity_heavy)
             ).map { (mm, label) -> mm * 1000.0 to label }
         } else {
@@ -168,7 +175,12 @@ class PrecipitationNowcastViewHolder(context: Context) : ComposeCardViewHolder(c
         Column(Modifier.padding(top = 14.dp, bottom = 12.dp)) {
             GlassCardHeader(R.drawable.ic_precipitation, m.title, contentColor)
             m.subtitle?.takeIf { it.isNotEmpty() }?.let {
-                Text(it, color = contentColor, fontSize = 15.sp, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp))
+                Text(
+                    it,
+                    color = contentColor,
+                    fontSize = 15.sp,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)
+                )
             }
             Chart(
                 m,
@@ -261,12 +273,28 @@ class PrecipitationNowcastViewHolder(context: Context) : ComposeCardViewHolder(c
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))
                     )
                     val layout = measurer.measure(label, labelStyle)
-                    drawText(layout, topLeft = Offset(size.width - layout.size.width, gy - layout.size.height - 1.dp.toPx()))
+                    drawText(
+                        layout,
+                        topLeft = Offset(
+                            size.width - layout.size.width,
+                            gy - layout.size.height - 1.dp.toPx()
+                        )
+                    )
                 }
                 // Baseline
-                drawLine(content.copy(alpha = 0.3f), Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx())
+                drawLine(
+                    content.copy(alpha = 0.3f),
+                    Offset(0f, size.height),
+                    Offset(size.width, size.height),
+                    strokeWidth = 1.dp.toPx()
+                )
 
-                val fill = Brush.verticalGradient(listOf(lerp(GlassPrecipitation, androidx.compose.ui.graphics.Color.White, 0.35f), GlassPrecipitation))
+                val fill = Brush.verticalGradient(
+                    listOf(
+                        lerp(GlassPrecipitation, androidx.compose.ui.graphics.Color.White, 0.35f),
+                        GlassPrecipitation
+                    )
+                )
                 m.bars.forEachIndexed { i, bar ->
                     if (bar.micrometers <= 0.0) return@forEachIndexed
                     val top = y(bar.micrometers).coerceAtMost(size.height - 3.dp.toPx())
@@ -280,7 +308,12 @@ class PrecipitationNowcastViewHolder(context: Context) : ComposeCardViewHolder(c
                 }
                 selected?.let {
                     val x = it * slot + slot / 2f
-                    drawLine(content.copy(alpha = 0.7f), Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.dp.toPx())
+                    drawLine(
+                        content.copy(alpha = 0.7f),
+                        Offset(x, 0f),
+                        Offset(x, size.height),
+                        strokeWidth = 1.dp.toPx()
+                    )
                 }
             }
             Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {

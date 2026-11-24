@@ -19,22 +19,22 @@ package org.breezyweather.ui.theme.weatherView.sky
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.PI
@@ -105,7 +105,14 @@ internal class SkyAssets private constructor(
                         // Mostly high in the sky, thinning out towards the horizon
                         a[o + 1] = random.nextFloat().let { it * it } * 0.8f
                     }
-                    a[o + 2] = if (random.nextFloat() < 0.05f) 1.5f + random.nextFloat() * 0.7f else 0.45f + random.nextFloat() * 0.8f
+                    a[o + 2] =
+                        if (random.nextFloat() <
+                            0.05f
+                        ) {
+                            1.5f + random.nextFloat() * 0.7f
+                        } else {
+                            0.45f + random.nextFloat() * 0.8f
+                        }
                     a[o + 3] = random.nextFloat() * 2f * PI.toFloat()
                     a[o + 4] = 0.6f + random.nextFloat() * 2.4f
                     a[o + 5] = random.nextInt(STAR_COLORS.size).toFloat()
@@ -116,7 +123,10 @@ internal class SkyAssets private constructor(
             val rain = style.precipitation == Precipitation.RAIN || style.precipitation == Precipitation.SLEET
             val hail = style.precipitation == Precipitation.HAIL
             val dropCount = when {
-                rain -> (240 * style.precipitationIntensity * if (style.precipitation == Precipitation.SLEET) 0.5f else 1f).toInt()
+                rain -> (
+                    240 * style.precipitationIntensity *
+                        if (style.precipitation == Precipitation.SLEET) 0.5f else 1f
+                    ).toInt()
                 hail -> (90 * style.precipitationIntensity).toInt()
                 else -> 0
             }
@@ -142,7 +152,11 @@ internal class SkyAssets private constructor(
 
             val sleet = style.precipitation == Precipitation.SLEET
             val flakes = if (style.precipitation == Precipitation.SNOW || sleet) {
-                Snowfall((520 * style.precipitationIntensity * if (sleet) 0.4f else 1f).toInt(), sleet, random.nextInt())
+                Snowfall(
+                    (520 * style.precipitationIntensity * if (sleet) 0.4f else 1f).toInt(),
+                    sleet,
+                    random.nextInt()
+                )
             } else {
                 null
             }
@@ -224,7 +238,7 @@ private val SUNSET_KEYS = listOf(
     SunsetKey(6f, Color(0xFF4470BC), Color(0xFFD9A994), Color(0xFFFFC98A), Color(0xFFFFE2B0)),
     SunsetKey(1f, Color(0xFF3C5094), Color(0xFFDE806E), Color(0xFFFFA05C), Color(0xFFFFAF5F)),
     SunsetKey(-3f, Color(0xFF2C306E), Color(0xFFA05088), Color(0xFFF27A68), Color(0xFFFF7D46)),
-    SunsetKey(-8f, Color(0xFF181A46), Color(0xFF502E70), Color(0xFF924E7C), Color(0xFFCD5FA5)),
+    SunsetKey(-8f, Color(0xFF181A46), Color(0xFF502E70), Color(0xFF924E7C), Color(0xFFCD5FA5))
 )
 
 /** The sunset palette at an altitude, blended between its steps. */
@@ -325,6 +339,7 @@ internal fun DrawScope.drawSkyEffects(
     val w = size.width
     val h = size.height
     val parallax = scroll * h * 0.12f
+
     // Each cloud layer shifts with the tilt by its depth, and drifts with the weather change
     fun shiftOf(layer: CloudLayer) = Offset(
         tilt.x * 16f * density * layer.parallax + slide * w * (0.6f + 0.6f * layer.parallax),
@@ -349,17 +364,37 @@ internal fun DrawScope.drawSkyEffects(
     }
     // The sun sinks from its usual place towards the horizon as it sets; the moon stays put
     val sink = if (style.daytime) sunSink(light.sunAltitude) else 0f
-    val lightCenter = Offset(w * (LIGHT_X - 0.18f * sink), h * (LIGHT_Y + (HORIZON_Y - LIGHT_Y) * sink) - parallax * 0.6f) +
-        tilt * (6f * density)
+    val lightCenter =
+        Offset(w * (LIGHT_X - 0.18f * sink), h * (LIGHT_Y + (HORIZON_Y - LIGHT_Y) * sink) - parallax * 0.6f) +
+            tilt * (6f * density)
     // On its way down the sun dims over the whole header area (it can be tall with large text), until it
     // goes behind the cards, so the location and temperature stay readable at any sun height
-    val behindHeader = if (sink > 0f) smoothstep(0.05f, 0.1f, lightCenter.y / h) * (1f - smoothstep(0.42f, 0.5f, lightCenter.y / h)) else 0f
-    val moonGlow = if (!style.daytime && style.lightOpacity > 0f) alpha * light.moonAlpha * moonFraction(light.moonPhase) else 0f
+    val behindHeader = if (sink >
+        0f
+    ) {
+        smoothstep(0.05f, 0.1f, lightCenter.y / h) * (1f - smoothstep(0.42f, 0.5f, lightCenter.y / h))
+    } else {
+        0f
+    }
+    val moonGlow = if (!style.daytime &&
+        style.lightOpacity > 0f
+    ) {
+        alpha * light.moonAlpha * moonFraction(light.moonPhase)
+    } else {
+        0f
+    }
     if (style.lightOpacity > 0f) {
         if (style.daytime) {
             if (light.sunAlpha > 0f) {
                 val flatten = light.sunAltitude?.let { smoothstep(6f, 0f, it) } ?: 0f
-                drawSun(lightCenter, style, time, style.lightOpacity * alpha * light.sunAlpha * (1f - 0.45f * sink) * (1f - 0.8f * behindHeader), light.golden, flatten)
+                drawSun(
+                    lightCenter,
+                    style,
+                    time,
+                    style.lightOpacity * alpha * light.sunAlpha * (1f - 0.45f * sink) * (1f - 0.8f * behindHeader),
+                    light.golden,
+                    flatten
+                )
             }
         } else if (light.moonAlpha > 0f) {
             drawMoon(lightCenter, style, style.lightOpacity * alpha * light.moonAlpha, light.moonPhase, light.southern)
@@ -369,7 +404,13 @@ internal fun DrawScope.drawSkyEffects(
     val cloudSpeed = 1f + style.wind * 0.6f
     // Sun-lit clouds: orange while the sun is up, pink afterglow once it has set
     val afterglow = light.sunAltitude?.let { smoothstep(2f, -4f, it) } ?: 0f
-    val sunlit = if (warmth > 0.01f) ColorFilter.tint(lerp(SUNLIT_CLOUD, AFTERGLOW_CLOUD, afterglow), BlendMode.SrcIn) else null
+    val sunlit = if (warmth >
+        0.01f
+    ) {
+        ColorFilter.tint(lerp(SUNLIT_CLOUD, AFTERGLOW_CLOUD, afterglow), BlendMode.SrcIn)
+    } else {
+        null
+    }
     // Lightning flashes behind the clouds, glowing through their gaps
     val strikes = if (style.lightning) strikesAt(time, style.lightningBolts) else emptyList()
     val flashing = strikes.any { it.brightness(time) > 0.01f }
@@ -385,7 +426,16 @@ internal fun DrawScope.drawSkyEffects(
         val layerAlpha = alpha * layer.opacity * clearing
         drawCloudBand(texture, layer, time, layerAlpha, parallax * layer.parallax, cloudSpeed, shift = shiftOf(layer))
         if (sunlit != null) {
-            drawCloudBand(texture, layer, time, layerAlpha * warmth * 0.7f, parallax * layer.parallax, cloudSpeed, sunlit, shift = shiftOf(layer))
+            drawCloudBand(
+                texture,
+                layer,
+                time,
+                layerAlpha * warmth * 0.7f,
+                parallax * layer.parallax,
+                cloudSpeed,
+                sunlit,
+                shift = shiftOf(layer)
+            )
         }
     }
     if (flashing && litClouds) drawStrikeInClouds(strikes, time, alpha)
@@ -415,7 +465,15 @@ internal fun DrawScope.drawSkyEffects(
         val (layer, texture) = horizonDeck
         val deckTop = h * layer.top - parallax * layer.parallax
         drawContext.canvas.saveLayer(Rect(Offset.Zero, size), Paint())
-        drawCloudBand(texture, layer, time, alpha * warmth.coerceIn(0f, 1f), parallax * layer.parallax, cloudSpeed, shift = shiftOf(layer))
+        drawCloudBand(
+            texture,
+            layer,
+            time,
+            alpha * warmth.coerceIn(0f, 1f),
+            parallax * layer.parallax,
+            cloudSpeed,
+            shift = shiftOf(layer)
+        )
         drawRect(
             brush = Brush.verticalGradient(
                 0f to lerp(deckKey.bottom, deckKey.sun, 0.5f),
@@ -430,25 +488,61 @@ internal fun DrawScope.drawSkyEffects(
     }
 
     // The sun's light through gaps in the clouds, and a lens flare while it is not hidden
-    if (style.daytime && style.lightOpacity > 0f && light.sunAlpha > 0f && (assets.clouds.isNotEmpty() || horizonDeck != null)) {
+    if (style.daytime && style.lightOpacity > 0f && light.sunAlpha > 0f &&
+        (assets.clouds.isNotEmpty() || horizonDeck != null)
+    ) {
         val strength = style.lightOpacity * alpha * light.sunAlpha
         val color = lerp(Color(0xFFFFF0CD), deckKey.sun, light.golden.coerceIn(0f, 1f))
-        drawLightShafts(lightCenter, w * (0.62f + 0.15f * light.golden), color, strength * (0.45f - 0.2f * sink) * (1f - 0.7f * behindHeader)) { mode ->
+        drawLightShafts(
+            lightCenter,
+            w * (0.62f + 0.15f * light.golden),
+            color,
+            strength * (0.45f - 0.2f * sink) * (1f - 0.7f * behindHeader)
+        ) { mode ->
             assets.clouds.forEach { (layer, texture) ->
-                drawCloudBand(texture, layer, time, layer.opacity, parallax * layer.parallax, cloudSpeed, blendMode = mode, shift = shiftOf(layer))
+                drawCloudBand(
+                    texture,
+                    layer,
+                    time,
+                    layer.opacity,
+                    parallax * layer.parallax,
+                    cloudSpeed,
+                    blendMode = mode,
+                    shift = shiftOf(layer)
+                )
             }
             horizonDeck?.let { (layer, texture) ->
-                drawCloudBand(texture, layer, time, warmth.coerceIn(0f, 1f), parallax * layer.parallax, cloudSpeed, blendMode = mode, shift = shiftOf(layer))
+                drawCloudBand(
+                    texture,
+                    layer,
+                    time,
+                    warmth.coerceIn(0f, 1f),
+                    parallax * layer.parallax,
+                    cloudSpeed,
+                    blendMode = mode,
+                    shift = shiftOf(layer)
+                )
             }
         }
-        val behindDeck = horizonDeck?.let { smoothstep(HORIZON_Y - 0.07f, HORIZON_Y - 0.01f, lightCenter.y / h) * warmth } ?: 0f
-        val open = (1f - cloudCover(assets, time, lightCenter, parallax, cloudSpeed, ::shiftOf)) * (1f - behindDeck.coerceIn(0f, 1f))
+        val behindDeck =
+            horizonDeck?.let { smoothstep(HORIZON_Y - 0.07f, HORIZON_Y - 0.01f, lightCenter.y / h) * warmth } ?: 0f
+        val open =
+            (1f - cloudCover(assets, time, lightCenter, parallax, cloudSpeed, ::shiftOf)) *
+                (1f - behindDeck.coerceIn(0f, 1f))
         drawLensFlare(lightCenter, strength * open * 0.6f)
     }
 
     if (style.fog > 0f) {
         assets.fog.forEach { (layer, texture) ->
-            drawCloudBand(texture, layer, time, alpha * style.fog * 0.85f, parallax * layer.parallax, 1f, shift = shiftOf(layer))
+            drawCloudBand(
+                texture,
+                layer,
+                time,
+                alpha * style.fog * 0.85f,
+                parallax * layer.parallax,
+                1f,
+                shift = shiftOf(layer)
+            )
         }
         drawRect(
             brush = Brush.verticalGradient(
@@ -548,7 +642,12 @@ private fun DrawScope.cloudCover(
 
 /** Real stars are not all white: blue-white, white, warm, a touch of violet. */
 private val STAR_COLORS = listOf(
-    Color.White, Color(0xFFCFE0FF), Color(0xFFFFE9D6), Color(0xFFE6DAFF), Color(0xFFBFD3FF), Color.White
+    Color.White,
+    Color(0xFFCFE0FF),
+    Color(0xFFFFE9D6),
+    Color(0xFFE6DAFF),
+    Color(0xFFBFD3FF),
+    Color.White
 )
 
 private fun DrawScope.drawStars(stars: FloatArray, time: Float, opacity: Float, lift: Float) {
@@ -585,9 +684,18 @@ private fun DrawScope.drawStars(stars: FloatArray, time: Float, opacity: Float, 
 }
 
 /** @param flatten 0..1 near the horizon, where the thick air squashes the sun's disc */
-private fun DrawScope.drawSun(center: Offset, style: SkyStyle, time: Float, opacity: Float, golden: Float, flatten: Float) {
+private fun DrawScope.drawSun(
+    center: Offset,
+    style: SkyStyle,
+    time: Float,
+    opacity: Float,
+    golden: Float,
+    flatten: Float,
+) {
     if (flatten > 0.01f) {
-        scale(scaleX = 1f, scaleY = 1f - 0.22f * flatten, pivot = center) { drawSun(center, style, time, opacity, golden, 0f) }
+        scale(scaleX = 1f, scaleY = 1f - 0.22f * flatten, pivot = center) {
+            drawSun(center, style, time, opacity, golden, 0f)
+        }
         return
     }
     val w = size.width
@@ -649,7 +757,13 @@ private fun DrawScope.drawMoon(center: Offset, style: SkyStyle, opacity: Float, 
  *
  * @param phase -180 (new, waxing) .. 0 (full) .. 180 (new, waning)
  */
-internal fun DrawScope.drawMoonDisc(center: Offset, radius: Float, phase: Float, southern: Boolean, opacity: Float = 1f) {
+internal fun DrawScope.drawMoonDisc(
+    center: Offset,
+    radius: Float,
+    phase: Float,
+    southern: Boolean,
+    opacity: Float = 1f,
+) {
     drawCircle(Color(0xFF2A2547), radius, center, opacity * 0.55f)
     drawCircle(Color(0xFFB9B2D6), radius, center, opacity * 0.08f)
     // Earthshine: the dark part shows its seas very faintly

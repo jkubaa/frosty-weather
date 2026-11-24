@@ -262,7 +262,12 @@ internal fun DetailsChart(
                     val innerWidth = (plotWidth - slot).coerceAtLeast(1f)
                     fun xToPx(x: Double): Float {
                         val f = ((x - minX) / (maxX - minX)).toFloat()
-                        return if (rtl) plotRight - innerStart - f * innerWidth else plotLeft + innerStart + f * innerWidth
+                        return if (rtl) {
+                            plotRight - innerStart - f * innerWidth
+                        } else {
+                            plotLeft + innerStart +
+                                f * innerWidth
+                        }
                     }
                     fun yToPx(y: Double): Float =
                         plotBottom - ((y - yMin) / (yMax - yMin)).toFloat() * plotHeight
@@ -319,7 +324,15 @@ internal fun DetailsChart(
                         emptyList()
                     }
                     val topLabelXs = topTexts?.let { texts ->
-                        fittingValues(topAxisValues, minX, maxX, plotWidth, texts.values.maxOf { it.size.width }.toFloat())
+                        fittingValues(
+                            topAxisValues,
+                            minX,
+                            maxX,
+                            plotWidth,
+                            texts.values.maxOf {
+                                it.size.width
+                            }.toFloat()
+                        )
                     }.orEmpty()
 
                     // "Now", highest and lowest
@@ -359,7 +372,13 @@ internal fun DetailsChart(
                         yValues.forEach { v ->
                             val py = yToPx(v)
                             if (abs(py - plotBottom) > 0.5f) {
-                                drawLine(grid, Offset(plotLeft, py), Offset(plotRight, py), lineWidth, pathEffect = dash)
+                                drawLine(
+                                    grid,
+                                    Offset(plotLeft, py),
+                                    Offset(plotRight, py),
+                                    lineWidth,
+                                    pathEffect = dash
+                                )
                             }
                         }
                         timeTicks.forEach { t ->
@@ -416,7 +435,13 @@ internal fun DetailsChart(
                             drawCircle(palette.sheet, 5.dp.toPx(), center)
                             drawCircle(palette.secondaryText, 2.dp.toPx(), center)
                             val baselineY = (center.y - 12.dp.toPx()).coerceAtLeast(plotTop + text.firstBaseline)
-                            drawText(text, topLeft = Offset(center.x - text.size.width / 2f, baselineY - text.firstBaseline))
+                            drawText(
+                                text,
+                                topLeft = Offset(
+                                    center.x - text.size.width / 2f,
+                                    baselineY - text.firstBaseline
+                                )
+                            )
                         }
 
                         // Axes: values at the end, times at the bottom

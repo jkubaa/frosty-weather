@@ -87,7 +87,12 @@ class RainLiveUpdateTest {
         )
         val withDrizzle = RainLiveUpdate.evaluate(drizzleThenRain, at(1)) as State.Upcoming
         assertEquals(at(10), withDrizzle.start)
-        val skipped = RainLiveUpdate.evaluate(drizzleThenRain, at(1), window = 30.minutes, skipLight = true) as State.Upcoming
+        val skipped = RainLiveUpdate.evaluate(
+            drizzleThenRain,
+            at(1),
+            window = 30.minutes,
+            skipLight = true
+        ) as State.Upcoming
         assertEquals(at(20), skipped.start)
     }
 

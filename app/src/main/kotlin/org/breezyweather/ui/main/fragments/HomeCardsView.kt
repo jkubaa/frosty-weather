@@ -22,39 +22,24 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.graphics.drawscope.ContentDrawScope
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -66,39 +51,59 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.toMutableStateList
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import org.breezyweather.ui.common.glass.GlassCornerRadius
-import org.breezyweather.ui.common.glass.GlassPainter
-import org.breezyweather.ui.common.glass.LocalGlassHidden
-import org.breezyweather.ui.common.glass.rememberGlassPainter
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toOffset
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.zIndex
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
-import org.breezyweather.ui.common.glass.GlassStyle
 import org.breezyweather.common.extensions.density
+import org.breezyweather.common.extensions.getBlocksPerRow
 import org.breezyweather.common.extensions.getThemeColor
+import org.breezyweather.ui.common.glass.GlassCornerRadius
+import org.breezyweather.ui.common.glass.GlassPainter
+import org.breezyweather.ui.common.glass.GlassStyle
+import org.breezyweather.ui.common.glass.LocalGlassHidden
 import org.breezyweather.ui.common.glass.ViewBackdrop
 import org.breezyweather.ui.common.glass.liquidGlass
-import org.breezyweather.common.extensions.getBlocksPerRow
+import org.breezyweather.ui.common.glass.rememberGlassPainter
 import org.breezyweather.ui.main.adapters.main.MainCards
 import org.breezyweather.ui.main.adapters.main.ViewType
 import org.breezyweather.ui.main.adapters.main.holder.AbstractMainCardViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.AbstractMainViewHolder
+import org.breezyweather.ui.main.adapters.main.holder.CardHeaderPin
 import org.breezyweather.ui.main.adapters.main.holder.HorizontalRegionsComposeView
 import org.breezyweather.ui.main.adapters.main.holder.LocalCardHeader
 import org.breezyweather.ui.main.adapters.main.holder.LocalCardHeaderPin
@@ -107,11 +112,6 @@ import org.breezyweather.ui.main.adapters.main.holder.LocalSkyBackdrop
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.ui.theme.weatherView.sky.SkyBackdrop
 import kotlin.math.roundToInt
-import androidx.compose.ui.graphics.layer.GraphicsLayer
-import androidx.compose.ui.graphics.layer.drawLayer
-import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.unit.IntOffset
-import org.breezyweather.ui.main.adapters.main.holder.CardHeaderPin
 
 /**
  * The home screen's cards, in Compose: a grid where tiles go two per row (more on wide screens)
@@ -159,7 +159,12 @@ class HomeCardsView @JvmOverloads constructor(
     private var version = 0
 
     /** Shows the cards of [location]; null shows nothing. Starts again from the top. */
-    fun show(location: Location?, provider: ResourceProvider, listAnimationEnabled: Boolean, itemAnimationEnabled: Boolean) {
+    fun show(
+        location: Location?,
+        provider: ResourceProvider,
+        listAnimationEnabled: Boolean,
+        itemAnimationEnabled: Boolean,
+    ) {
         data = location?.takeIf { it.weather != null }?.let {
             Data(it, provider, listAnimationEnabled, itemAnimationEnabled, ++version)
         }
@@ -321,14 +326,27 @@ class HomeCardsView @JvmOverloads constructor(
                 itemsIndexed(
                     items = types,
                     key = { _, type -> type },
-                    span = { index, _ -> GridItemSpan(SPANS / MainCards.tilesInRow(types, index, blocksPerRow).coerceAtLeast(1)) }
+                    span = { index, _ ->
+                        GridItemSpan(SPANS / MainCards.tilesInRow(types, index, blocksPerRow).coerceAtLeast(1))
+                    }
                 ) { index, type ->
                     val isTile = ViewType.isHalfSizeableBlock(type) == true
-                    val widthFactor = if (isTile) blocksPerRow.toFloat() / MainCards.tilesInRow(types, index, blocksPerRow) else 1f
+                    val widthFactor = if (isTile) {
+                        blocksPerRow.toFloat() /
+                            MainCards.tilesInRow(types, index, blocksPerRow)
+                    } else {
+                        1f
+                    }
                     val holder = holders[type]?.takeIf { it.first == widthFactor }?.second
                         ?: cards.create(type).also {
                             (it as? AbstractMainCardViewHolder)?.widthFactor = widthFactor
-                            cards.bind(it, data.location, data.provider, data.listAnimationEnabled, data.itemAnimationEnabled)
+                            cards.bind(
+                                it,
+                                data.location,
+                                data.provider,
+                                data.listAnimationEnabled,
+                                data.itemAnimationEnabled
+                            )
                             holders[type] = widthFactor to it
                         }
 
@@ -344,7 +362,9 @@ class HomeCardsView @JvmOverloads constructor(
                     // How far down it is kept: set when the card is drawn (where the exact scroll position is
                     // known), and read by the header's layout, which follows in the next frame if it changed
                     val pinPx = remember(type) { mutableIntStateOf(0) }
-                    val headerPin = remember(type, headerLayer) { CardHeaderPin(offset = { pinPx.intValue }, layer = headerLayer) }
+                    val headerPin =
+                        remember(type, headerLayer) { CardHeaderPin(offset = { pinPx.intValue }, layer = headerLayer) }
+
                     // Where the header is in the card, without its pinning (it reports where it is laid out)
                     fun headerAt(): Offset? {
                         val item = itemCoords[0]?.takeIf { it.isAttached } ?: return null
@@ -376,7 +396,15 @@ class HomeCardsView @JvmOverloads constructor(
                     ) {
                         holder.Render(
                             Modifier
-                                .then(if (isDragged) Modifier else Modifier.animateItem(placementSpec = spring(stiffness = 600f)))
+                                .then(
+                                    if (isDragged) {
+                                        Modifier
+                                    } else {
+                                        Modifier.animateItem(
+                                            placementSpec = spring(stiffness = 600f)
+                                        )
+                                    }
+                                )
                                 .zIndex(if (isDragged) 1f else 0f)
                                 .graphicsLayer {
                                     translationX = if (isDragged) dragOffset.x else 0f

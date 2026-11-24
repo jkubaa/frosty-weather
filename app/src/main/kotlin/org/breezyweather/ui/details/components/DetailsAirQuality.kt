@@ -71,8 +71,6 @@ import breezyweather.domain.location.model.Location
 import breezyweather.domain.weather.model.AirQuality
 import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
-import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
-import org.breezyweather.ui.common.charts.compose.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
 import kotlinx.collections.immutable.ImmutableList
@@ -82,7 +80,6 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.R
-import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.formatMeasure
 import org.breezyweather.common.extensions.getFormattedTime
@@ -99,8 +96,11 @@ import org.breezyweather.domain.weather.model.getDescription
 import org.breezyweather.domain.weather.model.getIndex
 import org.breezyweather.domain.weather.model.getName
 import org.breezyweather.ui.common.charts.compose.BreezyLineChart
+import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
 import org.breezyweather.ui.common.charts.compose.ChartYLabels
+import org.breezyweather.ui.common.charts.compose.lineModel
 import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.unit.formatting.UnitWidth
 import org.breezyweather.unit.formatting.format
 import java.util.Date

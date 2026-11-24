@@ -22,13 +22,13 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.res.stringResource
 import org.breezyweather.R
 import org.breezyweather.common.activities.BreezyActivity
-import org.breezyweather.domain.settings.SettingsManager
-import org.breezyweather.ui.settings.compose.DisplayOrderScreen
-import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
 import org.breezyweather.common.bus.EventBus
 import org.breezyweather.common.options.appearance.CardDisplay
 import org.breezyweather.domain.settings.SettingsChangedMessage
+import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.domain.settings.SettingsManager.Companion.DEFAULT_CARD_DISPLAY
+import org.breezyweather.ui.settings.compose.DisplayOrderScreen
+import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
 
 /**
  * Choose and order the main screen cards (iOS edit-mode list).

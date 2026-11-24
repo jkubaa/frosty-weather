@@ -95,7 +95,13 @@ object ForecastSummary {
         ).joinToString(" ").takeIf { it.isNotEmpty() }
     }
 
-    private fun conditions(context: Context, location: Location, current: Kind, hours: List<Hourly>, now: Date): String {
+    private fun conditions(
+        context: Context,
+        location: Location,
+        current: Kind,
+        hours: List<Hourly>,
+        now: Date,
+    ): String {
         val noun = context.getString(current.noun)
         val change = hours.firstOrNull { hourly ->
             hourly.date.after(now) && hourly.weatherCode?.let { kindOf(it) != current } == true
@@ -131,11 +137,17 @@ object ForecastSummary {
     private fun wind(context: Context, hours: List<Hourly>): String? {
         val gusts = hours.mapNotNull { it.wind?.gusts }.maxByOrNull { it.toDouble(SpeedUnit.KILOMETER_PER_HOUR) }
         if (gusts != null && gusts.toDouble(SpeedUnit.KILOMETER_PER_HOUR) >= NOTABLE_GUSTS_KMH) {
-            return context.getString(R.string.summary_gusts, unbreakable(gusts.formatMeasure(context, valueWidth = UnitWidth.NARROW)))
+            return context.getString(
+                R.string.summary_gusts,
+                unbreakable(gusts.formatMeasure(context, valueWidth = UnitWidth.NARROW))
+            )
         }
         val speed = hours.mapNotNull { it.wind?.speed }.maxByOrNull { it.toDouble(SpeedUnit.KILOMETER_PER_HOUR) }
         if (speed != null && speed.toDouble(SpeedUnit.KILOMETER_PER_HOUR) >= NOTABLE_WIND_KMH) {
-            return context.getString(R.string.summary_wind, unbreakable(speed.formatMeasure(context, valueWidth = UnitWidth.NARROW)))
+            return context.getString(
+                R.string.summary_wind,
+                unbreakable(speed.formatMeasure(context, valueWidth = UnitWidth.NARROW))
+            )
         }
         return null
     }

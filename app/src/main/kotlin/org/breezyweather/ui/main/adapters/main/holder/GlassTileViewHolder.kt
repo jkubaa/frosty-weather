@@ -16,7 +16,6 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.graphics.Color as AndroidColor
 import android.content.Context
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
@@ -44,6 +43,7 @@ import org.breezyweather.ui.main.widgets.Compass
 import org.breezyweather.ui.main.widgets.MiniBars
 import org.breezyweather.ui.main.widgets.ScaleBar
 import org.breezyweather.ui.main.widgets.toAnnotatedString
+import android.graphics.Color as AndroidColor
 
 /**
  * Square liquid glass tile, iOS weather style, drawn in Compose: header with [iconId] and

@@ -65,13 +65,13 @@ import kotlin.math.roundToInt
 val GlassCornerRadius = 26.dp
 
 /** Edge refraction of the bottom bar and the tiles: how strongly light bends at the rounded rim. */
-const val GlassEdgeRefraction = 2.4f
+const val GLASS_EDGE_REFRACTION = 2.4f
 
 /** Backdrop saturation of the cards and tiles: a bit more vivid, but warm backdrops don't get too bright. */
-const val GlassVividSaturation = 1.4f
+const val GLASS_VIVID_SATURATION = 1.4f
 
 /** Backdrop saturation of the bottom bar: more vivid, like the reference glass. */
-const val GlassBarSaturation = 2.6f
+const val GLASS_BAR_SATURATION = 2.6f
 
 /** Thin rim of light around glass: brighter at the top, fading towards the bottom. */
 val GlassRimBrush = Brush.verticalGradient(
@@ -161,8 +161,21 @@ fun rememberGlassPainter(
     val blurPx = intensity / 100f * LiquidGlass.MAX_BLUR_RADIUS * BLUR_SCALE * blurScale
     val edgePx = minOf(radiusPx * 0.6f, with(density) { LiquidGlass.REFRACTION_EDGE_DP.dp.toPx() })
     val layer = rememberGraphicsLayer()
-    return remember(backdrop, body, frosted, blurPx, radiusPx, edgePx, isLight, layer, refractionStrength, saturation, rim) {
-        GlassPainter(backdrop?.takeIf { frosted }, body, blurPx, radiusPx, edgePx, isLight, layer, refractionStrength, saturation, rim)
+    return remember(
+        backdrop, body, frosted, blurPx, radiusPx, edgePx, isLight, layer, refractionStrength, saturation, rim
+    ) {
+        GlassPainter(
+            backdrop?.takeIf { frosted },
+            body,
+            blurPx,
+            radiusPx,
+            edgePx,
+            isLight,
+            layer,
+            refractionStrength,
+            saturation,
+            rim
+        )
     }
 }
 
@@ -197,7 +210,14 @@ class GlassPainter internal constructor(
     ) {
         if (box.width <= 0f || box.height <= 0f) return
         if (backdrop != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && backdrop.isReady) {
-            layer.renderEffect = effects.get(box.size, blurPx, cornerRadius, minOf(edgePx, cornerRadius * 0.6f), refractionStrength, saturation)
+            layer.renderEffect = effects.get(
+                box.size,
+                blurPx,
+                cornerRadius,
+                minOf(edgePx, cornerRadius * 0.6f),
+                refractionStrength,
+                saturation
+            )
             layer.topLeft = IntOffset(box.left.roundToInt(), box.top.roundToInt())
             layer.record(size = IntSize(box.width.roundToInt(), box.height.roundToInt())) {
                 drawIntoCanvas { backdrop.drawBackdrop(it.nativeCanvas, windowPosition) }
@@ -225,7 +245,7 @@ class GlassPainter internal constructor(
                 topLeft = box.topLeft,
                 size = box.size,
                 cornerRadius = CornerRadius(cornerRadius),
-                style = Stroke(width = 1.dp.toPx()),
+                style = Stroke(width = 1.dp.toPx())
             )
         }
     }
@@ -238,7 +258,14 @@ private class EffectCache {
     private var key: List<Float>? = null
     private var effect: androidx.compose.ui.graphics.RenderEffect? = null
 
-    fun get(size: Size, blur: Float, cornerRadius: Float, edge: Float, strength: Float, saturation: Float): androidx.compose.ui.graphics.RenderEffect? {
+    fun get(
+        size: Size,
+        blur: Float,
+        cornerRadius: Float,
+        edge: Float,
+        strength: Float,
+        saturation: Float,
+    ): androidx.compose.ui.graphics.RenderEffect? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || size.width <= 0f || size.height <= 0f) return null
         val newKey = listOf(size.width, size.height, blur, cornerRadius, edge, strength, saturation)
         if (newKey != key) {
@@ -249,8 +276,19 @@ private class EffectCache {
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private fun build(size: Size, blur: Float, cornerRadius: Float, edge: Float, strength: Float, saturation: Float): RenderEffect {
-        val blurred = RenderEffect.createBlurEffect(blur.coerceAtLeast(0.1f), blur.coerceAtLeast(0.1f), Shader.TileMode.CLAMP)
+    private fun build(
+        size: Size,
+        blur: Float,
+        cornerRadius: Float,
+        edge: Float,
+        strength: Float,
+        saturation: Float,
+    ): RenderEffect {
+        val blurred = RenderEffect.createBlurEffect(
+            blur.coerceAtLeast(0.1f),
+            blur.coerceAtLeast(0.1f),
+            Shader.TileMode.CLAMP
+        )
         val vibrancy = RenderEffect.createColorFilterEffect(
             ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(saturation) }),
             blurred
@@ -260,7 +298,13 @@ private class EffectCache {
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private fun refraction(input: RenderEffect, size: Size, cornerRadius: Float, edge: Float, strength: Float): RenderEffect {
+    private fun refraction(
+        input: RenderEffect,
+        size: Size,
+        cornerRadius: Float,
+        edge: Float,
+        strength: Float,
+    ): RenderEffect {
         val shader = RuntimeShader(LiquidGlassBlur.REFRACTION_SHADER).apply {
             setFloatUniform("size", size.width, size.height)
             setFloatUniform("cornerRadius", cornerRadius.coerceAtMost(minOf(size.width, size.height) / 2f))

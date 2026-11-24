@@ -43,13 +43,13 @@ import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.options.appearance.DetailScreen
 import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.domain.weather.index.PollenIndex
+import org.breezyweather.domain.weather.index.PollenIndex.Companion.getNegligiblePollenColor
+import org.breezyweather.domain.weather.index.PollenIndex.Companion.getNegligiblePollenText
 import org.breezyweather.domain.weather.model.getColor
 import org.breezyweather.domain.weather.model.getIndex
 import org.breezyweather.domain.weather.model.getIndexName
 import org.breezyweather.domain.weather.model.getName
 import org.breezyweather.domain.weather.model.pollensWithConcentration
-import org.breezyweather.domain.weather.index.PollenIndex.Companion.getNegligiblePollenColor
-import org.breezyweather.domain.weather.index.PollenIndex.Companion.getNegligiblePollenText
 import org.breezyweather.ui.main.MainActivity
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 
@@ -83,9 +83,17 @@ class PollenViewHolder(context: Context) : ComposeTileViewHolder(context) {
                 .sortedByDescending { pollen.getIndex(it) }
                 .take(2)
             if (primary.isEmpty() && pollen.isValid) {
-                listOf(Entry(null, getNegligiblePollenText(activity, source), getNegligiblePollenColor(activity, source)))
+                listOf(
+                    Entry(null, getNegligiblePollenText(activity, source), getNegligiblePollenColor(activity, source))
+                )
             } else {
-                primary.map { Entry(pollen.getName(activity, it), pollen.getIndexName(activity, it, source), pollen.getColor(activity, it, source)) }
+                primary.map {
+                    Entry(
+                        pollen.getName(activity, it),
+                        pollen.getIndexName(activity, it, source),
+                        pollen.getColor(activity, it, source)
+                    )
+                }
             }
         }
 
@@ -94,7 +102,12 @@ class PollenViewHolder(context: Context) : ComposeTileViewHolder(context) {
             .plus(entries.value.map { listOfNotNull(it.name, it.level).joinToString(separator) })
             .joinToString(separator)
         itemView.setOnClickListener {
-            IntentHelper.startDailyWeatherActivity(activity, location.formattedId, location.weather!!.todayIndex, DetailScreen.TAG_POLLEN)
+            IntentHelper.startDailyWeatherActivity(
+                activity,
+                location.formattedId,
+                location.weather!!.todayIndex,
+                DetailScreen.TAG_POLLEN
+            )
         }
     }
 
@@ -111,7 +124,14 @@ class PollenViewHolder(context: Context) : ComposeTileViewHolder(context) {
                 )
                 Column {
                     entry.name?.let {
-                        Text(it, color = contentColor, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            it,
+                            color = contentColor,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                     entry.level?.let {
                         Text(

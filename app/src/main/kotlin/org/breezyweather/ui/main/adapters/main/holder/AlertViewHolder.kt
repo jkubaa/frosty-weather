@@ -16,8 +16,8 @@
 
 package org.breezyweather.ui.main.adapters.main.holder
 
-import android.content.Context
 import android.annotation.SuppressLint
+import android.content.Context
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,10 +50,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import breezyweather.domain.location.model.Location
 import org.breezyweather.R
-import org.breezyweather.ui.common.glass.GlassStyle
 import org.breezyweather.common.activities.BreezyActivity
 import org.breezyweather.common.utils.helpers.IntentHelper
 import org.breezyweather.domain.weather.model.getFormattedDates
+import org.breezyweather.ui.common.glass.GlassStyle
 import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.compose.BreezyWeatherTheme
 import org.breezyweather.ui.theme.compose.themeRipple
@@ -69,7 +69,10 @@ class AlertViewHolder(
     // Warm-tinted liquid glass for alerts
     override val glassStyle = GlassStyle.Card.copy(
         tint = androidx.compose.ui.graphics.Color(
-            ColorUtils.setAlphaComponent(ContextCompat.getColor(context, R.color.alert_background), (0.62f * 255).toInt())
+            ColorUtils.setAlphaComponent(
+                ContextCompat.getColor(context, R.color.alert_background),
+                (0.62f * 255).toInt()
+            )
         )
     )
 

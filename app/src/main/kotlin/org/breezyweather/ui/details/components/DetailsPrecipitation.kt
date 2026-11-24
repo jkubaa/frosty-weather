@@ -50,10 +50,6 @@ import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
 import breezyweather.domain.weather.model.PrecipitationDuration
 import breezyweather.domain.weather.model.PrecipitationProbability
-import org.breezyweather.ui.common.charts.compose.ChartYLabels
-import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
-import org.breezyweather.ui.common.charts.compose.columnModel
-import org.breezyweather.ui.common.charts.compose.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
 import kotlinx.collections.immutable.ImmutableList
@@ -62,7 +58,6 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
 import org.breezyweather.R
-import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.formatMeasure
 import org.breezyweather.common.extensions.formatPercent
 import org.breezyweather.common.extensions.formatTime
@@ -75,6 +70,11 @@ import org.breezyweather.common.utils.UnitUtils
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.ui.common.charts.compose.BreezyBarChart
 import org.breezyweather.ui.common.charts.compose.BreezyLineChart
+import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
+import org.breezyweather.ui.common.charts.compose.ChartYLabels
+import org.breezyweather.ui.common.charts.compose.columnModel
+import org.breezyweather.ui.common.charts.compose.lineModel
+import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.unit.formatting.UnitWidth
 import org.breezyweather.unit.precipitation.Precipitation
 import org.breezyweather.unit.precipitation.Precipitation.Companion.millimeters

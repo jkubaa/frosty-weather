@@ -42,7 +42,11 @@ fun Modifier.fadeHorizontalEdges(start: Boolean, end: Boolean, length: Dp): Modi
                 drawContent()
                 if (start) {
                     drawRect(
-                        brush = Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = 0f, endX = px),
+                        brush = Brush.horizontalGradient(
+                            listOf(Color.Transparent, Color.Black),
+                            startX = 0f,
+                            endX = px
+                        ),
                         size = Size(px, size.height),
                         blendMode = BlendMode.DstIn
                     )
@@ -50,7 +54,11 @@ fun Modifier.fadeHorizontalEdges(start: Boolean, end: Boolean, length: Dp): Modi
                 if (end) {
                     val left = size.width - px
                     drawRect(
-                        brush = Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = left, endX = size.width),
+                        brush = Brush.horizontalGradient(
+                            listOf(Color.Black, Color.Transparent),
+                            startX = left,
+                            endX = size.width
+                        ),
                         topLeft = Offset(left, 0f),
                         size = Size(px, size.height),
                         blendMode = BlendMode.DstIn

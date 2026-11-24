@@ -32,8 +32,7 @@ import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.UnitWidth
 
 /** Pressure tile: value, unit, and where it sits between low and high pressure. */
-class PressureViewHolder(context: Context) : GlassTileViewHolder(
-    context, R.drawable.ic_gauge, R.string.pressure) {
+class PressureViewHolder(context: Context) : GlassTileViewHolder(context, R.drawable.ic_gauge, R.string.pressure) {
 
     override fun onBindView(
         activity: BreezyActivity,
