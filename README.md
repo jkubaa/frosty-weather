@@ -14,15 +14,58 @@
 
 # 🧊 What’s different
 
-Frosty Weather keeps the weather data, sources and features of Breezy Weather, and focuses on the look of the app:
+Frosty Weather keeps the weather data, sources and features of Breezy Weather, and rebuilds how the app looks and feels around a frosted, liquid glass design.
 
-- A redesigned user interface introducing a glass UI
+## Home screen
 
-For the full list of features and supported weather sources, see the [upstream Breezy Weather README](https://github.com/breezy-weather/breezy-weather#readme).
+- **Rebuilt in Jetpack Compose**: header, cards, top and bottom bars, pull-to-refresh and location swipes
+- **Liquid glass everywhere**: cards, tiles and bars refract, blur and tint the sky behind them, with soft rims of light
+- **Collapsing cards**: as you scroll, each card keeps its header pinned while its content slides up underneath, and the next card slides over it
+- **Large hero that hands off** to a compact title (temperature · condition · feels like) as you scroll
+- **New cards**: a forecast summary, Highlights, and restyled hourly and daily forecasts with temperature range bars
+- **Glass bottom bar** for the main actions, with in-app notifications floating above it
+- **Frosted weather icons** as the built-in icon set
+
+## Living sky
+
+The background follows the real sun, moon and weather at each location:
+
+- Night skies with the Milky Way, twinkling stars, shooting stars and a cratered moon with its halo
+- Light shafts and lens flare from the sun, and a golden hour that warms through sunset and dusk
+- Rain, sleet and storms seen through a wet window, with lightning that lights the clouds from inside
+- Snow with depth, soft vapour-like clouds and fog, and the aurora on clear nights at high latitudes
+- Tilt and scroll parallax, with clouds that drift in as the weather changes
+
+## Details
+
+- **Detail screens as sheets** over the home screen, with a week strip, a glass metric menu and drag-to-dismiss
+- **New, faster charts** drawn on the GPU, with scrubbing, H/L labels and a “now” marker
+- **Sunrise/sunset screen** with the sun’s path through the day
+- **Moon screen** with a NASA lunar map lit by the current phase, a draggable timeline, rise/set times and the next full moon
+
+## Live Updates
+
+- **Rain countdown**: an ongoing notification when rain is about to start (or a short shower is about to end), from the minutely forecast
+- **Weather warnings** as ongoing notifications
+- On Android 16+, both show as Live Updates in the status bar and on the lock screen
+
+## Widgets
+
+Three new widgets drawn on the location’s sky with the frosted icons: **Conditions** (2×2), **Hourly forecast** (4×2) and **Forecast** (4×4). They show more hours and days as you resize them.
+
+## Settings and dialogs
+
+- Settings, dialogs, sheets and pickers use a consistent Frosty design: large titles, grouped rows with icon tiles, glass toggles, pull-down menus and time wheels
+- Locations list and search redesigned in liquid glass
+- “Edit this location” and weather source pickers rebuilt as sheets and menus
+
+For the full list of weather features and supported weather sources, see the [upstream Breezy Weather README](https://github.com/breezy-weather/breezy-weather#readme).
 
 # ⬇️ Download
 
-There are no releases yet. See [INSTALL.md](INSTALL.md) to build the app from source.
+Download the latest APK from the [Releases page](https://github.com/jkubaa/frosty-weather/releases). If you’re not sure which file to pick, use the `universal` one. See [INSTALL.md](INSTALL.md) for details or to build the app from source.
+
+Frosty Weather has its own version numbers. Each release, and the About screen in the app, also says which Breezy Weather version it is based on.
 
 # 🔒 Privacy
 

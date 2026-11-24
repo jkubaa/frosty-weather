@@ -1072,6 +1072,7 @@
     <string name="notification_app_update_available">New version available!</string>
     <!-- About -->
     <string name="about_app">About app</string>
+    <string name="about_based_on_upstream">Based on Breezy Weather %s</string>
     <string name="about_check_for_app_updates">Check for app updates</string>
     <string name="about_no_new_updates">No new updates available</string>
     <string name="about_update_check_eol">This Android version is no longer supported</string>

@@ -19,17 +19,25 @@ plugins {
 
 val supportedAbi = setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 
+// Frosty Weather's own version. versionCode = major * 10000 + minor * 100 + patch, and must only ever go up
+val frostyVersionName = "1.0.0"
+val frostyVersionCode = 10000
+
+// The Breezy Weather release this fork is based on: bump it when merging upstream
+val breezyVersion = "6.2.3"
+
 configure<ApplicationExtension> {
     namespace = "org.breezyweather"
 
     defaultConfig {
         applicationId = "io.github.jkubaa.frostyweather"
-        versionCode = 60203
-        versionName = "6.2.3"
+        versionCode = frostyVersionCode
+        versionName = frostyVersionName
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
         buildConfigField("boolean", "IS_BREEZY", "${Config.isBreezy}")
+        buildConfigField("String", "UPSTREAM_VERSION", "\"$breezyVersion\"")
 
         multiDexEnabled = true
         ndk {
