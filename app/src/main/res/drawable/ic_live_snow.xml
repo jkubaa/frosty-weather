@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Snow. Coloured so it can also be the large icon; as a small icon only its shape is used. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:fillColor="#FFA3B1C2" android:pathData="M3,10.5a3.5,3.5 0 1,0 7,0a3.5,3.5 0 1,0 -7,0ZM7,8a5,5 0 1,0 10,0a5,5 0 1,0 -10,0ZM14,10.5a3.5,3.5 0 1,0 7,0a3.5,3.5 0 1,0 -7,0ZM6.5,10.5L6.5,14L17.5,14L17.5,10.5Z" />
+    <path android:strokeColor="#FF6FB2F2" android:strokeWidth="1.3" android:strokeLineCap="round" android:pathData="M7.50,16.30L7.50,19.70M6.03,17.15L8.97,18.85M8.97,17.15L6.03,18.85M12.00,18.55L12.00,21.95M10.53,19.40L13.47,21.10M13.47,19.40L10.53,21.10M16.50,16.30L16.50,19.70M15.03,17.15L17.97,18.85M17.97,17.15L15.03,18.85" />
+</vector>

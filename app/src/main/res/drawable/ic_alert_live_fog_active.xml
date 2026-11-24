@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Warning type "fog", while the warning is in effect -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M12,2.75L21.75,20.25H2.25Z" /><group android:scaleX="0.4" android:scaleY="0.4" android:translateX="7.20" android:translateY="9.80"><path android:fillColor="#FFFFFFFF" android:pathData="M3,10.5a3.5,3.5 0 1,0 7,0a3.5,3.5 0 1,0 -7,0ZM7,8a5,5 0 1,0 10,0a5,5 0 1,0 -10,0ZM14,10.5a3.5,3.5 0 1,0 7,0a3.5,3.5 0 1,0 -7,0ZM6.5,10.5L6.5,14L17.5,14L17.5,10.5Z" /><path android:strokeColor="#FFFFFFFF" android:strokeWidth="3.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M4,17.5H20M6.5,21H17.5" /></group>
+</vector>

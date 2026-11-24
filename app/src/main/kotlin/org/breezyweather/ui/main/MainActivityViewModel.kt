@@ -45,6 +45,8 @@ import org.breezyweather.domain.location.model.applyDefaultPreset
 import org.breezyweather.domain.location.model.isCloseTo
 import org.breezyweather.domain.settings.CurrentLocationStore
 import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.remoteviews.AlertLiveUpdate
+import org.breezyweather.remoteviews.RainLiveUpdate
 import org.breezyweather.sources.RefreshHelper
 import org.breezyweather.sources.SourceManager
 import org.breezyweather.ui.main.utils.RefreshErrorType
@@ -264,6 +266,13 @@ class MainActivityViewModel @Inject constructor(
                 // If it's null, it's not coming from an update, so no need to broadcast anything
                 if (updatedLocationIds != null) {
                     refreshHelper.broadcastDataIfNecessary(getApplication(), locationList, updatedLocationIds)
+                    // Refresh the rain countdown when its location was just updated in the app
+                    RainLiveUpdate.pickLocation(locationList)
+                        ?.takeIf { it.formattedId in updatedLocationIds }
+                        ?.let {
+                            RainLiveUpdate.update(getApplication(), it)
+                            AlertLiveUpdate.update(getApplication(), it)
+                        }
                 }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
