@@ -26,21 +26,6 @@ While we welcome pull requests, before implementing any new feature/improvement,
 That's why you can only contribute to [existing issues tagged “Open to contributions”](https://github.com/breezy-weather/breezy-weather/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22Open%20to%20contributions%22), or [existing ideas tagged “Open to contributions”](https://github.com/breezy-weather/breezy-weather/discussions?discussions_q=is%3Aopen+label%3A%22Open+to+contributions%22) *after* you’ve expressed interest in that discussion.
 
 
-### AI guidelines
-
-AI has numerous ethical concerns (such as copyright violations and huge use of energy and water), so we prefer you only use it if strictly necessary.
-
-If you use AI or any kind of assistance tool, you use it as an assistant, meaning you're responsible for:
-1. **Understanding** every line of code and documentation you submit, and be able to explain the approach during review.
-2. **Ensuring it is correct, safe and appropriate**: these tools are good at generating plausible but meaningless content. So, you need to carefully review it, to avoid lowering the project code quality, or requiring unfair amount of human effort from developers and users to review contributions and detect the mistakes resulting from the use of AI.
-3. Ensuring it can be **licensed under LGPLv3** (the project license): do not use tools whose terms forbid using their output in LGPLv3-licensed projects or impose additional restrictions on redistribution.
-4. **Transparency**: disclose when AI was used. Which tools were used, and what they were used for.
-
-If you can't follow them, don’t use AI.
-
-Otherwise, before starting any contribution, mention in the linked issue/idea the tools used and their license terms for redistribution.
-
-
 ### Linting
 
 You can check linting issues with `./gradlew spotlessCheck`.
