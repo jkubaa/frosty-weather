@@ -24,7 +24,7 @@ val frostyVersionName = "0.1.0-beta"
 val frostyVersionCode = 100
 
 // The Breezy Weather release this fork is based on: bump it when merging upstream
-val breezyVersion = "6.2.3"
+val breezyVersion = "6.2.2"
 
 configure<ApplicationExtension> {
     namespace = "org.breezyweather"
