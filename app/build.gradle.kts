@@ -58,10 +58,13 @@ configure<ApplicationExtension> {
         }
     }
 
+    val isPrerelease = project.hasProperty("frostyPrerelease")
+
     buildTypes {
         named("debug") {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-r${getCommitCount()}"
+            buildConfigField("String", "BUILD_TIER", "\"debug\"")
         }
         named("release") {
             isShrinkResources = true
@@ -69,6 +72,11 @@ configure<ApplicationExtension> {
             isDebuggable = false
             isCrunchPngs = false // No need to do that, we already optimized them
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            buildConfigField(
+                "String",
+                "BUILD_TIER",
+                if (isPrerelease) "\"prerelease\"" else "\"release\""
+            )
         }
         // Release speed on the debug app (same id and signing, so it installs over it and keeps its data):
         // debug builds are far slower in Compose, which hides how smooth the app really is
@@ -79,6 +87,8 @@ configure<ApplicationExtension> {
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
             isProfileable = true
+            resValue("color", "ic_launcher_background", "#800000")
+            buildConfigField("String", "BUILD_TIER", "\"debug\"")
         }
     }
 
@@ -386,6 +396,19 @@ configure<ApplicationExtension> {
                 res.directories += "src/res_breezy"
             } else {
                 res.directories += "src/res_fork"
+            }
+        }
+        if (!Config.isBreezy) {
+            getByName("debug") {
+                res.directories += "src/res_fork_debug"
+            }
+            getByName("fastDebug") {
+                res.directories += "src/res_fork_debug"
+            }
+            if (isPrerelease) {
+                getByName("release") {
+                    res.directories += "src/res_fork_prerelease"
+                }
             }
         }
     }

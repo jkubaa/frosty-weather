@@ -1073,6 +1073,9 @@
     <!-- About -->
     <string name="about_app">About app</string>
     <string name="about_based_on_upstream">Based on Breezy Weather %s</string>
+    <string name="about_build_tier_release">Release</string>
+    <string name="about_build_tier_prerelease">Pre-release</string>
+    <string name="about_build_tier_debug">Debug</string>
     <string name="about_check_for_app_updates">Check for app updates</string>
     <string name="about_no_new_updates">No new updates available</string>
     <string name="about_update_check_eol">This Android version is no longer supported</string>
@@ -1081,6 +1084,8 @@
     <string name="about_source_code">Source code</string>
     <string name="about_dependencies">Dependencies</string>
     <string name="about_contributors">Contributors</string>
+    <string name="about_upstream_contributors">Breezy Weather contributors</string>
+    <string name="about_contribution_fork">Frosty Weather fork &amp; redesign</string>
     <string name="about_translators">Translators</string>
     <string name="about_contribution_WangDaYeeeeee">Developer of the original project Geometric Weather</string>
     <string name="about_contribution_designer">Logo designer</string>
