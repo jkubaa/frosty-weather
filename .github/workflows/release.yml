@@ -129,8 +129,10 @@ jobs:
             echo "### Checksums"
             echo "| File | SHA-256 |"
             echo "|------|---------|"
-            cd dist
-            for f in *.apk; do echo "| \`$f\` | \`$(sha256sum "$f" | awk '{ print $1 }')\` |"; done
+            (
+              cd dist
+              for f in *.apk; do echo "| \`$f\` | \`$(sha256sum "$f" | awk '{ print $1 }')\` |"; done
+            )
           } > release-notes.md
           cat release-notes.md
 
