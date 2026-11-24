@@ -24,8 +24,8 @@ import org.breezyweather.ui.theme.weatherView.R
 import org.breezyweather.ui.theme.weatherView.WeatherView
 import org.breezyweather.ui.theme.weatherView.WeatherView.WeatherKindRule
 import org.breezyweather.ui.theme.weatherView.materialWeatherView.MaterialWeatherView.WeatherAnimationImplementor
-import org.breezyweather.ui.theme.weatherView.materialWeatherView.implementor.LayeredImplementor
 import org.breezyweather.ui.theme.weatherView.materialWeatherView.implementor.HailImplementor
+import org.breezyweather.ui.theme.weatherView.materialWeatherView.implementor.LayeredImplementor
 import org.breezyweather.ui.theme.weatherView.materialWeatherView.implementor.MeteorShowerImplementor
 import org.breezyweather.ui.theme.weatherView.materialWeatherView.implementor.RainImplementor
 import org.breezyweather.ui.theme.weatherView.materialWeatherView.implementor.SnowImplementor
