@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#6B44D6</color>
+    <color name="ic_launcher_sky_top">#361E88</color>
+    <color name="ic_launcher_sky_mid">#6B44D6</color>
+    <color name="ic_launcher_sky_bottom">#AE88FF</color>
+</resources>

@@ -23,6 +23,7 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -67,6 +68,8 @@ import org.breezyweather.common.utils.helpers.SnackbarHelper
 import org.breezyweather.data.appContributors
 import org.breezyweather.data.appTranslators
 import org.breezyweather.ui.common.composables.AlertDialogLink
+import org.breezyweather.ui.common.frosty.BuildTier
+import org.breezyweather.ui.common.frosty.FrostyBuildTierBadge
 import org.breezyweather.ui.common.frosty.FrostyChevron
 import org.breezyweather.ui.common.frosty.FrostyIconTile
 import org.breezyweather.ui.common.frosty.FrostyRow
@@ -315,7 +318,32 @@ internal fun AboutScreen(
             }
 
             largeSeparatorItem()
-            item { SectionTitle(stringResource(R.string.about_contributors)) }
+            if (!BuildConfig.IS_BREEZY) {
+                item { SectionTitle(stringResource(R.string.brand_name)) }
+                item {
+                    ContributorView(
+                        name = "jkubaa",
+                        contribution = R.string.about_contribution_fork,
+                        isFirst = true,
+                        isLast = true
+                    ) {
+                        linkToOpen.value = "https://github.com/jkubaa"
+                        dialogLinkOpenState.value = true
+                    }
+                }
+                largeSeparatorItem()
+            }
+            item {
+                SectionTitle(
+                    stringResource(
+                        if (BuildConfig.IS_BREEZY) {
+                            R.string.about_contributors
+                        } else {
+                            R.string.about_upstream_contributors
+                        }
+                    )
+                )
+            }
             itemsIndexed(appContributors) { index, item ->
                 ContributorView(
                     name = item.name,
@@ -392,12 +420,20 @@ private fun Header() {
             color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.headlineSmall
         )
-        Text(
-            text = versionFormatted,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelMedium
-        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FrostyBuildTierBadge()
+            Text(
+                text = BuildTier.currentVersionLabel(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
         if (!BuildConfig.IS_BREEZY) {
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = stringResource(R.string.about_based_on_upstream, BuildConfig.UPSTREAM_VERSION),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -409,12 +445,6 @@ private fun Header() {
 
 @Composable
 private fun SectionTitle(title: String) = FrostySectionHeader(title)
-
-private val versionFormatted: String
-    get() = when {
-        BuildConfig.DEBUG -> "Debug ${BuildConfig.COMMIT_SHA}"
-        else -> "Release ${BuildConfig.VERSION_NAME}"
-    }
 
 @Composable
 private fun AboutAppLink(

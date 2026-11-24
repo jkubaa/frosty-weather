@@ -25,6 +25,8 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import org.breezyweather.R
 import org.breezyweather.common.extensions.plus
+import org.breezyweather.common.utils.helpers.IntentHelper
+import org.breezyweather.ui.common.frosty.FrostyBuildTierCard
 import org.breezyweather.ui.common.widgets.Material3Scaffold
 import org.breezyweather.ui.common.widgets.generateCollapsedScrollBehavior
 import org.breezyweather.ui.common.widgets.insets.FitStatusBarTopAppBar
@@ -145,6 +147,13 @@ fun RootSettingsView(
                 ) {
                     onNavigateTo(SettingsScreenRouter.Debug.route)
                 }
+            }
+            largeSeparatorItem()
+            item(key = "build_tier_card") {
+                val context = LocalContext.current
+                FrostyBuildTierCard(
+                    onClick = { IntentHelper.startAboutActivity(context) }
+                )
             }
 
             bottomInsetItem()

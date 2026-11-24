@@ -75,7 +75,14 @@ jobs:
 
       # No -Pbreezy: modified builds must not carry the Breezy Weather branding (see LICENSE_ADDITIONAL)
       - name: Assemble release APKs
-        run: ./gradlew assembleBasicRelease assembleFreenetRelease
+        env:
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          GRADLE_ARGS=""
+          if [ "$PRERELEASE" = "true" ]; then
+            GRADLE_ARGS="-PfrostyPrerelease"
+          fi
+          ./gradlew assembleBasicRelease assembleFreenetRelease $GRADLE_ARGS
 
       - name: Sign APKs (basic)
         uses: r0adkll/sign-android-release@a391126403df92c6a0a3988a829dd47f79b89ed7
