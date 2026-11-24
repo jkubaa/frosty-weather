@@ -58,6 +58,7 @@ class CrashLogUtils(
     fun getDebugInfo(): String {
         return """
             App version: ${BuildConfig.VERSION_NAME} (${BuildConfig.FLAVOR}, ${BuildConfig.COMMIT_SHA}, ${BuildConfig.VERSION_CODE}
+            Based on Breezy Weather: ${BuildConfig.UPSTREAM_VERSION}
             Android version: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT}); build ${Build.DISPLAY}
             Device brand: ${Build.BRAND}
             Device manufacturer: ${Build.MANUFACTURER}

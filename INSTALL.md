@@ -4,7 +4,12 @@ Frosty Weather is an unofficial fork of [Breezy Weather](https://github.com/bree
 
 ## Releases
 
-There are no published releases yet. When they are available, they will be on the [Releases page](https://github.com/jkubaa/frosty-weather/releases).
+Releases are published on the [Releases page](https://github.com/jkubaa/frosty-weather/releases). Each release has:
+- `frosty-weather-<version>_universal.apk`: works on every device; pick this one if unsure
+- `frosty-weather-<version>_arm64-v8a.apk`, `_armeabi-v7a.apk`, `_x86.apk`, `_x86_64.apk`: smaller, per-architecture APKs (most phones are `arm64-v8a`)
+- `frosty-weather-<version>_freenet.apk`: only weather sources that work over free networks
+
+SHA-256 checksums are listed in each release’s notes.
 
 ## Building from source
 

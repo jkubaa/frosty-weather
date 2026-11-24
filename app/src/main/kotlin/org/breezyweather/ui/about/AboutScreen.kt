@@ -397,6 +397,13 @@ private fun Header() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.labelMedium
         )
+        if (!BuildConfig.IS_BREEZY) {
+            Text(
+                text = stringResource(R.string.about_based_on_upstream, BuildConfig.UPSTREAM_VERSION),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
     }
 }
 
