@@ -199,6 +199,23 @@ class SettingsManager private constructor(
         }
         get() = config.getString("rain_live_quiet_end", "07:00") ?: "07:00"
 
+    // Weather warnings (Live Update)
+
+    var alertLiveEnabled: Boolean
+        set(value) {
+            config.edit().putBoolean("alert_live_enabled", value).apply()
+            notifySettingsChanged()
+        }
+        get() = config.getBoolean("alert_live_enabled", true)
+
+    /** Lowest severity shown as a Live Update: "moderate" or "severe" */
+    var alertLiveMinSeverity: String
+        set(value) {
+            config.edit().putString("alert_live_min_severity", value).apply()
+            notifySettingsChanged()
+        }
+        get() = config.getString("alert_live_min_severity", "moderate") ?: "moderate"
+
     /** Weather types to count down for: rain, snow, sleet_hail, thunderstorm */
     var rainLiveTypes: Set<String>
         set(value) {

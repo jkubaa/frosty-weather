@@ -126,6 +126,11 @@ object Notifications {
                     setGroup(GROUP_BREEZY_WEATHER)
                     setShowBadge(false)
                 },
+                buildNotificationChannel(AlertLiveUpdate.CHANNEL_ALERT_LIVE, IMPORTANCE_DEFAULT) {
+                    setName(context.getString(R.string.notification_channel_alert_live))
+                    setGroup(GROUP_BREEZY_WEATHER)
+                    setShowBadge(false)
+                },
                 buildNotificationChannel(CHANNEL_FORECAST, IMPORTANCE_DEFAULT) {
                     setName(context.getString(R.string.notification_channel_forecast))
                     setGroup(GROUP_BREEZY_WEATHER)

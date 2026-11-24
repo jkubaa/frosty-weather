@@ -19,6 +19,7 @@ package org.breezyweather.debug
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import org.breezyweather.remoteviews.AlertLiveUpdate
 import org.breezyweather.remoteviews.RainLiveUpdate
 import java.util.Date
 
@@ -27,9 +28,31 @@ import java.util.Date
  * Int extras: `minutes` until it starts (default 5, 0 = raining now, negative = dismiss),
  * `duration` in minutes (default 20), `rate` in tenths of mm/h (default 30 = 3 mm/h, moderate).
  * String extra `kind`: snow, sleet, hail or thunderstorm (default rain).
+ *
+ * Weather warning instead: string extra `alert` = wind, rain, snow, thunderstorm, heat, fog or
+ * general (or `off` to dismiss), with int extras `minutes` until it starts (0 = already in effect,
+ * started 30 minutes ago), `hours` it lasts (default 6), and string `severity` = moderate, severe
+ * (default) or extreme.
  */
 class RainLiveTestReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        intent.getStringExtra("alert")?.let { type ->
+            if (type == "off") {
+                AlertLiveUpdate.stopTest(context)
+                return
+            }
+            val minutes = intent.getIntExtra("minutes", 90)
+            val now = System.currentTimeMillis()
+            val start = if (minutes <= 0) now - 30 * 60_000L else now + minutes * 60_000L
+            AlertLiveUpdate.startTest(
+                context,
+                Date(start),
+                hours = intent.getIntExtra("hours", 6),
+                type = type,
+                severity = intent.getStringExtra("severity")
+            )
+            return
+        }
         val minutes = intent.getIntExtra("minutes", 5)
         if (minutes < 0) {
             RainLiveUpdate.stopTest(context)

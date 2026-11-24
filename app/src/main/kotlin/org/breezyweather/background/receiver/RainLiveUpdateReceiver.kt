@@ -28,6 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.breezyweather.background.weather.WeatherUpdateJob
+import org.breezyweather.remoteviews.AlertLiveUpdate
 import org.breezyweather.remoteviews.RainLiveUpdate
 import javax.inject.Inject
 import org.breezyweather.BuildConfig.APPLICATION_ID as ID
@@ -48,6 +49,23 @@ class RainLiveUpdateReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             ACTION_DISMISSED -> RainLiveUpdate.onDismissed(context, intent.getLongExtra(EXTRA_UNTIL, 0))
+            ACTION_ALERT_DISMISSED -> AlertLiveUpdate.onDismissed(
+                context,
+                intent.getStringExtra(EXTRA_ALERT_ID) ?: "",
+                intent.getLongExtra(EXTRA_UNTIL, 0)
+            )
+            ACTION_ALERT_CHECK -> {
+                val pending = goAsync()
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+                        RainLiveUpdate.pickLocation(locationRepository.getAllLocations())
+                            ?.let { it.copy(weather = weatherRepository.getWeatherByLocationId(it.formattedId)) }
+                            ?.let { AlertLiveUpdate.update(context, it) }
+                    } finally {
+                        pending.finish()
+                    }
+                }
+            }
             ACTION_CHECK -> {
                 val refresh = intent.getBooleanExtra(EXTRA_REFRESH, false)
                 val pending = goAsync()
@@ -75,6 +93,9 @@ class RainLiveUpdateReceiver : BroadcastReceiver() {
         private const val NAME = "RainLiveUpdateReceiver"
         private const val ACTION_CHECK = "$ID.$NAME.CHECK"
         private const val ACTION_DISMISSED = "$ID.$NAME.DISMISSED"
+        private const val ACTION_ALERT_CHECK = "$ID.$NAME.ALERT_CHECK"
+        private const val ACTION_ALERT_DISMISSED = "$ID.$NAME.ALERT_DISMISSED"
+        private const val EXTRA_ALERT_ID = "alert_id"
         private const val EXTRA_REFRESH = "refresh"
         private const val EXTRA_UNTIL = "until"
 
@@ -87,6 +108,25 @@ class RainLiveUpdateReceiver : BroadcastReceiver() {
             },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
+
+        fun alertAlarmIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
+            context,
+            2,
+            Intent(context, RainLiveUpdateReceiver::class.java).apply { action = ACTION_ALERT_CHECK },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        fun alertDismissedIntent(context: Context, alertId: String, until: Long): PendingIntent =
+            PendingIntent.getBroadcast(
+                context,
+                3,
+                Intent(context, RainLiveUpdateReceiver::class.java).apply {
+                    action = ACTION_ALERT_DISMISSED
+                    putExtra(EXTRA_ALERT_ID, alertId)
+                    putExtra(EXTRA_UNTIL, until)
+                },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
 
         fun dismissedIntent(context: Context, until: Long): PendingIntent = PendingIntent.getBroadcast(
             context,

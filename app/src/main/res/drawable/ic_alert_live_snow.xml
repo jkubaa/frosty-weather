@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Warning type "snow", before the warning starts -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M12.00,3.00L12.00,21.00M4.21,7.50L19.79,16.50M19.79,7.50L4.21,16.50M12.00,17.58L13.50,19.37M12.00,17.58L10.50,19.37M7.17,14.79L6.37,16.99M7.17,14.79L4.86,14.38M7.17,9.21L4.86,9.62M7.17,9.21L6.37,7.01M12.00,6.42L10.50,4.63M12.00,6.42L13.50,4.63M16.83,9.21L17.63,7.01M16.83,9.21L19.14,9.62M16.83,14.79L19.14,14.38M16.83,14.79L17.63,16.99" />
+</vector>

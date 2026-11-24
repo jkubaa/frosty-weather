@@ -61,6 +61,7 @@ import org.breezyweather.common.source.RefreshError
 import org.breezyweather.common.source.WeatherResult
 import org.breezyweather.domain.location.model.getPlace
 import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.remoteviews.AlertLiveUpdate
 import org.breezyweather.remoteviews.Notifications
 import org.breezyweather.remoteviews.RainLiveUpdate
 import org.breezyweather.sources.RefreshHelper
@@ -326,6 +327,7 @@ class WeatherUpdateJob @AssistedInject constructor(
             val rainLocation = RainLiveUpdate.pickLocation(locationList)
             if (rainLocation != null && newUpdates.any { it.first.formattedId == rainLocation.formattedId }) {
                 Notifications.checkAndSendPrecipitation(applicationContext, rainLocation)
+                AlertLiveUpdate.update(applicationContext, rainLocation)
             }
 
             refreshHelper.broadcastDataIfNecessary(

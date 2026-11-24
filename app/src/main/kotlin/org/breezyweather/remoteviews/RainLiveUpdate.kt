@@ -21,14 +21,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.os.Build
 import androidx.annotation.DrawableRes
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.core.graphics.drawable.toBitmap
-import androidx.core.graphics.drawable.IconCompat
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.weather.model.Hourly
 import breezyweather.domain.weather.model.Minutely
@@ -67,7 +65,7 @@ import kotlin.time.Duration.Companion.minutes
  *
  * Background refreshes are usually an hour or more apart, so after each evaluation an alarm is set
  * for the next moment that matters (15 min before forecast rain, the start, the end, or a periodic
- * one-minute tick while showing). The alarm before rain also asks for a fresh forecast to confirm it.
+ * one-minute refresh of the pill's label while showing). The alarm before rain also asks for a fresh forecast to confirm it.
  */
 object RainLiveUpdate {
 
@@ -77,7 +75,7 @@ object RainLiveUpdate {
     // Default lead time; the user can pick another in settings
     private val WINDOW = 15.minutes
     private val SHORT_SHOWER = 30.minutes
-    // Moves the bar along while showing
+    // Refresh the pill's "in 8m" / "8m left" every minute while showing
     private val TICK = 1.minutes
     private val LINGER = 2.minutes
 
@@ -87,6 +85,7 @@ object RainLiveUpdate {
 
     private const val PREFS = "rain_live_update"
     private const val KEY_DISMISSED_UNTIL = "dismissed_until"
+    private const val KEY_SHOWING_UNTIL = "showing_until"
     private const val KEY_TEST_START = "test_start"
     private const val KEY_TEST_DURATION = "test_duration"
     private const val KEY_TEST_RATE = "test_rate"
@@ -204,7 +203,7 @@ object RainLiveUpdate {
                     cancel(context)
                     false
                 } else {
-                    show(context, location, weather, state, now, window, inQuietHours(settings, now))
+                    show(context, location, weather, state, now, inQuietHours(settings, now))
                     true
                 }
             }
@@ -290,7 +289,6 @@ object RainLiveUpdate {
         weather: Weather?,
         state: State,
         now: Date,
-        window: Duration,
         quiet: Boolean,
     ) {
         val run = when (state) {
@@ -346,28 +344,29 @@ object RainLiveUpdate {
             setContentTitle(title)
             setContentText(text)
             location?.let { setSubText(it.getPlace(context)) }
-            setStyle(
-                fillUpStyle(
-                    context,
-                    run,
-                    now,
-                    window,
-                    upcoming = state is State.Upcoming,
-                    snow = kind == Kind.SNOW
-                )
-            )
+            setStyle(NotificationCompat.BigTextStyle().bigText(text))
             setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             setCategory(NotificationCompat.CATEGORY_STATUS)
             setOngoing(true)
             setOnlyAlertOnce(true)
             // Only the "starting soon" stage may alert, and not during quiet hours
             setSilent(state is State.Raining || quiet)
-            setShowWhen(true)
-            setWhen(countdownTo.time)
-            setUsesChronometer(true)
-            setChronometerCountDown(true)
+            // The pill's text says which way it's counting, in words (a bare countdown next to an
+            // icon didn't make clear whether rain was starting or stopping)
+            setShowWhen(false)
+            setShortCriticalText(
+                context.getString(
+                    if (state is State.Upcoming) {
+                        R.string.notification_alert_live_pill_in
+                    } else {
+                        R.string.notification_alert_live_pill_left
+                    },
+                    "${minutesUntil(countdownTo, now)}m"
+                )
+            )
             setTimeoutAfter((run.end.time - now.time + LINGER.inWholeMilliseconds).coerceAtLeast(0))
-            setRequestPromotedOngoing(true)
+            // An extreme weather warning takes the Live Update slot; rain stays a normal notification
+            setRequestPromotedOngoing(!AlertLiveUpdate.isExtremeShowing(context))
             setContentIntent(
                 PendingIntent.getActivity(
                     context,
@@ -398,52 +397,15 @@ object RainLiveUpdate {
         }.build()
 
         context.notify(ID_RAIN_LIVE, notification)
+        prefs(context).edit().putLong(KEY_SHOWING_UNTIL, run.end.time + LINGER.inWholeMilliseconds).apply()
     }
 
-    /**
-     * A bar that fills up as the moment approaches: towards the rain while upcoming (drop / flake at
-     * the end), towards it stopping while raining (crossed-out drop / flake at the end). An upcoming
-     * bar always spans the lead-time [window].
-     */
-    private fun fillUpStyle(
-        context: Context,
-        run: RainRun,
-        now: Date,
-        window: Duration,
-        upcoming: Boolean,
-        snow: Boolean,
-    ): NotificationCompat.ProgressStyle {
-        val from = if (upcoming) run.start.time - window.inWholeMilliseconds else run.start.time
-        val to = if (upcoming) run.start.time else run.end.time
-        val total = ((to - from) / 1000L).toInt().coerceAtLeast(1)
-        val elapsed = ((now.time - from) / 1000L).toInt().coerceIn(0, total)
-        val color = levelColor(levelOf(run.maxIntensityMm))
-        return NotificationCompat.ProgressStyle()
-            .setStyledByProgress(true)
-            .addProgressSegment(NotificationCompat.ProgressStyle.Segment(total).setColor(color))
-            .setProgress(elapsed)
-            .setProgressEndIcon(
-                IconCompat.createWithResource(
-                    context,
-                    when {
-                        snow && upcoming -> R.drawable.ic_live_flake
-                        snow -> R.drawable.ic_live_flake_off
-                        upcoming -> R.drawable.ic_live_drop
-                        else -> R.drawable.ic_live_drop_off
-                    }
-                )
-            )
-    }
+    /** Whole minutes until [target], rounded up, at least 1 */
+    fun minutesUntil(target: Date, now: Date = Date()): Int =
+        Math.ceil((target.time - now.time) / 60_000.0).toInt().coerceAtLeast(1)
 
-    private val LIGHT_COLOR = Color.rgb(142, 197, 255)
-    private val MODERATE_COLOR = Color.rgb(61, 139, 255)
-    private val HEAVY_COLOR = Color.rgb(31, 79, 216)
-
-    private fun levelColor(level: Level) = when (level) {
-        Level.LIGHT -> LIGHT_COLOR
-        Level.MODERATE -> MODERATE_COLOR
-        Level.HEAVY -> HEAVY_COLOR
-    }
+    /** Whether the countdown is up, so lesser weather warnings give it the Live Update slot */
+    fun isShowing(context: Context) = System.currentTimeMillis() < prefs(context).getLong(KEY_SHOWING_UNTIL, 0)
 
     private fun levelOf(mmPerHour: Double) = when {
         mmPerHour < LIGHT_MAX -> Level.LIGHT
@@ -540,5 +502,8 @@ object RainLiveUpdate {
 
     private fun prefs(context: Context) = ConfigStore(context, PREFS)
 
-    fun cancel(context: Context) = context.cancelNotification(ID_RAIN_LIVE)
+    fun cancel(context: Context) {
+        context.cancelNotification(ID_RAIN_LIVE)
+        prefs(context).edit().putLong(KEY_SHOWING_UNTIL, 0L).apply()
+    }
 }

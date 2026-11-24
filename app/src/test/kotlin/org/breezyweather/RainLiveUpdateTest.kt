@@ -92,6 +92,12 @@ class RainLiveUpdateTest {
     }
 
     @Test
+    fun `minutes until rounds up`() {
+        assertEquals(8, RainLiveUpdate.minutesUntil(Date(base + 7 * 60_000L + 1), Date(base)))
+        assertEquals(1, RainLiveUpdate.minutesUntil(Date(base + 10_000L), Date(base)))
+    }
+
+    @Test
     fun `long rain is dropped`() {
         // Raining now until minute 45: more than 30 min left
         assertEquals(State.Idle(null), RainLiveUpdate.evaluate(weather(12, 0, 1, 2, 3, 4, 5, 6, 7, 8), at(1)))

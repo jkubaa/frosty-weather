@@ -40,6 +40,7 @@ import org.breezyweather.common.extensions.plus
 import org.breezyweather.common.options.UpdateInterval
 import kotlinx.collections.immutable.toImmutableList
 import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.remoteviews.AlertLiveUpdate
 import org.breezyweather.remoteviews.RainLiveUpdate
 import org.breezyweather.ui.common.composables.AnimatedVisibilitySlideVertically
 import org.breezyweather.ui.common.widgets.Material3Scaffold
@@ -76,6 +77,8 @@ fun NotificationsSettingsScreen(
     // The rain countdown options only apply while precipitation notifications are on
     var precipitationEnabled by remember { mutableStateOf(settings.isPrecipitationPushEnabled) }
     var quietHoursEnabled by remember { mutableStateOf(settings.rainLiveQuietHours) }
+    var alertsEnabled by remember { mutableStateOf(settings.isAlertPushEnabled) }
+    var alertLiveEnabled by remember { mutableStateOf(settings.alertLiveEnabled) }
 
     Material3Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -158,6 +161,8 @@ fun NotificationsSettingsScreen(
                     isFirst = true,
                     onValueChanged = {
                         SettingsManager.getInstance(context).isAlertPushEnabled = it
+                        alertsEnabled = it
+                        if (!it) AlertLiveUpdate.cancel(context)
                     }
                 )
             }
@@ -272,6 +277,48 @@ fun NotificationsSettingsScreen(
                 )
             }
             sectionFooterItem(R.string.settings_notifications_section_rain_live)
+
+            largeSeparatorItem()
+
+            // Weather warnings (Live Update) options
+            val alertSectionEnabled = alertsEnabled &&
+                settings.updateInterval != UpdateInterval.INTERVAL_NEVER &&
+                hasNotificationPermission
+            sectionHeaderItem(R.string.settings_notifications_section_alert_live)
+            switchPreferenceItem(R.string.settings_alert_live) { id ->
+                SwitchPreferenceView(
+                    titleId = id,
+                    summaryOnId = R.string.settings_alert_live_on,
+                    summaryOffId = R.string.settings_disabled,
+                    checked = settings.alertLiveEnabled,
+                    enabled = alertSectionEnabled,
+                    isFirst = true,
+                    onValueChanged = {
+                        settings.alertLiveEnabled = it
+                        alertLiveEnabled = it
+                        if (!it) AlertLiveUpdate.cancel(context)
+                    }
+                )
+            }
+            smallSeparatorItem()
+            listPreferenceItem(R.string.settings_alert_live_severity) { id ->
+                val values = arrayOf("moderate", "severe")
+                val names = arrayOf(
+                    stringResource(R.string.settings_alert_live_severity_moderate),
+                    stringResource(R.string.settings_alert_live_severity_severe)
+                )
+                ListPreferenceViewWithCard(
+                    title = stringResource(id),
+                    summary = { _, value -> names[values.indexOf(value).coerceAtLeast(0)] },
+                    selectedKey = settings.alertLiveMinSeverity,
+                    valueArray = values,
+                    nameArray = names,
+                    enabled = alertSectionEnabled && alertLiveEnabled,
+                    isLast = true,
+                    onValueChanged = { settings.alertLiveMinSeverity = it }
+                )
+            }
+            sectionFooterItem(R.string.settings_notifications_section_alert_live)
 
             largeSeparatorItem()
 

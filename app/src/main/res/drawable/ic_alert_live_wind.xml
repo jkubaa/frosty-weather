@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Warning type "wind", before the warning starts -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="2.0" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M3,8.5H13.5A2.75,2.75 0 1,0 10.75,5.75M3,12.5H18.25A2.75,2.75 0 1,1 15.5,15.25M3,16.5H9.5" />
+</vector>

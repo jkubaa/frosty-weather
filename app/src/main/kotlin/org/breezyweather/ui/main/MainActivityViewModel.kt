@@ -45,6 +45,7 @@ import org.breezyweather.domain.location.model.applyDefaultPreset
 import org.breezyweather.domain.location.model.isCloseTo
 import org.breezyweather.domain.settings.CurrentLocationStore
 import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.remoteviews.AlertLiveUpdate
 import org.breezyweather.remoteviews.RainLiveUpdate
 import org.breezyweather.sources.RefreshHelper
 import org.breezyweather.sources.SourceManager
@@ -268,7 +269,10 @@ class MainActivityViewModel @Inject constructor(
                     // Refresh the rain countdown when its location was just updated in the app
                     RainLiveUpdate.pickLocation(locationList)
                         ?.takeIf { it.formattedId in updatedLocationIds }
-                        ?.let { RainLiveUpdate.update(getApplication(), it) }
+                        ?.let {
+                            RainLiveUpdate.update(getApplication(), it)
+                            AlertLiveUpdate.update(getApplication(), it)
+                        }
                 }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {

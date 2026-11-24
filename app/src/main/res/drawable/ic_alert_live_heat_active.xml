@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Warning type "heat", while the warning is in effect -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M12,2.75L21.75,20.25H2.25Z" /><group android:scaleX="0.4" android:scaleY="0.4" android:translateX="7.20" android:translateY="9.80"><path android:strokeColor="#FFFFFFFF" android:strokeWidth="3.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9,4.5A2,2 0 0,1 13,4.5V13.6A4,4 0 1,1 9,13.6Z" /><path android:fillColor="#FFFFFFFF" android:pathData="M9,17a2,2 0 1,0 4,0a2,2 0 1,0 -4,0Z" /><path android:strokeColor="#FFFFFFFF" android:strokeWidth="3.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M17,5.5L19,4.5M17,9.5H19.5M17,13.5L19,14.5" /></group>
+</vector>
