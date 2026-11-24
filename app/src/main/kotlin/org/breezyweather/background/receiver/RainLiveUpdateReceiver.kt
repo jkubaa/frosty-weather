@@ -48,12 +48,19 @@ class RainLiveUpdateReceiver : BroadcastReceiver() {
     @OptIn(DelicateCoroutinesApi::class)
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
-            ACTION_DISMISSED -> RainLiveUpdate.onDismissed(context, intent.getLongExtra(EXTRA_UNTIL, 0))
-            ACTION_ALERT_DISMISSED -> AlertLiveUpdate.onDismissed(
-                context,
-                intent.getStringExtra(EXTRA_ALERT_ID) ?: "",
-                intent.getLongExtra(EXTRA_UNTIL, 0)
-            )
+            // From a swipe (already gone) or the Dismiss / Hide button (still showing, so remove it)
+            ACTION_DISMISSED -> {
+                RainLiveUpdate.onDismissed(context, intent.getLongExtra(EXTRA_UNTIL, 0))
+                RainLiveUpdate.cancel(context)
+            }
+            ACTION_ALERT_DISMISSED -> {
+                AlertLiveUpdate.onDismissed(
+                    context,
+                    intent.getStringExtra(EXTRA_ALERT_ID) ?: "",
+                    intent.getLongExtra(EXTRA_UNTIL, 0)
+                )
+                AlertLiveUpdate.cancel(context)
+            }
             ACTION_ALERT_CHECK -> {
                 val pending = goAsync()
                 GlobalScope.launch(Dispatchers.IO) {

@@ -1037,6 +1037,8 @@
     <string name="notification_alert_live_upcoming">Starts %1$s · until %2$s</string>
     <string name="notification_alert_live_active">In effect until %s</string>
     <string name="notification_alert_live_more">+%d more</string>
+    <string name="notification_live_action_dismiss">Dismiss</string>
+    <string name="notification_alert_live_action_hide">Hide</string>
     <string name="notification_alert_live_pill_in">in %s</string>
     <string name="notification_alert_live_pill_left">%s left</string>
     <string name="settings_notifications_section_alert_live">Weather warning countdown</string>

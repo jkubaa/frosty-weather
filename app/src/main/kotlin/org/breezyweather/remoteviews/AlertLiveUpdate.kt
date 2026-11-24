@@ -270,8 +270,11 @@ object AlertLiveUpdate {
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
             )
-            // Swiping it away mutes this warning until it ends
-            setDeleteIntent(RainLiveUpdateReceiver.alertDismissedIntent(context, alert.alertId, end.time))
+            // Swiping it away, or the Hide button, hides this warning until it ends. An upgraded or new
+            // warning has another id, so it still shows.
+            val hide = RainLiveUpdateReceiver.alertDismissedIntent(context, alert.alertId, end.time)
+            addAction(0, context.getString(R.string.notification_alert_live_action_hide), hide)
+            setDeleteIntent(hide)
         }.build()
 
         context.notify(ID_ALERT_LIVE, notification)

@@ -390,10 +390,11 @@ object RainLiveUpdate {
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
             )
-            // Swiping it away mutes it until this rain is over
-            setDeleteIntent(
-                RainLiveUpdateReceiver.dismissedIntent(context, run.end.time + LINGER.inWholeMilliseconds)
-            )
+            // Swiping it away, or the Dismiss button (the only way once it sits in a Live Update capsule),
+            // mutes it until this rain is over
+            val dismiss = RainLiveUpdateReceiver.dismissedIntent(context, run.end.time + LINGER.inWholeMilliseconds)
+            addAction(0, context.getString(R.string.notification_live_action_dismiss), dismiss)
+            setDeleteIntent(dismiss)
         }.build()
 
         context.notify(ID_RAIN_LIVE, notification)
