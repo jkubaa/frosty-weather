@@ -31,8 +31,7 @@ import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import org.breezyweather.unit.formatting.UnitWidth
 
 /** Wind tile: speed, gusts, where it comes from, and a compass. */
-class WindViewHolder(context: Context) : GlassTileViewHolder(
-    context, R.drawable.ic_wind, R.string.wind) {
+class WindViewHolder(context: Context) : GlassTileViewHolder(context, R.drawable.ic_wind, R.string.wind) {
 
     override fun onBindView(
         activity: BreezyActivity,
@@ -66,7 +65,9 @@ class WindViewHolder(context: Context) : GlassTileViewHolder(
 
         val talkBackBuilder = StringBuilder(context.getString(R.string.wind))
         wind?.let {
-            talkBackBuilder.append(context.getString(R.string.colon_separator)).append(it.getContentDescription(context))
+            talkBackBuilder.append(
+                context.getString(R.string.colon_separator)
+            ).append(it.getContentDescription(context))
         }
         itemView.contentDescription = talkBackBuilder.toString()
         itemView.setOnClickListener {

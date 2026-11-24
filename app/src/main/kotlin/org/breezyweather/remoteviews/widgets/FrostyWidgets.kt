@@ -55,7 +55,13 @@ import kotlin.math.roundToInt
  */
 object FrostyWidgets {
 
-    enum class Size(val provider: Class<*>, val layout: Int, val requestCode: Int, val defaultWidthDp: Int, val defaultHeightDp: Int) {
+    enum class Size(
+        val provider: Class<*>,
+        val layout: Int,
+        val requestCode: Int,
+        val defaultWidthDp: Int,
+        val defaultHeightDp: Int,
+    ) {
         SMALL(FrostySmallWidgetProvider::class.java, R.layout.widget_frosty_small, 141, 170, 170),
         MEDIUM(FrostyMediumWidgetProvider::class.java, R.layout.widget_frosty_medium, 142, 360, 170),
         LARGE(FrostyLargeWidgetProvider::class.java, R.layout.widget_frosty_large, 143, 360, 380),
@@ -143,7 +149,13 @@ object FrostyWidgets {
         return views
     }
 
-    private fun bindHours(context: Context, views: RemoteViews, location: Location, unit: TemperatureUnit, columns: Int) {
+    private fun bindHours(
+        context: Context,
+        views: RemoteViews,
+        location: Location,
+        unit: TemperatureUnit,
+        columns: Int,
+    ) {
         val weather = location.weather!!
         views.removeAllViews(R.id.widget_hours)
         weather.nextHourlyForecast.take(columns).forEachIndexed { index, hourly ->
@@ -196,7 +208,10 @@ object FrostyWidgets {
             }
             val (low, high) = ranges[row]
             item.setTextViewText(R.id.widget_day_low, low?.let { GlassForecastFormat.degrees(context, it, unit) } ?: "")
-            item.setTextViewText(R.id.widget_day_high, high?.let { GlassForecastFormat.degrees(context, it, unit) } ?: "")
+            item.setTextViewText(
+                R.id.widget_day_high,
+                high?.let { GlassForecastFormat.degrees(context, it, unit) } ?: ""
+            )
             if (scaleMin != null && scaleMax != null) {
                 item.setImageViewBitmap(
                     R.id.widget_day_bar,

@@ -125,7 +125,11 @@ internal object NightSky {
                 var albedo = 0.95f - smoothstep(0.5f, 0.68f, noise.fbm(nx * 2.2f + 3f, ny * 2.2f + 3f, 256, 4)) * 0.22f
                 for ((cx, cy, cr) in craters) {
                     val d = hypot(nx - cx, ny - cy) / cr
-                    if (d < 0.8f) albedo -= 0.055f else if (d < 1.05f) albedo += 0.04f
+                    if (d < 0.8f) {
+                        albedo -= 0.055f
+                    } else if (d < 1.05f) {
+                        albedo += 0.04f
+                    }
                 }
                 // Limb darkening: the sphere dims a little towards its edge
                 val limb = 0.78f + 0.22f * sqrt(max(0f, 1f - rr))
@@ -153,7 +157,10 @@ internal fun DrawScope.drawMilkyWay(image: ImageBitmap, alpha: Float, lift: Floa
         srcOffset = IntOffset.Zero,
         srcSize = IntSize(image.width, image.height),
         dstOffset = IntOffset((-NightSky.MARGIN_X * w).roundToInt(), (-NightSky.MARGIN_Y * h - lift).roundToInt()),
-        dstSize = IntSize((w * (1f + 2f * NightSky.MARGIN_X)).roundToInt(), (h * (1f + 2f * NightSky.MARGIN_Y)).roundToInt()),
+        dstSize = IntSize(
+            (w * (1f + 2f * NightSky.MARGIN_X)).roundToInt(),
+            (h * (1f + 2f * NightSky.MARGIN_Y)).roundToInt()
+        ),
         alpha = alpha.coerceIn(0f, 1f),
         blendMode = BlendMode.Plus,
         filterQuality = FilterQuality.Low
@@ -195,7 +202,11 @@ internal fun DrawScope.drawShootingStar(time: Float, alpha: Float, lift: Float) 
         alpha = (fade * 0.9f).coerceIn(0f, 1f)
     )
     drawCircle(
-        brush = Brush.radialGradient(listOf(Color(0xCCFFFAF0), Color.Transparent), center = head, radius = 5f * density),
+        brush = Brush.radialGradient(
+            listOf(Color(0xCCFFFAF0), Color.Transparent),
+            center = head,
+            radius = 5f * density
+        ),
         radius = 5f * density,
         center = head,
         alpha = fade.coerceIn(0f, 1f)

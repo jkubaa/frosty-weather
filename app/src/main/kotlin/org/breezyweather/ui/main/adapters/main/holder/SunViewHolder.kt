@@ -166,7 +166,9 @@ private data class SunModel(
             val polarDay = rise != null && set != null && set.time == rise.time + 1.days.inWholeMilliseconds - 1
             if (rise == null || set == null || polarDay) {
                 // Polar day: the whole curve above the horizon; polar night: all of it below
-                val text = activity.getString(if (polarDay) R.string.ephemeris_polar_day else R.string.ephemeris_polar_night)
+                val text = activity.getString(
+                    if (polarDay) R.string.ephemeris_polar_day else R.string.ephemeris_polar_night
+                )
                 return SunModel(
                     title = activity.getString(R.string.ephemeris_sun),
                     value = text,
@@ -233,6 +235,7 @@ private fun DrawScope.drawSunPath(sun: SunModel, position: Float, line: Color) {
     if (w <= 0f || h <= 0f) return
     val margin = 7.dp.toPx()
     fun heightAt(fraction: Float) = cos(2.0 * PI * (fraction - sun.noonFraction)).toFloat()
+
     // -1..1 mapped to the drawing area, top = highest
     fun y(value: Float) = margin + (1f - (value + 1f) / 2f) * (h - margin * 2f)
 

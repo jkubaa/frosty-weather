@@ -84,6 +84,7 @@ fun generateCollapsedScrollBehavior(): TopAppBarScrollBehavior {
 }
 
 // scaffold.
+
 /**
  * Screen scaffold on the iOS grouped background, with the iOS type scale.
  */

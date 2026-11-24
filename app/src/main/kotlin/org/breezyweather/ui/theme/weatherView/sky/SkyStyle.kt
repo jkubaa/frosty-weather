@@ -118,7 +118,7 @@ object SkyStyles {
         edge: Float = 0.8f,
     ): List<CloudLayer> = listOf(
         CloudLayer(23, -0.02f, depth, 1.85f, 0.004f * speed, opacity * 0.95f, cover, edge, 0.45f),
-        CloudLayer(37, -0.04f, depth * 0.92f, 1.55f, 0.008f * speed, opacity * 0.8f, cover * 0.8f, edge - 0.12f, 0.7f),
+        CloudLayer(37, -0.04f, depth * 0.92f, 1.55f, 0.008f * speed, opacity * 0.8f, cover * 0.8f, edge - 0.12f, 0.7f)
     )
 
     fun of(weatherKind: Int, daytime: Boolean): SkyStyle {
@@ -175,7 +175,7 @@ object SkyStyles {
                 WeatherView.WEATHER_KIND_FOG -> 0.35f
                 WeatherView.WEATHER_KIND_THUNDER, WeatherView.WEATHER_KIND_THUNDERSTORM -> 0.15f
                 else -> 0.3f
-            },
+            }
         )
 
         return when (weatherKind) {

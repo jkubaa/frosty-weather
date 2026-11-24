@@ -71,7 +71,11 @@ class HighlightsViewHolder(context: Context) : ComposeCardViewHolder(context) {
     @Composable
     override fun Content() {
         Column(Modifier.padding(top = 14.dp, bottom = 6.dp)) {
-            GlassCardHeader(R.drawable.ic_sunshine_duration, itemView.context.getString(R.string.highlights), contentColor)
+            GlassCardHeader(
+                R.drawable.ic_sunshine_duration,
+                itemView.context.getString(R.string.highlights),
+                contentColor
+            )
             GlassDivider(contentColor, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
                 highlights.value.forEach { Gauge(it, Modifier.weight(1f)) }
@@ -94,9 +98,20 @@ class HighlightsViewHolder(context: Context) : ComposeCardViewHolder(context) {
                 RingGauge(highlight.fraction, Color(highlight.color), contentColor, Modifier.size(62.dp))
                 // A value inside the ring when there is one ("97%", "+6°"), otherwise the icon (sunset...)
                 if (highlight.value != null) {
-                    Text(highlight.value, color = contentColor, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    Text(
+                        highlight.value,
+                        color = contentColor,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
+                    )
                 } else {
-                    Icon(painterResource(highlight.icon), contentDescription = null, tint = contentColor, modifier = Modifier.size(24.dp))
+                    Icon(
+                        painterResource(highlight.icon),
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
             Text(

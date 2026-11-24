@@ -26,9 +26,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -38,18 +39,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.AbstractComposeView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.unit.toSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -317,7 +317,8 @@ private fun SkyScene(
     val rainGlass = remember { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) RainGlass() else null }
 
     val sky: DrawScope.() -> Unit = {
-        val light = SkyLight(dayAmount, golden, sunAlpha, moonAlpha, moonPhase, southern, sunAltitude?.toFloat(), aurora)
+        val light =
+            SkyLight(dayAmount, golden, sunAlpha, moonAlpha, moonPhase, southern, sunAltitude?.toFloat(), aurora)
         val t = time.floatValue
         val s = scroll()
         val tl = tilt()
@@ -332,8 +333,28 @@ private fun SkyScene(
             previous != null -> {
                 // The weather arrives: new clouds drift in from the side as the old ones drift away
                 val eased = p * p * (3f - 2f * p)
-                drawPair(previous, light, t, s, backgroundAlpha = 1f, effectsAlpha = 1f - p, tilt = tl, slide = -eased * 0.5f)
-                drawPair(current, light, t, s, backgroundAlpha = p, effectsAlpha = p, tilt = tl, slide = (1f - eased) * 0.6f)
+                drawPair(
+                    previous,
+                    light,
+                    t,
+                    s,
+                    backgroundAlpha = 1f,
+                    effectsAlpha = 1f - p,
+                    tilt = tl,
+                    slide =
+                    -eased * 0.5f
+                )
+                drawPair(
+                    current,
+                    light,
+                    t,
+                    s,
+                    backgroundAlpha = p,
+                    effectsAlpha = p,
+                    tilt = tl,
+                    slide =
+                    (1f - eased) * 0.6f
+                )
             }
             else -> drawPair(current, light, t, s, backgroundAlpha = 1f, effectsAlpha = p, tilt = tl)
         }
@@ -367,7 +388,9 @@ private fun SkyScene(
             val node = backdrop.obtainNode()
             node.setPosition(0, 0, size.width.toInt(), size.height.toInt())
             val recording = node.beginRecording()
-            CanvasDrawScope().draw(density, layoutDirection, androidx.compose.ui.graphics.Canvas(recording), size) { painter() }
+            CanvasDrawScope().draw(density, layoutDirection, androidx.compose.ui.graphics.Canvas(recording), size) {
+                painter()
+            }
             node.endRecording()
             canvas.drawRenderNode(node)
         } else {
@@ -392,7 +415,16 @@ private fun DrawScope.drawPair(
     if (day > 0f) drawSkyBackground(pair.day, backgroundAlpha * if (day < 1f) day else 1f)
     val golden = light.golden * pair.day.style.goldenStrength
     drawGoldenHour(golden * effectsAlpha, light.sunAltitude)
-    drawSkyEffects(pair.night, light, time, scroll, effectsAlpha * (1f - day), warmth = golden, tilt = tilt, slide = slide)
+    drawSkyEffects(
+        pair.night,
+        light,
+        time,
+        scroll,
+        effectsAlpha * (1f - day),
+        warmth = golden,
+        tilt = tilt,
+        slide = slide
+    )
     drawSkyEffects(pair.day, light, time, scroll, effectsAlpha * day, warmth = golden, tilt = tilt, slide = slide)
 }
 

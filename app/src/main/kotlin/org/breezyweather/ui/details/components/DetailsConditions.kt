@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -73,9 +74,6 @@ import breezyweather.domain.weather.model.Daily
 import breezyweather.domain.weather.model.Hourly
 import breezyweather.domain.weather.model.Normals
 import breezyweather.domain.weather.reference.WeatherCode
-import org.breezyweather.ui.common.charts.compose.ChartYLabels
-import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
-import org.breezyweather.ui.common.charts.compose.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerVisibilityListener
 import kotlinx.collections.immutable.ImmutableList
@@ -86,12 +84,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.launch
 import org.breezyweather.R
-import androidx.compose.foundation.layout.padding
-import org.breezyweather.domain.location.model.isDaylight
-import org.breezyweather.domain.weather.model.isToday
-import org.breezyweather.ui.details.LocalDetailsPalette
-import org.breezyweather.ui.details.DetailsSegmentedControl
-import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.formatMeasure
 import org.breezyweather.common.extensions.getCalendarMonth
@@ -103,10 +95,18 @@ import org.breezyweather.common.extensions.roundUpToNearestMultiplier
 import org.breezyweather.common.extensions.toBitmap
 import org.breezyweather.common.extensions.toDate
 import org.breezyweather.common.options.appearance.DetailScreen
+import org.breezyweather.domain.location.model.isDaylight
 import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.domain.weather.model.isToday
 import org.breezyweather.ui.common.charts.compose.BreezyLineChart
+import org.breezyweather.ui.common.charts.compose.CartesianChartModelProducer
 import org.breezyweather.ui.common.charts.compose.ChartIconSize
+import org.breezyweather.ui.common.charts.compose.ChartYLabels
+import org.breezyweather.ui.common.charts.compose.lineModel
 import org.breezyweather.ui.common.widgets.AnimatableIconView
+import org.breezyweather.ui.details.DetailsHeaderRow
+import org.breezyweather.ui.details.DetailsSegmentedControl
+import org.breezyweather.ui.details.LocalDetailsPalette
 import org.breezyweather.ui.theme.resource.ResourceHelper
 import org.breezyweather.ui.theme.resource.ResourcesProviderFactory
 import org.breezyweather.unit.formatting.UnitWidth
@@ -967,7 +967,14 @@ private fun ConditionsHeader(
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = temperature?.formatMeasure(context, temperatureUnit, valueWidth = UnitWidth.NARROW, unitWidth = UnitWidth.NARROW) ?: "",
+                text =
+                temperature?.formatMeasure(
+                    context,
+                    temperatureUnit,
+                    valueWidth = UnitWidth.NARROW,
+                    unitWidth = UnitWidth.NARROW
+                )
+                    ?: "",
                 style = MaterialTheme.typography.displaySmall,
                 color = palette.text,
                 modifier = Modifier.clearAndSetSemantics {
@@ -995,8 +1002,20 @@ private fun ConditionsHeader(
             } else {
                 stringResource(
                     R.string.hero_high_low,
-                    high?.formatMeasure(context, temperatureUnit, valueWidth = UnitWidth.NARROW, unitWidth = UnitWidth.NARROW) ?: "-",
-                    low?.formatMeasure(context, temperatureUnit, valueWidth = UnitWidth.NARROW, unitWidth = UnitWidth.NARROW) ?: "-"
+                    high?.formatMeasure(
+                        context,
+                        temperatureUnit,
+                        valueWidth = UnitWidth.NARROW,
+                        unitWidth = UnitWidth.NARROW
+                    )
+                        ?: "-",
+                    low?.formatMeasure(
+                        context,
+                        temperatureUnit,
+                        valueWidth = UnitWidth.NARROW,
+                        unitWidth = UnitWidth.NARROW
+                    )
+                        ?: "-"
                 ).replace("  ", " ")
             },
             style = MaterialTheme.typography.labelMedium,

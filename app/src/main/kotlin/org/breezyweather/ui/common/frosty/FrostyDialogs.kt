@@ -311,7 +311,9 @@ fun FrostySheet(
                                 .height(58.dp)
                                 .padding(horizontal = 12.dp)
                         ) {
-                            FrostyCloseButton(onClick = { dismissAnimated() }, modifier = Modifier.align(Alignment.CenterStart))
+                            FrostyCloseButton(onClick = {
+                                dismissAnimated()
+                            }, modifier = Modifier.align(Alignment.CenterStart))
                             Box(
                                 Modifier
                                     .align(Alignment.Center)

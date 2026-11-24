@@ -19,22 +19,13 @@ package org.breezyweather.ui.details
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.ui.composed
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.Dp
-import org.breezyweather.ui.common.glass.GlassCardRimBrush
-import org.breezyweather.ui.common.glass.GlassStyle
-import org.breezyweather.ui.common.glass.liquidGlass
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -75,8 +66,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -91,6 +87,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -102,6 +99,9 @@ import org.breezyweather.common.extensions.getFormattedDayOfTheMonth
 import org.breezyweather.common.extensions.getFormattedTime
 import org.breezyweather.common.extensions.is12Hour
 import org.breezyweather.common.options.appearance.DetailScreen
+import org.breezyweather.ui.common.glass.GlassCardRimBrush
+import org.breezyweather.ui.common.glass.GlassStyle
+import org.breezyweather.ui.common.glass.liquidGlass
 import java.util.Date
 
 /**
@@ -629,7 +629,9 @@ fun smallSuffix(raw: String): AnnotatedString = buildAnnotatedString {
         val c = text[i]
         if (c.isLetter()) {
             withStyle(SpanStyle(fontSize = 0.78.em)) { append(c.uppercaseChar()) }
-        } else if (c.isWhitespace() && i + 1 < text.length && text[i + 1].isLetter() && i > 0 && text[i - 1].isDigit()) {
+        } else if (c.isWhitespace() && i + 1 < text.length && text[i + 1].isLetter() && i > 0 &&
+            text[i - 1].isDigit()
+        ) {
             // Drop the space between the time and its marker
         } else {
             append(c)

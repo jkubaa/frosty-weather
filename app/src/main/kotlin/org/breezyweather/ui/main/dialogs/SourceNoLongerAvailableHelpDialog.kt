@@ -19,14 +19,14 @@ package org.breezyweather.ui.main.dialogs
 import android.app.Activity
 import android.view.LayoutInflater
 import androidx.annotation.StringRes
-import org.breezyweather.ui.common.composables.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import org.breezyweather.ui.common.composables.TextButton
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import org.breezyweather.R
+import org.breezyweather.ui.common.composables.AlertDialog
+import org.breezyweather.ui.common.composables.TextButton
 import org.breezyweather.ui.main.MainActivity
 import org.breezyweather.ui.search.SearchActivity
 import org.breezyweather.ui.theme.ThemeManager

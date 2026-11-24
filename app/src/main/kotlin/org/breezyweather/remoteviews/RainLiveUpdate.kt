@@ -75,6 +75,7 @@ object RainLiveUpdate {
     // Default lead time; the user can pick another in settings
     private val WINDOW = 15.minutes
     private val SHORT_SHOWER = 30.minutes
+
     // Refresh the pill's "in 8m" / "8m left" every minute while showing
     private val TICK = 1.minutes
     private val LINGER = 2.minutes

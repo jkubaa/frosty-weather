@@ -64,9 +64,20 @@ internal class GlassWeather(
     val wind: Float = 0f,
 ) {
     companion object {
-        val RAIN = GlassWeather(beads = 80, landEvery = 0.03f, runners = 12, runnerEvery = 0.45f, speed = 1f, maxBead = 7.5f)
-        val SLEET = GlassWeather(beads = 50, landEvery = 0.06f, runners = 6, runnerEvery = 0.9f, speed = 0.8f, maxBead = 6f)
-        val STORM = GlassWeather(beads = 130, landEvery = 0.01f, runners = 22, runnerEvery = 0.15f, speed = 1.7f, maxBead = 8.5f, wind = 0.25f)
+        val RAIN =
+            GlassWeather(beads = 80, landEvery = 0.03f, runners = 12, runnerEvery = 0.45f, speed = 1f, maxBead = 7.5f)
+        val SLEET =
+            GlassWeather(beads = 50, landEvery = 0.06f, runners = 6, runnerEvery = 0.9f, speed = 0.8f, maxBead = 6f)
+        val STORM =
+            GlassWeather(
+                beads = 130,
+                landEvery = 0.01f,
+                runners = 22,
+                runnerEvery = 0.15f,
+                speed = 1.7f,
+                maxBead = 8.5f,
+                wind = 0.25f
+            )
     }
 }
 
@@ -115,7 +126,10 @@ internal class RainGlass {
         strokeCap = Paint.Cap.ROUND
     }
     private val wipeFade = Paint().apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT) }
-    private val maskPaint = Paint(Paint.FILTER_BITMAP_FLAG).apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN) }
+    private val maskPaint = Paint(Paint.FILTER_BITMAP_FLAG).apply {
+        xfermode =
+            PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+    }
     private val spritePaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
     private val filmPaint = Paint().apply { color = android.graphics.Color.argb(13, 210, 220, 232) }
     private val lensPath = Path()
@@ -137,7 +151,14 @@ internal class RainGlass {
         world.setPosition(0, 0, width, height)
         world.setUseCompositingLayer(true, null)
         val worldCanvas = world.beginRecording()
-        CanvasDrawScope().draw(Density(density, scope.fontScale), scope.layoutDirection, androidx.compose.ui.graphics.Canvas(worldCanvas), Size(w, h)) { sky() }
+        CanvasDrawScope().draw(
+            Density(density, scope.fontScale),
+            scope.layoutDirection,
+            androidx.compose.ui.graphics.Canvas(worldCanvas),
+            Size(w, h)
+        ) {
+            sky()
+        }
         world.endRecording()
 
         val dt = if (lastTime.isNaN()) 0f else (time - lastTime).coerceIn(0f, 0.05f)
@@ -185,7 +206,16 @@ internal class RainGlass {
         for (r in runners) drawLens(canvas, r.x, r.y, r.r, 1f, 1f, tear = true, amount)
     }
 
-    private fun drawLens(canvas: Canvas, x: Float, y: Float, r: Float, sx: Float, sy: Float, tear: Boolean, amount: Float) {
+    private fun drawLens(
+        canvas: Canvas,
+        x: Float,
+        y: Float,
+        r: Float,
+        sx: Float,
+        sy: Float,
+        tear: Boolean,
+        amount: Float,
+    ) {
         val top = if (tear) r * 1.55f else r * sy
         canvas.save()
         canvas.translate(x, y)
@@ -337,8 +367,16 @@ private object Sprites {
             val c = Canvas(bmp)
             val p = Paint(Paint.ANTI_ALIAS_FLAG)
             p.shader = RadialGradient(
-                24f, 26f, 24f,
-                intArrayOf(argb(0.10f, 255, 255, 255), argb(0.04f, 255, 255, 255), argb(0.32f, 10, 16, 26), argb(0.18f, 10, 16, 26), 0),
+                24f,
+                26f,
+                24f,
+                intArrayOf(
+                    argb(0.10f, 255, 255, 255),
+                    argb(0.04f, 255, 255, 255),
+                    argb(0.32f, 10, 16, 26),
+                    argb(0.18f, 10, 16, 26),
+                    0
+                ),
                 floatArrayOf(0f, 0.6f, 0.84f, 0.97f, 1f),
                 Shader.TileMode.CLAMP
             )
@@ -385,7 +423,9 @@ private object Sprites {
         p.shader = LinearGradient(0f, -top, 0f, r * 0.2f, argb(0.38f, 8, 12, 20), 0, Shader.TileMode.CLAMP)
         c.drawRect(all, p)
         p.shader = RadialGradient(
-            0f, r * 0.1f, r * 1.15f,
+            0f,
+            r * 0.1f,
+            r * 1.15f,
             intArrayOf(0, 0, argb(0.26f, 8, 12, 20), argb(0.5f, 8, 12, 20)),
             floatArrayOf(0f, 0.62f, 0.86f, 1f),
             Shader.TileMode.CLAMP

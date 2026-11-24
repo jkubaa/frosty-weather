@@ -34,7 +34,8 @@ import androidx.compose.ui.geometry.Offset
 internal class TiltSensor(context: Context) : SensorEventListener {
 
     private val manager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
-    private val sensor = manager?.getDefaultSensor(Sensor.TYPE_GRAVITY) ?: manager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    private val sensor =
+        manager?.getDefaultSensor(Sensor.TYPE_GRAVITY) ?: manager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
     /** Read at draw time only */
     var value by mutableStateOf(Offset.Zero)

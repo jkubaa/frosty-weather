@@ -50,8 +50,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlin.math.abs
 
 private val WheelRowHeight = 36.dp
-private const val WheelVisibleRows = 5
-private const val CyclicRepeats = 400
+private const val WHEEL_VISIBLE_ROWS = 5
+private const val CYCLIC_REPEATS = 400
 
 /**
  * One wheel of an iOS picker. Rows fade and shrink away from the centre; [cyclic] wheels loop.
@@ -68,8 +68,8 @@ fun FrostyWheel(
 ) {
     val colors = frostyColors
     val haptics = LocalHapticFeedback.current
-    val count = if (cyclic) items.size * CyclicRepeats else items.size
-    val startIndex = if (cyclic) items.size * (CyclicRepeats / 2) + selectedIndex else selectedIndex
+    val count = if (cyclic) items.size * CYCLIC_REPEATS else items.size
+    val startIndex = if (cyclic) items.size * (CYCLIC_REPEATS / 2) + selectedIndex else selectedIndex
     val state = rememberLazyListState(initialFirstVisibleItemIndex = startIndex)
     val fling = rememberSnapFlingBehavior(state)
     val rowPx = with(LocalDensity.current) { WheelRowHeight.toPx() }
@@ -90,14 +90,14 @@ fun FrostyWheel(
             }
     }
 
-    val pad = WheelRowHeight * (WheelVisibleRows / 2)
+    val pad = WheelRowHeight * (WHEEL_VISIBLE_ROWS / 2)
     LazyColumn(
         state = state,
         flingBehavior = fling,
         contentPadding = PaddingValues(vertical = pad),
         modifier = modifier
             .width(width)
-            .height(WheelRowHeight * WheelVisibleRows)
+            .height(WheelRowHeight * WHEEL_VISIBLE_ROWS)
     ) {
         items(count) { index ->
             val label = items[index % items.size]
@@ -112,7 +112,7 @@ fun FrostyWheel(
                         if (item != null) {
                             val centre = (info.viewportStartOffset + info.viewportEndOffset) / 2f
                             val itemCentre = item.offset + item.size / 2f
-                            val d = ((itemCentre - centre) / (rowPx * (WheelVisibleRows / 2 + 0.5f)))
+                            val d = ((itemCentre - centre) / (rowPx * (WHEEL_VISIBLE_ROWS / 2 + 0.5f)))
                                 .coerceIn(-1f, 1f)
                             val a = abs(d)
                             alpha = 1f - a * 0.75f

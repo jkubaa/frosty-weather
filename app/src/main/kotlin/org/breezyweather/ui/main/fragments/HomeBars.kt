@@ -61,13 +61,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.ColorUtils
 import org.breezyweather.R
-import org.breezyweather.ui.common.glass.GlassStyle
 import org.breezyweather.common.extensions.getThemeColor
-import org.breezyweather.ui.common.glass.LiquidGlass
-import org.breezyweather.ui.common.widgets.SwipeSwitchLayout
 import org.breezyweather.ui.common.glass.GlassBackdrop
 import org.breezyweather.ui.common.glass.GlassRimBrush
+import org.breezyweather.ui.common.glass.GlassStyle
+import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.common.glass.liquidGlass
+import org.breezyweather.ui.common.widgets.SwipeSwitchLayout
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.min
@@ -111,12 +111,31 @@ class HomeTopBarView @JvmOverloads constructor(
                         tint = content.copy(alpha = 0.8f),
                         modifier = Modifier.size(12.dp).padding(end = 2.dp)
                     )
-                    Text(it, color = content.copy(alpha = 0.8f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        it,
+                        color = content.copy(alpha = 0.8f),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
-            Text(title, color = content, fontSize = 20.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                title,
+                color = content,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             subtitle?.let {
-                Text(it, color = content.copy(alpha = 0.8f), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    it,
+                    color = content.copy(alpha = 0.8f),
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
@@ -199,7 +218,10 @@ class HomeBottomBarView @JvmOverloads constructor(
         // Frosted, the glass stays clear so the sky shows through (like the reference glass); a light
         // tint keeps the icons readable. Without blur it needs a denser body
         val tint = Color(
-            ColorUtils.setAlphaComponent(surface, ((if (LiquidGlass.isBlurEnabled(context)) 0.12f else 0.72f) * 255).toInt())
+            ColorUtils.setAlphaComponent(
+                surface,
+                ((if (LiquidGlass.isBlurEnabled(context)) 0.12f else 0.72f) * 255).toInt()
+            )
         )
         Box(
             modifier = Modifier
@@ -207,7 +229,13 @@ class HomeBottomBarView @JvmOverloads constructor(
                 .height(BAR_HEIGHT)
         ) {
             if (editVisible) {
-                GlassButton(R.drawable.ic_edit, stringResource(R.string.action_edit_location), tint, content, Modifier.align(Alignment.CenterStart)) {
+                GlassButton(
+                    R.drawable.ic_edit,
+                    stringResource(R.string.action_edit_location),
+                    tint,
+                    content,
+                    Modifier.align(Alignment.CenterStart)
+                ) {
                     onEdit?.invoke()
                 }
             }
@@ -226,7 +254,13 @@ class HomeBottomBarView @JvmOverloads constructor(
                     PageDots(content)
                 }
             }
-            GlassButton(R.drawable.ic_list, stringResource(R.string.action_location_list), tint, content, Modifier.align(Alignment.CenterEnd)) {
+            GlassButton(
+                R.drawable.ic_list,
+                stringResource(R.string.action_location_list),
+                tint,
+                content,
+                Modifier.align(Alignment.CenterEnd)
+            ) {
                 onManage?.invoke()
             }
         }
@@ -250,7 +284,12 @@ class HomeBottomBarView @JvmOverloads constructor(
                 .clickable(onClickLabel = description, onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
-            Icon(painterResource(icon), contentDescription = description, tint = content, modifier = Modifier.size(22.dp))
+            Icon(
+                painterResource(icon),
+                contentDescription = description,
+                tint = content,
+                modifier = Modifier.size(22.dp)
+            )
         }
     }
 
@@ -270,12 +309,17 @@ class HomeBottomBarView @JvmOverloads constructor(
             val diameter = DOT.toPx()
             val step = diameter + DOT_GAP.toPx()
             val cy = size.height / 2f
-            val position = if (swipeTarget >= 0) current + (swipeTarget - current) * swipeFraction else current.toFloat()
+            val position = if (swipeTarget >=
+                0
+            ) {
+                current + (swipeTarget - current) * swipeFraction
+            } else {
+                current.toFloat()
+            }
             // First page shown in the window: keeps the highlight centered, clamped at both ends
             val windowStart = (position - (slots - 1) / 2f).coerceIn(0f, (pageCount - slots).toFloat())
             val rowWidth = slots * diameter + (slots - 1) * DOT_GAP.toPx()
             val firstX = (size.width - rowWidth) / 2f + diameter / 2f
-
 
             for (i in (floor(windowStart).toInt() - 1)..ceil(windowStart + slots).toInt()) {
                 if (i !in 0 until pageCount) continue
@@ -287,7 +331,12 @@ class HomeBottomBarView @JvmOverloads constructor(
                     swipeTarget -> swipeFraction
                     else -> 0f
                 }
-                val color = lerp(unselected, selected, highlight).let { it.copy(alpha = it.alpha * min(1f, scale / EDGE_SCALE)) }
+                val color = lerp(unselected, selected, highlight).let {
+                    it.copy(
+                        alpha =
+                        it.alpha * min(1f, scale / EDGE_SCALE)
+                    )
+                }
                 val x = firstX + slot * step
                 if (i == arrowIndex) {
                     drawArrow(x, cy, diameter * ARROW_SCALE * scale, color)

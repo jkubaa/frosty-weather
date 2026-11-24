@@ -32,13 +32,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import kotlinx.collections.immutable.toImmutableList
 import org.breezyweather.BreezyWeather
 import org.breezyweather.R
 import org.breezyweather.background.forecast.TodayForecastNotificationJob
 import org.breezyweather.background.forecast.TomorrowForecastNotificationJob
 import org.breezyweather.common.extensions.plus
 import org.breezyweather.common.options.UpdateInterval
-import kotlinx.collections.immutable.toImmutableList
 import org.breezyweather.domain.settings.SettingsManager
 import org.breezyweather.remoteviews.AlertLiveUpdate
 import org.breezyweather.remoteviews.RainLiveUpdate
@@ -47,10 +47,10 @@ import org.breezyweather.ui.common.widgets.Material3Scaffold
 import org.breezyweather.ui.common.widgets.generateCollapsedScrollBehavior
 import org.breezyweather.ui.common.widgets.insets.FitStatusBarTopAppBar
 import org.breezyweather.ui.settings.preference.bottomInsetItem
-import org.breezyweather.ui.settings.preference.composables.PreferenceScreen
 import org.breezyweather.ui.settings.preference.composables.ListPreferenceViewWithCard
 import org.breezyweather.ui.settings.preference.composables.MultiListPreferenceViewWithCard
 import org.breezyweather.ui.settings.preference.composables.PreferenceItem
+import org.breezyweather.ui.settings.preference.composables.PreferenceScreen
 import org.breezyweather.ui.settings.preference.composables.PreferenceViewWithCard
 import org.breezyweather.ui.settings.preference.composables.SwitchPreferenceView
 import org.breezyweather.ui.settings.preference.composables.TimePickerPreferenceView

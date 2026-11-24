@@ -18,7 +18,12 @@ package org.breezyweather.ui.main.fragments
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.graphics.Canvas
+import android.graphics.Rect
 import android.graphics.Typeface
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -28,15 +33,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.viewinterop.AndroidView
-import org.breezyweather.ui.common.glass.GlassContentLayout
-import android.graphics.Canvas
-import android.graphics.Rect
-import android.text.Layout
-import android.text.StaticLayout
-import android.text.TextPaint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -57,25 +53,29 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.withTranslation
 import androidx.recyclerview.widget.RecyclerView
 import org.breezyweather.R
-import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.common.extensions.dpToPx
 import org.breezyweather.common.extensions.spToPx
+import org.breezyweather.ui.common.glass.GlassContentLayout
+import org.breezyweather.ui.common.glass.LiquidGlass
 import org.breezyweather.ui.main.adapters.location.LocationHolder
 
 /**
@@ -339,7 +339,12 @@ internal class LocationListDecoration(
                 .also { layout = it }
     }
 
-    override fun getItemOffsets(outRect: Rect, view: android.view.View, parent: RecyclerView, state: RecyclerView.State) {
+    override fun getItemOffsets(
+        outRect: Rect,
+        view: android.view.View,
+        parent: RecyclerView,
+        state: RecyclerView.State,
+    ) {
         if (parent.getChildViewHolder(view) !is LocationHolder) {
             outRect.setEmpty() // the header
             return

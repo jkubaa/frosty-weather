@@ -26,6 +26,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.InteractionSource
@@ -55,14 +57,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -70,6 +75,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -79,28 +85,22 @@ import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.toggleableState
-import androidx.compose.ui.state.ToggleableState
 import org.breezyweather.ui.common.glass.GlassStyle
 import org.breezyweather.ui.common.glass.LensBackdrop
 import org.breezyweather.ui.common.glass.rememberGlassPainter
-import androidx.compose.ui.graphics.toArgb
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /* ---------------------------------------------------------------------------------------------- */
 /* Press feedback                                                                                 */
@@ -335,10 +335,10 @@ private val ThumbHeight = 24.dp
 private val ThumbInset = 2.dp
 
 /** How much the thumb swells into a glass lens while touched (iOS 26). */
-private const val GlassThumbScale = 1.42f
+private const val GLASS_THUMB_SCALE = 1.42f
 
 /** How much the glass lens magnifies what is under it (below 1 it takes in more, like a fisheye, so the track's edges curve through it). */
-private const val LensMagnification = 0.82f
+private const val LENS_MAGNIFICATION = 0.82f
 
 /**
  * iOS 26 toggle: a capsule track that turns green, with a white pill thumb. While touched the
@@ -384,7 +384,7 @@ fun FrostySwitch(
     // the cell around it, drawn again into the lens
     val cellColor = frostyCellColor()
     val under = remember { ToggleUnderLens() }
-    val backdrop = remember { LensBackdrop(magnification = LensMagnification) { under.draw(it) } }
+    val backdrop = remember { LensBackdrop(magnification = LENS_MAGNIFICATION) { under.draw(it) } }
     val glassPainter = rememberGlassPainter(
         GlassStyle.Lens.copy(
             cornerRadius = ThumbHeight / 2,
@@ -432,7 +432,9 @@ fun FrostySwitch(
                 touched = false
                 dragFraction = null
                 if (newValue != currentChecked) {
-                    haptics.performHapticFeedback(if (newValue) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+                    haptics.performHapticFeedback(
+                        if (newValue) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff
+                    )
                     onChange?.invoke(newValue)
                 }
             }
@@ -470,7 +472,7 @@ fun FrostySwitch(
                 .offset { IntOffset(((ThumbInset + travel * fraction).toPx()).roundToInt(), ThumbInset.roundToPx()) }
                 .size(ThumbWidth, ThumbHeight)
                 .graphicsLayer {
-                    val scale = 1f + (GlassThumbScale - 1f) * glass
+                    val scale = 1f + (GLASS_THUMB_SCALE - 1f) * glass
                     scaleX = scale
                     scaleY = scale
                     shadowElevation = (2f + 4f * glass).dp.toPx()
@@ -496,7 +498,7 @@ fun FrostySwitch(
                         // size (the thumb is drawn swollen) and slightly magnified
                         backdrop.place(
                             elementCenter = Offset(size.width / 2f, size.height / 2f),
-                            elementScale = 1f + (GlassThumbScale - 1f) * glass
+                            elementScale = 1f + (GLASS_THUMB_SCALE - 1f) * glass
                         )
                         val at = Offset(
                             (ThumbInset + travel * fraction).toPx() + size.width / 2f,

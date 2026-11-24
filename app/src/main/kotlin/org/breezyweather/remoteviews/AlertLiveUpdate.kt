@@ -137,7 +137,8 @@ object AlertLiveUpdate {
         }
         // Most severe first, then whichever matters soonest
         val top = showing.sortedWith(
-            compareByDescending<Alert> { it.level }.thenBy { (it.startDate?.takeIf { s -> s.after(now) } ?: it.endDate!!).time }
+            compareByDescending<Alert> { it.level }
+                .thenBy { (it.startDate?.takeIf { s -> s.after(now) } ?: it.endDate!!).time }
         ).first()
         val others = showing.size - 1
         return if (top in active) State.Active(top, others) else State.Upcoming(top, others)
@@ -172,7 +173,13 @@ object AlertLiveUpdate {
 
     private fun updateWith(context: Context, location: Location?, weather: Weather): Boolean {
         val settings = SettingsManager.getInstance(context)
-        val minSeverity = if (settings.alertLiveMinSeverity == "severe") AlertSeverity.SEVERE else AlertSeverity.MODERATE
+        val minSeverity = if (settings.alertLiveMinSeverity ==
+            "severe"
+        ) {
+            AlertSeverity.SEVERE
+        } else {
+            AlertSeverity.MODERATE
+        }
         val now = Date()
         val state = evaluate(weather.alertList, now, minSeverity)
         val prefs = prefs(context)
@@ -246,7 +253,11 @@ object AlertLiveUpdate {
             setShowWhen(false)
             setShortCriticalText(
                 context.getString(
-                    if (active) R.string.notification_alert_live_pill_left else R.string.notification_alert_live_pill_in,
+                    if (active) {
+                        R.string.notification_alert_live_pill_left
+                    } else {
+                        R.string.notification_alert_live_pill_in
+                    },
                     remaining(target, now)
                 )
             )

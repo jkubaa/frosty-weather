@@ -53,7 +53,10 @@ private object AuroraParts {
         Bitmap.createBitmap(4, 256, Bitmap.Config.ARGB_8888).also {
             val paint = Paint().apply {
                 shader = LinearGradient(
-                    0f, 0f, 0f, 256f,
+                    0f,
+                    0f,
+                    0f,
+                    256f,
                     intArrayOf(
                         argb(0f, 150, 50, 120),
                         argb(0.22f, 150, 60, 140),
@@ -78,12 +81,19 @@ private object AuroraParts {
     private fun argb(a: Float, r: Int, g: Int, b: Int) = android.graphics.Color.argb((a * 255f).roundToInt(), r, g, b)
 }
 
-private class Curtain(val base: Float, val amplitude: Float, val length: Float, val strength: Float, val seed: Float, val rays: Int)
+private class Curtain(
+    val base: Float,
+    val amplitude: Float,
+    val length: Float,
+    val strength: Float,
+    val seed: Float,
+    val rays: Int,
+)
 
 /** Back curtain higher and fainter, front one lower and brighter */
 private val CURTAINS = listOf(
     Curtain(base = 0.2f, amplitude = 0.03f, length = 0.2f, strength = 0.5f, seed = 5f, rays = 220),
-    Curtain(base = 0.3f, amplitude = 0.045f, length = 0.28f, strength = 1f, seed = 0f, rays = 340),
+    Curtain(base = 0.3f, amplitude = 0.045f, length = 0.28f, strength = 1f, seed = 0f, rays = 340)
 )
 
 /** Android 12+: the curtains are recorded once, then drawn sharp and blurred */
@@ -126,7 +136,9 @@ internal fun DrawScope.drawAurora(time: Float, strength: Float, lift: Float) {
     val canvas = drawContext.canvas.nativeCanvas
     val rays = AuroraNodes.rays
     val halo = AuroraNodes.halo
-    if (rays != null && halo != null && canvas.isHardwareAccelerated && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    if (rays != null && halo != null && canvas.isHardwareAccelerated &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    ) {
         rays.setPosition(0, 0, w.roundToInt(), h.roundToInt())
         rays.setUseCompositingLayer(true, AuroraNodes.layerPaint)
         drawCurtains(rays.beginRecording(), time, strength, lift)

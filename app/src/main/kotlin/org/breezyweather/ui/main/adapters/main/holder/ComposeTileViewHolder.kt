@@ -35,8 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -63,7 +63,8 @@ abstract class ComposeTileViewHolder(
     private val tileWidth = mutableFloatStateOf(1f)
 
     /** Text and drawing color on glass. */
-    protected val contentColor: Color = Color(context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
+    protected val contentColor: Color =
+        Color(context.getThemeColor(com.google.android.material.R.attr.colorSurfaceInverse))
 
     @Composable
     override fun CardContent() {

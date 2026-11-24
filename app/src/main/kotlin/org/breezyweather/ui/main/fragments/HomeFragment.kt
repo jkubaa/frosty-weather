@@ -46,11 +46,11 @@ import org.breezyweather.common.snackbar.SnackbarContainer
 import org.breezyweather.databinding.FragmentHomeBinding
 import org.breezyweather.domain.location.model.getPlace
 import org.breezyweather.domain.settings.SettingsManager
+import org.breezyweather.ui.common.glass.LayeredBackdrop
 import org.breezyweather.ui.common.widgets.SwipeSwitchLayout
 import org.breezyweather.ui.main.MainActivity
 import org.breezyweather.ui.main.MainActivityViewModel
 import org.breezyweather.ui.main.adapters.main.MainCards
-import org.breezyweather.ui.common.glass.LayeredBackdrop
 import org.breezyweather.ui.theme.ThemeManager
 import org.breezyweather.ui.theme.resource.ResourcesProviderFactory
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
@@ -400,7 +400,7 @@ class HomeFragment : MainModuleFragment() {
                 // Feels like, only when it differs from the actual temperature (as in the hero)
                 current.temperature?.feelsLikeTemperature?.toDouble(temperatureUnit)?.roundToInt()
                     ?.takeIf { it != current.temperature?.temperature?.toDouble(temperatureUnit)?.roundToInt() }
-                    ?.let { getString(R.string.temperature_feels_like_with_unit, "${it}°") }
+                    ?.let { getString(R.string.temperature_feels_like_with_unit, "$it°") }
             ).joinToString("  ·  ").takeIf { it.isNotEmpty() }
         }
         updateToolbarTitleAlpha()

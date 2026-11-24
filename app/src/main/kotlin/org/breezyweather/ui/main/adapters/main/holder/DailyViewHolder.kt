@@ -145,7 +145,12 @@ class DailyViewHolder(context: Context) : ComposeCardViewHolder(context) {
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)
                 )
             }
-            Crossfade(metric, animationSpec = tween(250), label = "metric", modifier = Modifier.padding(top = 6.dp)) { shown ->
+            Crossfade(
+                metric,
+                animationSpec = tween(250),
+                label = "metric",
+                modifier = Modifier.padding(top = 6.dp)
+            ) { shown ->
                 Column(Modifier.padding(horizontal = 16.dp)) {
                     if (shown == ForecastMetric.CONDITIONS) {
                         ConditionRows(b)
@@ -215,9 +220,17 @@ class DailyViewHolder(context: Context) : ComposeCardViewHolder(context) {
                     .clearAndSetSemantics { contentDescription = description },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(name, color = contentColor, fontSize = 18.sp, fontWeight = FontWeight.Medium, maxLines = 1, modifier = Modifier.width(64.dp))
+                Text(
+                    name,
+                    color = contentColor,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    modifier = Modifier.width(64.dp)
+                )
                 Column(Modifier.width(48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    val painter = rememberDrawablePainter(code?.let { ResourceHelper.getWeatherIcon(b.provider, it, true) }, code)
+                    val painter =
+                        rememberDrawablePainter(code?.let { ResourceHelper.getWeatherIcon(b.provider, it, true) }, code)
                     // The frosted art has built-in padding, so it is drawn larger than a glyph would be
                     painter?.let { Image(it, contentDescription = null, modifier = Modifier.size(34.dp)) }
                     GlassForecastFormat.precipitation(activity, precipitation)?.let {
@@ -239,7 +252,13 @@ class DailyViewHolder(context: Context) : ComposeCardViewHolder(context) {
                             scaleMax = scaleMax,
                             low = low?.toDouble(TemperatureUnit.CELSIUS),
                             high = high?.toDouble(TemperatureUnit.CELSIUS),
-                            current = if (isToday) weather.current?.temperature?.temperature?.toDouble(TemperatureUnit.CELSIUS) else null
+                            current = if (isToday) {
+                                weather.current?.temperature?.temperature?.toDouble(
+                                    TemperatureUnit.CELSIUS
+                                )
+                            } else {
+                                null
+                            }
                         )
                     }
                 }
@@ -273,12 +292,20 @@ class DailyViewHolder(context: Context) : ComposeCardViewHolder(context) {
                     .height(48.dp)
                     .clickable { open(b, index, metric.detailScreen()) }
                     .clearAndSetSemantics {
-                        contentDescription = name + activity.getString(org.breezyweather.unit.R.string.locale_separator) +
+                        contentDescription =
+                            name + activity.getString(org.breezyweather.unit.R.string.locale_separator) +
                             activity.getString(metric.nameId) + activity.getString(R.string.colon_separator) + value
                     },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(name, color = contentColor, fontSize = 18.sp, fontWeight = FontWeight.Medium, maxLines = 1, modifier = Modifier.width(64.dp))
+                Text(
+                    name,
+                    color = contentColor,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    modifier = Modifier.width(64.dp)
+                )
                 if (hasArrows) {
                     Box(Modifier.width(32.dp), contentAlignment = Alignment.Center) {
                         cell.degree?.let {
@@ -340,7 +367,12 @@ class DailyViewHolder(context: Context) : ComposeCardViewHolder(context) {
             }
             current?.let {
                 val dot = Offset(x(it), cy)
-                drawCircle(Color.Black.copy(alpha = 0.35f), 3.5.dp.toPx() + 1.dp.toPx(), dot, style = Stroke(2.dp.toPx()))
+                drawCircle(
+                    Color.Black.copy(alpha = 0.35f),
+                    3.5.dp.toPx() + 1.dp.toPx(),
+                    dot,
+                    style = Stroke(2.dp.toPx())
+                )
                 drawCircle(Color.White, 3.5.dp.toPx(), dot)
             }
         }
@@ -353,7 +385,11 @@ class DailyViewHolder(context: Context) : ComposeCardViewHolder(context) {
             val radius = CornerRadius(size.height / 2f)
             drawRoundRect(track, cornerRadius = radius)
             fraction?.coerceIn(0f, 1f)?.takeIf { it > 0f }?.let {
-                drawRoundRect(color, size = Size((size.width * it).coerceAtLeast(size.height), size.height), cornerRadius = radius)
+                drawRoundRect(
+                    color,
+                    size = Size((size.width * it).coerceAtLeast(size.height), size.height),
+                    cornerRadius = radius
+                )
             }
         }
     }

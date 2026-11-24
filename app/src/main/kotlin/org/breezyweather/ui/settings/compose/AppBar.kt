@@ -17,18 +17,18 @@
 package org.breezyweather.ui.settings.compose
 
 import android.content.Context
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Icon
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.unit.dp
-import org.breezyweather.ui.common.frosty.FrostyGlassButton
-import org.breezyweather.ui.common.frosty.frostyColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import org.breezyweather.R
 import org.breezyweather.common.utils.helpers.IntentHelper
+import org.breezyweather.ui.common.frosty.FrostyGlassButton
+import org.breezyweather.ui.common.frosty.frostyColors
 
 @Composable
 fun AboutActivityIconButton(

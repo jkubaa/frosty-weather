@@ -71,13 +71,23 @@ internal fun DrawScope.drawLightShafts(
     val plainDensity = Density(density, fontScale)
 
     val source = LightShafts.source
-    source.setPosition(0, 0, (w * LightShafts.SCALE).roundToInt().coerceAtLeast(1), (h * LightShafts.SCALE).roundToInt().coerceAtLeast(1))
+    source.setPosition(
+        0,
+        0,
+        (w * LightShafts.SCALE).roundToInt().coerceAtLeast(1),
+        (h * LightShafts.SCALE).roundToInt().coerceAtLeast(1)
+    )
     // Its own layer, so the clouds can erase the light inside it
     source.setUseCompositingLayer(true, null)
     source.alpha = 0.13f
     val sourceCanvas = source.beginRecording()
     sourceCanvas.scale(LightShafts.SCALE, LightShafts.SCALE)
-    CanvasDrawScope().draw(plainDensity, layoutDirection, androidx.compose.ui.graphics.Canvas(sourceCanvas), Size(w, h)) {
+    CanvasDrawScope().draw(
+        plainDensity,
+        layoutDirection,
+        androidx.compose.ui.graphics.Canvas(sourceCanvas),
+        Size(w, h)
+    ) {
         drawCircle(
             brush = Brush.radialGradient(
                 0f to color,
@@ -163,5 +173,5 @@ private data class Ghost(val at: Float, val radius: Float, val color: Color, val
 private val FLARE_GHOSTS = listOf(
     Ghost(0.8f, 30f, Color(0xFFC8B4FF), 0.06f),
     Ghost(1.15f, 14f, Color(0xFFFFE6B4), 0.11f),
-    Ghost(1.5f, 44f, Color(0xFFA0C8FF), 0.05f),
+    Ghost(1.5f, 44f, Color(0xFFA0C8FF), 0.05f)
 )

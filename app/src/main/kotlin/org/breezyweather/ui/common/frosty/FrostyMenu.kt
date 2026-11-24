@@ -23,8 +23,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -161,7 +161,13 @@ fun FrostyMenu(
                                     .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 6.dp)
                                     .height(0.5.dp)
                                     .background(
-                                        if (colors.isDark) Color.White.copy(alpha = 0.16f) else Color.Black.copy(alpha = 0.12f)
+                                        if (colors.isDark) {
+                                            Color.White.copy(
+                                                alpha = 0.16f
+                                            )
+                                        } else {
+                                            Color.Black.copy(alpha = 0.12f)
+                                        }
                                     )
                             )
                         }

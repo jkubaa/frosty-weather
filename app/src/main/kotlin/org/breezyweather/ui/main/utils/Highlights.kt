@@ -136,7 +136,11 @@ object Highlights {
             val chance = hourly.precipitationProbability?.total
             return Highlight(
                 icon = R.drawable.ic_umbrella,
-                title = context.getString(R.string.highlight_precipitation_around, kind, time(context, location, hourly.date)),
+                title = context.getString(
+                    R.string.highlight_precipitation_around,
+                    kind,
+                    time(context, location, hourly.date)
+                ),
                 detail = chance?.let { context.getString(R.string.highlight_chance, it.formatPercent(context)) },
                 label = kind,
                 sublabel = time(context, location, hourly.date),
@@ -147,7 +151,9 @@ object Highlights {
         }
 
         val days = upcomingDays.drop(1).take(DAYS_AHEAD_FOR_PRECIPITATION)
-        days.withIndex().firstOrNull { it.value.precipitationChance() >= LIKELY_PRECIPITATION_PERCENT }?.let { (i, daily) ->
+        days.withIndex().firstOrNull {
+            it.value.precipitationChance() >= LIKELY_PRECIPITATION_PERCENT
+        }?.let { (i, daily) ->
             val kind = precipitationKind(context, daily.day?.weatherCode ?: daily.night?.weatherCode)
             val chance = listOfNotNull(
                 daily.day?.precipitationProbability?.total,
@@ -158,7 +164,11 @@ object Highlights {
                 title = if (i == 0) {
                     context.getString(R.string.highlight_precipitation_tomorrow, kind)
                 } else {
-                    context.getString(R.string.highlight_precipitation_on, kind, daily.getWeek(location, context, full = true))
+                    context.getString(
+                        R.string.highlight_precipitation_on,
+                        kind,
+                        daily.getWeek(location, context, full = true)
+                    )
                 },
                 detail = chance?.let { context.getString(R.string.highlight_chance, it.formatPercent(context)) },
                 label = kind,
@@ -209,7 +219,9 @@ object Highlights {
                         degrees(context, tomorrowHigh, unit)
                     ),
                     label = context.getString(R.string.daily_tomorrow),
-                    sublabel = context.getString(if (warmer) R.string.highlight_label_warmer else R.string.highlight_label_cooler),
+                    sublabel = context.getString(
+                        if (warmer) R.string.highlight_label_warmer else R.string.highlight_label_cooler
+                    ),
                     value = (if (warmer) "+" else "−") + change,
                     color = if (warmer) WARM else COOL
                 )
@@ -286,7 +298,9 @@ object Highlights {
                 if (isSunrise) R.string.highlight_sunrise else R.string.highlight_sunset,
                 time(context, location, date)
             ),
-            label = context.getString(if (isSunrise) R.string.highlight_label_sunrise else R.string.highlight_label_sunset),
+            label = context.getString(
+                if (isSunrise) R.string.highlight_label_sunrise else R.string.highlight_label_sunset
+            ),
             sublabel = time(context, location, date),
             color = SUN
         )
@@ -300,7 +314,10 @@ object Highlights {
     )
 
     /** Daytime and nighttime temperatures are what sources give; the high is the warmer of the two. */
-    private fun Daily.high(): Temperature? = listOfNotNull(day?.temperature?.temperature, night?.temperature?.temperature)
+    private fun Daily.high(): Temperature? = listOfNotNull(
+        day?.temperature?.temperature,
+        night?.temperature?.temperature
+    )
         .maxByOrNull { it.celsius() }
 
     private fun Temperature.celsius() = toDouble(TemperatureUnit.CELSIUS)

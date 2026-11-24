@@ -73,10 +73,16 @@ class ClockViewHolder(context: Context) : ComposeTileViewHolder(context) {
     ) {
         super.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
         this.location.value = location
-        itemView.contentDescription = activity.getString(R.string.clock) + activity.getString(R.string.colon_separator) +
+        itemView.contentDescription =
+            activity.getString(R.string.clock) + activity.getString(R.string.colon_separator) +
             Date().getFormattedTime(location, activity, activity.is12Hour)
         itemView.setOnClickListener {
-            IntentHelper.startDailyWeatherActivity(activity, location.formattedId, location.weather!!.todayIndex, DetailScreen.TAG_CONDITIONS)
+            IntentHelper.startDailyWeatherActivity(
+                activity,
+                location.formattedId,
+                location.weather!!.todayIndex,
+                DetailScreen.TAG_CONDITIONS
+            )
         }
     }
 
@@ -99,7 +105,11 @@ class ClockViewHolder(context: Context) : ComposeTileViewHolder(context) {
                 // Recomputed each minute only in practice: the text is the same within a minute
                 TileValue(Date(millis).getFormattedTime(location, context, context.is12Hour))
                 Text(
-                    text = timeZone.getDisplayName(timeZone.inDaylightTime(Date(millis)), TimeZone.LONG, context.currentLocale),
+                    text = timeZone.getDisplayName(
+                        timeZone.inDaylightTime(Date(millis)),
+                        TimeZone.LONG,
+                        context.currentLocale
+                    ),
                     color = contentColor.copy(alpha = 0.85f),
                     fontSize = 13.sp,
                     lineHeight = 16.sp,

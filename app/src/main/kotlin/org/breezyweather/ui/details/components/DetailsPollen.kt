@@ -30,12 +30,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import breezyweather.domain.weather.model.Pollen
 import org.breezyweather.R
-import org.breezyweather.ui.details.DetailsHeaderRow
 import org.breezyweather.common.source.PollenIndexSource
 import org.breezyweather.domain.weather.model.getPollenWithMaxIndex
 import org.breezyweather.domain.weather.model.isIndexValid
 import org.breezyweather.ui.common.composables.PollenGrid
 import org.breezyweather.ui.common.widgets.Material3ExpressiveCardListItem
+import org.breezyweather.ui.details.DetailsHeaderRow
 
 /**
  * TODO: Save pollen hourly data, and display a hourly index chart of the pollen with the maximum index on that day

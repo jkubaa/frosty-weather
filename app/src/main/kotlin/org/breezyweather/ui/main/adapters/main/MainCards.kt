@@ -28,14 +28,11 @@ import org.breezyweather.ui.main.adapters.main.holder.AbstractMainCardViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.AbstractMainViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.AirQualityViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.AlertViewHolder
-import org.breezyweather.ui.main.adapters.main.holder.HighlightsViewHolder
-import org.breezyweather.ui.main.utils.Highlights
 import org.breezyweather.ui.main.adapters.main.holder.ClockViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.DailyViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.FooterViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.HeaderViewHolder
-import org.breezyweather.ui.main.adapters.main.holder.SummaryViewHolder
-import org.breezyweather.ui.main.utils.ForecastSummary
+import org.breezyweather.ui.main.adapters.main.holder.HighlightsViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.HourlyViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.HumidityViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.MoonViewHolder
@@ -43,10 +40,13 @@ import org.breezyweather.ui.main.adapters.main.holder.PollenViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.PrecipitationNowcastViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.PrecipitationViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.PressureViewHolder
+import org.breezyweather.ui.main.adapters.main.holder.SummaryViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.SunViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.UvViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.VisibilityViewHolder
 import org.breezyweather.ui.main.adapters.main.holder.WindViewHolder
+import org.breezyweather.ui.main.utils.ForecastSummary
+import org.breezyweather.ui.main.utils.Highlights
 import org.breezyweather.ui.theme.resource.providers.ResourceProvider
 import java.util.Calendar
 import java.util.Collections
@@ -177,13 +177,27 @@ class MainCards(private val activity: MainActivity) {
     ) {
         when (holder) {
             is HourlyViewHolder -> holder.onBindView(
-                activity, location, provider, listAnimationEnabled, itemAnimationEnabled, selectedHourlyTab
+                activity,
+                location,
+                provider,
+                listAnimationEnabled,
+                itemAnimationEnabled,
+                selectedHourlyTab
             ) { selectedHourlyTab = it }
             is DailyViewHolder -> holder.onBindView(
-                activity, location, provider, listAnimationEnabled, itemAnimationEnabled, selectedDailyTab
+                activity,
+                location,
+                provider,
+                listAnimationEnabled,
+                itemAnimationEnabled,
+                selectedDailyTab
             ) { selectedDailyTab = it }
             is AbstractMainCardViewHolder -> holder.onBindView(
-                activity, location, provider, listAnimationEnabled, itemAnimationEnabled
+                activity,
+                location,
+                provider,
+                listAnimationEnabled,
+                itemAnimationEnabled
             )
             else -> holder.onBindView(activity, location, provider, listAnimationEnabled, itemAnimationEnabled)
         }

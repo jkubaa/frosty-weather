@@ -77,7 +77,6 @@ class LiquidGlassDrawable(
         style = Paint.Style.FILL
     }
 
-
     override fun onBoundsChange(bounds: Rect) {
         super.onBoundsChange(bounds)
         panelBounds.set(bounds)
@@ -264,5 +263,4 @@ object LiquidGlass {
             it.visibility = View.GONE
         }
     }
-
 }
